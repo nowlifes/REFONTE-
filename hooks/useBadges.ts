@@ -1,0 +1,95 @@
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { gameService } from '../services/gameService';
+import type { Badge, BadgeType } from '../types';
+
+export function useBadges(playerId: string | undefined) {
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [newBadge, setNewBadge] = useState<Badge | null>(null);
+  const badgesRef = useRef<Badge[]>([]);
+
+  const fetchBadges = useCallback(async () => {
+    if (!playerId) return;
+    try {
+      const { data, error } = await supabase
+        .from('player_badges')
+        .select('id, player_id, badge_type, unlocked_at')
+        .eq('player_id', playerId)
+        .order('unlocked_at', { ascending: false });
+      
+      if (!error && data) {
+        setBadges(data);
+        badgesRef.current = data;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch badges", e);
+    }
+  }, [playerId]);
+
+  useEffect(() => {
+    if (!playerId) return;
+
+    fetchBadges();
+
+    const subscription = supabase
+      .channel(`badges:${playerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'player_badges',
+          filter: `player_id=eq.${playerId}`
+        },
+        (payload) => {
+          const badge = payload.new as Badge;
+          setBadges(prev => {
+            if (prev.find(b => b.badge_type === badge.badge_type)) return prev;
+            setNewBadge(badge);
+            const next = [...prev, badge];
+            badgesRef.current = next;
+            return next;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [playerId, fetchBadges]);
+
+  const injectBadge = useCallback(async (type: BadgeType) => {
+    if (!playerId) return;
+    if (badgesRef.current.some(b => b.badge_type === type)) return;
+
+    // Optimistic
+    const fakeBadge: Badge = {
+      id: 'temp-' + Date.now(),
+      player_id: playerId,
+      badge_type: type,
+      unlocked_at: new Date().toISOString()
+    };
+    
+    setBadges(prev => {
+        const next = [...prev, fakeBadge];
+        badgesRef.current = next;
+        return next;
+    });
+    setNewBadge(fakeBadge);
+
+    // Persist
+    try {
+      await gameService.unlockBadge(playerId, type);
+    } catch (e) {
+      console.error("Exception saving badge:", e);
+    }
+  }, [playerId]);
+
+  const clearNewBadge = useCallback(() => {
+    setNewBadge(null);
+  }, []);
+
+  return { badges, newBadge, injectBadge, clearNewBadge };
+}

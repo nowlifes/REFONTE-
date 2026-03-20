@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Copy of VFinal Refonte V1.1",
+  "description": "A medieval-themed festive Bingo quest. Complete challenges, seek the Bingo Master, and claim glory!",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
