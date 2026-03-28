@@ -1,21 +1,76 @@
 
-import React from 'react';
-import { Power, DoorOpen, DoorClosed, Gamepad2, Crown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
-import { APP_VERSION, MASTER_VALID_CODE } from '../constants';
+import { APP_VERSION, MASTER_VALID_CODE, CHALLENGES_EN, CHALLENGES_FR } from '../constants';
+import { gameService } from '../services/gameService';
 import BackgroundParticles from './BackgroundParticles';
 
 interface MasterPageProps {
   isSessionActive: boolean;
   setSessionActive: (active: boolean) => void;
+  resetSession: () => Promise<void>;
+  createNewSession: () => Promise<void>;
   state: any;
   actions: any;
 }
 
-const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, state: s, actions: a }) => {
-  const { t } = useLanguage();
+const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, state: s, actions: a }) => {
+  const { t, language } = useLanguage();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [dbChallenges, setDbChallenges] = useState<any[]>([]);
+  const [showChallenges, setShowChallenges] = useState(false);
+
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      const challenges = await gameService.getChallenges();
+      setDbChallenges(challenges);
+    };
+    fetchChallenges();
+  }, []);
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await resetSession();
+      setShowResetConfirm(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleCreateNew = async () => {
+    setIsCreatingNew(true);
+    try {
+      await createNewSession();
+      setShowNewSessionConfirm(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsCreatingNew(false);
+    }
+  };
+
+  const handleSimulate = async () => {
+    setIsSimulating(true);
+    try {
+      const challenges = language === 'fr' ? CHALLENGES_FR : CHALLENGES_EN;
+      await gameService.simulatePlayers(challenges);
+      alert("✅ 5 Mock Agents deployed to the field!");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-[#0A1629] flex flex-col items-center justify-center p-6">
@@ -23,7 +78,10 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
       <div className="w-full max-w-sm relative z-10 animate-in zoom-in duration-300">
          <div className="bg-white border-[4px] border-black rounded-2xl p-6 shadow-[10px_10px_0px_black] text-center overflow-hidden">
             <div className="mb-6 pb-6 border-b-2 border-black/10">
-               <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic mb-4">{t('master_control')}</h2>
+               <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic mb-1">{t('master_control')}</h2>
+               <p className="text-[10px] font-impact text-black/40 uppercase tracking-widest mb-4">
+                 Session: {isSessionActive ? 'ACTIVE' : 'CLOSED'}
+               </p>
                <div className="grid grid-cols-2 gap-3 mb-4">
                   <button onClick={() => setSessionActive(true)} className={`p-4 rounded-xl border-[3px] border-black flex flex-col items-center justify-center gap-1 transition-all ${isSessionActive ? 'bg-[#00FF9D] shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[3px_3px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none'}`}>
                      <DoorOpen className="w-8 h-8 text-black" strokeWidth={3} />
@@ -34,9 +92,42 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                      <span className="font-impact text-[9px] uppercase tracking-widest">{t('closed')}</span>
                   </button>
                </div>
-               <button onClick={() => a.setView(s.cells.length > 0 ? AppView.GAME : AppView.NICKNAME)} className="w-full py-3 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  <Gamepad2 className="w-4 h-4" /> {t('back_to_game')}
-               </button>
+               
+               <div className="flex flex-col gap-2">
+                 <button onClick={() => a.setView(s.cells.length > 0 ? AppView.GAME : AppView.NICKNAME)} className="w-full py-3 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <Gamepad2 className="w-4 h-4" /> {t('back_to_game')}
+                 </button>
+
+                 <button 
+                   onClick={handleSimulate} 
+                   disabled={isSimulating}
+                   className="w-full py-3 bg-gold-500 text-black rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[4px_4px_0px_black] border-[3px] border-black disabled:opacity-50"
+                 >
+                    <Users className={`w-4 h-4 ${isSimulating ? 'animate-bounce' : ''}`} /> 
+                    {isSimulating ? 'DEPLOYING AGENTS...' : 'SIMULATE 5 PLAYERS'}
+                 </button>
+                 
+                 <button 
+                   onClick={() => setShowResetConfirm(true)} 
+                   className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-2 hover:bg-red-100 transition-all"
+                 >
+                    <Trash2 className="w-3 h-3" /> {t('reset_session')}
+                 </button>
+
+                 <button 
+                   onClick={() => setShowNewSessionConfirm(true)} 
+                   className="w-full py-3 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[4px_4px_0px_black] border-[3px] border-black mt-2"
+                 >
+                    <Sparkles className="w-4 h-4" /> {t('create_new_session')}
+                 </button>
+
+                 <button 
+                    onClick={() => setShowChallenges(true)} 
+                    className="w-full py-3 bg-blue-500 text-white rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[4px_4px_0px_black] border-[3px] border-black"
+                  >
+                     <List className="w-4 h-4" /> {dbChallenges.length} CHALLENGES LOADED
+                  </button>
+               </div>
             </div>
 
             <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-4 border-[3px] border-black shadow-[4px_4px_0px_#FFD700]">
@@ -49,6 +140,109 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
            <span className="text-[9px] font-impact text-white/20 uppercase tracking-widest">V{APP_VERSION}</span>
          </div>
       </div>
+
+      {/* RESET CONFIRMATION MODAL */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white border-[4px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#FF2E63] animate-in zoom-in duration-300">
+            <button onClick={() => setShowResetConfirm(false)} className="absolute top-4 right-4 text-black/20 hover:text-black"><X className="w-6 h-6" /></button>
+            
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-impact font-bold text-black uppercase tracking-tighter italic mb-2">
+                {t('reset_session')}
+              </h3>
+              <p className="text-sm font-medium text-black/60 leading-tight">
+                {t('reset_session_confirm')}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={handleReset}
+                disabled={isResetting}
+                className="w-full bg-[#FF2E63] text-white font-impact uppercase py-4 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50"
+              >
+                {isResetting ? t('loading') : t('reset_session_btn')}
+              </button>
+              <button 
+                onClick={() => setShowResetConfirm(false)}
+                className="w-full bg-white text-black font-impact uppercase py-3 rounded-xl border-[3px] border-black hover:bg-slate-50 transition-all"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW SESSION CONFIRMATION MODAL */}
+      {showNewSessionConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white border-[4px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#00FF9D] animate-in zoom-in duration-300">
+            <button onClick={() => setShowNewSessionConfirm(false)} className="absolute top-4 right-4 text-black/20 hover:text-black"><X className="w-6 h-6" /></button>
+            
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-2xl font-impact font-bold text-black uppercase tracking-tighter italic mb-2">
+                {t('create_new_session')}
+              </h3>
+              <p className="text-sm font-medium text-black/60 leading-tight">
+                {t('create_new_session_confirm')}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={handleCreateNew}
+                disabled={isCreatingNew}
+                className="w-full bg-[#00FF9D] text-black font-impact uppercase py-4 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all disabled:opacity-50"
+              >
+                {isCreatingNew ? t('loading') : t('create_new_session_btn')}
+              </button>
+              <button 
+                onClick={() => setShowNewSessionConfirm(false)}
+                className="w-full bg-white text-black font-impact uppercase py-3 rounded-xl border-[3px] border-black hover:bg-slate-50 transition-all"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CHALLENGES LIST MODAL */}
+      {showChallenges && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white border-[4px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_#3B82F6] flex flex-col max-h-[80vh]">
+            <button onClick={() => setShowChallenges(false)} className="absolute top-4 right-4 text-black/20 hover:text-black z-10"><X className="w-6 h-6" /></button>
+            
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-impact font-bold text-black uppercase tracking-tighter italic">
+                SUPABASE CHALLENGES ({dbChallenges.length})
+              </h3>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-2 space-y-2 no-scrollbar">
+               {dbChallenges.map((c, i) => (
+                 <div key={i} className="p-3 bg-slate-50 border-2 border-black/10 rounded-xl flex items-center gap-3">
+                    <span className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center font-impact text-xs italic">{i + 1}</span>
+                    <div className="flex-1">
+                       <div className="text-[10px] font-impact uppercase text-black/40">{c.type}</div>
+                       <div className="text-xs font-bold text-black leading-tight">
+                          {language === 'fr' ? (c.text_fr || c.text) : (c.text_en || c.text)}
+                       </div>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

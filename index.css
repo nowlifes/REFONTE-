@@ -1,4 +1,25 @@
 
+@import "tailwindcss";
+
+@theme {
+  --animate-scan: scan 3s linear infinite;
+  --animate-hologram: hologram 5s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-spin-slow: spin 8s linear infinite;
+  --animate-bounce-slow: bounce 3s infinite;
+
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(1000%); }
+  }
+
+  @keyframes hologram {
+    0%, 100% { filter: hue-rotate(0deg) brightness(1); transform: skewX(0deg); }
+    33% { filter: hue-rotate(90deg) brightness(1.2); transform: skewX(2deg); }
+    66% { filter: hue-rotate(180deg) brightness(1.1); transform: skewX(-2deg); }
+  }
+}
+
 /* PARTICLE ANIMATION */
 .particles {
   position: absolute;
@@ -42,9 +63,4 @@
 /* SHADOWS */
 .shadow-gold-lg {
   box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
-}
-
-/* FONT PLAYBOOK FALLBACK */
-.font-playbook {
-  font-family: 'Anton', 'Impact', sans-serif;
 }

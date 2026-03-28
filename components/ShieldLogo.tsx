@@ -5,11 +5,46 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface ShieldLogoProps {
   className?: string;
   variant?: 'default' | 'print';
+  onCrownClick?: () => void;
 }
 
-const ShieldLogo: React.FC<ShieldLogoProps> = ({ className = "w-full h-full", variant = 'default' }) => {
+const ShieldLogo: React.FC<ShieldLogoProps> = ({ className = "w-full h-full", variant = 'default', onCrownClick }) => {
   const { t } = useLanguage();
   const isPrint = variant === 'print';
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isPressing, setIsPressing] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+
+  const startPress = () => {
+    if (isPrint || !onCrownClick) return;
+    setIsPressing(true);
+    setProgress(0);
+    
+    let p = 0;
+    intervalRef.current = setInterval(() => {
+      p += 1;
+      setProgress(p);
+      if (navigator.vibrate) navigator.vibrate(20);
+      
+      if (p >= 3) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+        onCrownClick();
+        setIsPressing(false);
+        setProgress(0);
+      }
+    }, 1000);
+  };
+
+  const endPress = () => {
+    setIsPressing(false);
+    setProgress(0);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
   
   // Colors based on variant
   const c = {
@@ -40,7 +75,15 @@ const ShieldLogo: React.FC<ShieldLogoProps> = ({ className = "w-full h-full", va
       </defs>
       
       {/* --- CROWN (Top Center) --- */}
-      <g transform="translate(135, 10) scale(1.1)">
+      <g 
+        transform="translate(135, 10) scale(1.1)" 
+        onMouseDown={startPress}
+        onMouseUp={endPress}
+        onMouseLeave={endPress}
+        onTouchStart={startPress}
+        onTouchEnd={endPress}
+        className={!isPrint ? `cursor-pointer transition-all duration-300 ${isPressing ? 'scale-125 opacity-80' : 'hover:scale-105'}` : ""}
+      >
          <path 
            d="M105,10 L125,40 L155,30 L175,60 L225,20 L195,100 L15,100 L-15,20 L35,60 L55,30 L85,40 Z" 
            fill={isPrint ? 'none' : c.gold} 
@@ -54,6 +97,23 @@ const ShieldLogo: React.FC<ShieldLogoProps> = ({ className = "w-full h-full", va
          <circle cx="155" cy="50" r="4" fill={c.goldDark} />
          {/* Base accent */}
          <path d="M15,100 L195,100" stroke={c.goldDark} strokeWidth="4" />
+
+         {/* Progress Dots */}
+         {isPressing && (
+           <g transform="translate(105, 125)">
+              {[1, 2, 3].map((dot, idx) => (
+                <circle 
+                  key={dot} 
+                  cx={(idx - 1) * 30} 
+                  cy="0" 
+                  r="8" 
+                  fill={progress >= dot ? c.gold : 'rgba(255,255,255,0.2)'} 
+                  stroke={c.goldDark}
+                  strokeWidth="2"
+                />
+              ))}
+           </g>
+         )}
       </g>
 
       {/* --- SHIELD BODY --- */}

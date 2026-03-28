@@ -12,6 +12,7 @@ export enum CellStatus {
 }
 
 export interface ChallengeDef {
+  id?: number;
   text: string;
   type: ChallengeType;
   icon?: string;
@@ -35,7 +36,8 @@ export enum AppView {
   ONBOARDING_REWARDS = 'ONBOARDING_REWARDS', // Step 3
   GAME = 'GAME',                           // Step 4-6
   MASTER_DASHBOARD = 'MASTER_DASHBOARD',
-  LEADERBOARD = 'LEADERBOARD'
+  LEADERBOARD = 'LEADERBOARD',
+  MISSION_REPORT = 'MISSION_REPORT'
 }
 
 export enum TutorialStep {
@@ -100,8 +102,24 @@ export interface LeaderboardEntry {
   isCurrentUser: boolean;
 }
 
+export interface NationLeaderboardEntry {
+  rank: number;
+  country: string;
+  totalScore: number;
+  playerCount: number;
+}
+
 export interface EventSession {
   id: number;
   is_active: boolean;
   updated_at?: string;
+}
+
+export interface Activity {
+  id: string;
+  player_id: string;
+  player_pseudo: string;
+  player_emoji: string;
+  type: 'LINE_COMPLETED' | 'GRID_COMPLETED';
+  created_at: string;
 }

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Trophy, Crown, Settings, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Trophy, Crown, Settings, Sparkles, FileText, LogOut } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView, TutorialStep, BingoCellData } from '../types';
 import BingoCell from './BingoCell';
@@ -13,6 +13,7 @@ import BackgroundParticles from './BackgroundParticles';
 import Avatar from './Avatar';
 import NetworkStatus from './NetworkStatus';
 import BadgeNotification from './BadgeNotification';
+import ActivityFeed from './ActivityFeed';
 
 interface GamePageProps {
   state: any;
@@ -21,19 +22,106 @@ interface GamePageProps {
   uiActions: any;
   tutorialActions: any;
   onTutorialNext: () => void;
+  onCrownClick?: () => void;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut, onTutorialNext }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut, onTutorialNext, onCrownClick }) => {
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
+  
+  const crownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const crownIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const pressStartTimeRef = React.useRef<number>(0);
+  const [isCrownPressing, setIsCrownPressing] = React.useState(false);
+  const [crownProgress, setCrownProgress] = React.useState(0);
+
+  const startCrownPress = (e: React.SyntheticEvent) => {
+    if (!onCrownClick) return;
+    
+    pressStartTimeRef.current = Date.now();
+    setIsCrownPressing(true);
+    setCrownProgress(0);
+    
+    let progress = 0;
+    crownIntervalRef.current = setInterval(() => {
+      progress += 1;
+      setCrownProgress(progress);
+      if (navigator.vibrate) navigator.vibrate(20);
+      
+      if (progress >= 3) {
+        if (crownIntervalRef.current) clearInterval(crownIntervalRef.current);
+        crownIntervalRef.current = null;
+        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+        onCrownClick();
+        setIsCrownPressing(false);
+        setCrownProgress(0);
+      }
+    }, 1000);
+  };
+
+  const endCrownPress = () => {
+    setIsCrownPressing(false);
+    setCrownProgress(0);
+    if (crownIntervalRef.current) {
+      clearInterval(crownIntervalRef.current);
+      crownIntervalRef.current = null;
+    }
+  };
+
+  const handleCrownClick = (e: React.MouseEvent) => {
+    const pressDuration = Date.now() - pressStartTimeRef.current;
+    // If it was a long press (more than 1s), don't show badges
+    if (pressDuration > 1000) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    uia.setShowBadge(true);
+  };
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'fr' : 'en');
   };
 
+  const [isResetPressing, setIsResetPressing] = useState(false);
+  const [resetProgress, setResetProgress] = useState(0);
+  const resetIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startResetPress = () => {
+    setIsResetPressing(true);
+    setResetProgress(0);
+    let p = 0;
+    resetIntervalRef.current = setInterval(() => {
+      p += 1;
+      setResetProgress(p);
+      if (navigator.vibrate) navigator.vibrate(20);
+      if (p >= 5) { // 5 seconds for reset
+        if (resetIntervalRef.current) clearInterval(resetIntervalRef.current);
+        resetIntervalRef.current = null;
+        if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+        if (window.confirm("Reset profile and start over?")) {
+           a.resetGame();
+           a.setView(AppView.NICKNAME);
+        }
+        setIsResetPressing(false);
+        setResetProgress(0);
+      }
+    }, 1000);
+  };
+
+  const endResetPress = () => {
+    setIsResetPressing(false);
+    setResetProgress(0);
+    if (resetIntervalRef.current) {
+      clearInterval(resetIntervalRef.current);
+      resetIntervalRef.current = null;
+    }
+  };
+
   return (
     <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
       <NetworkStatus />
+      <ActivityFeed />
       <BackgroundParticles />
       
       <TutorialLayer step={tut.currentStep} onNext={onTutorialNext} />
@@ -61,9 +149,26 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 </span>
              </button>
 
-             <div className="bg-[#FFD93D] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center">
-                <span className="text-[7px] text-black/60 font-impact uppercase leading-none mb-0.5 font-black tracking-widest">{t('score')}</span>
+             <div 
+                className={`bg-[#FFD93D] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
+                onMouseDown={startResetPress}
+                onMouseUp={endResetPress}
+                onMouseLeave={endResetPress}
+                onTouchStart={startResetPress}
+                onTouchEnd={endResetPress}
+             >
+                <span className="text-[7px] text-black/60 font-impact uppercase leading-none mb-0.5 font-black tracking-widest">{isResetPressing ? 'RESET' : t('score')}</span>
                 <span className="font-impact text-lg text-black leading-none italic">{s.score}/25</span>
+                {isResetPressing && (
+                  <div className="flex gap-0.5 mt-0.5">
+                    {[1, 2, 3, 4, 5].map((dot) => (
+                      <div 
+                        key={dot} 
+                        className={`w-1 h-1 rounded-full transition-all duration-300 ${resetProgress >= dot ? 'bg-white shadow-[0_0_4px_white]' : 'bg-black/20'}`}
+                      />
+                    ))}
+                  </div>
+                )}
              </div>
         </div>
       </header>
@@ -108,9 +213,29 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               <span className="text-[8px] font-impact uppercase tracking-widest mt-0.5 text-black font-black">TOP</span>
            </button>
            
-           <div onClick={() => uia.setShowBadge(true)} className="w-16 h-16 bg-white border-[4px] border-black rounded-2xl flex items-center justify-center shadow-[6px_6px_0px_black] -mt-16 cursor-pointer active:scale-95 transition-all group">
-              <Crown size={30} className="text-black group-hover:rotate-12 transition-transform" fill="currentColor" />
-           </div>
+            <div 
+              onMouseDown={startCrownPress}
+              onMouseUp={endCrownPress}
+              onMouseLeave={endCrownPress}
+              onTouchStart={startCrownPress}
+              onTouchEnd={endCrownPress}
+              onClick={handleCrownClick} 
+              className={`w-16 h-16 bg-white border-[4px] border-black rounded-2xl flex flex-col items-center justify-center shadow-[6px_6px_0px_black] -mt-16 cursor-pointer transition-all group relative ${isCrownPressing ? 'scale-125 bg-gold-400' : 'active:scale-95'}`}
+            >
+               <Crown size={30} className={`text-black transition-transform ${isCrownPressing ? 'animate-bounce' : 'group-hover:rotate-12'}`} fill="currentColor" />
+               
+               {/* Progress Dots */}
+               {isCrownPressing && (
+                 <div className="absolute -bottom-6 flex gap-1.5">
+                    {[1, 2, 3].map((dot) => (
+                      <div 
+                        key={dot} 
+                        className={`w-2 h-2 rounded-full border border-black transition-colors duration-300 ${crownProgress >= dot ? 'bg-black' : 'bg-white/50'}`}
+                      />
+                    ))}
+                 </div>
+               )}
+            </div>
 
            <button onClick={() => uia.setShowLegends(true)} className="flex flex-col items-center active:scale-90 transition-transform">
               <Settings size={26} className="text-black" />

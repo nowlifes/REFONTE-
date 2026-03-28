@@ -159,18 +159,18 @@ class GameBackendService {
       const { data, error } = await supabase
         .from('event_session')
         .select('is_active')
-        .eq('id', 1)
-        .single();
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
       if (error) {
-        if (error.code === 'PGRST116') {
-             await supabase.from('event_session').insert({ id: 1, is_active: false }); 
-             return false;
-        }
+        console.error("[GameService] Error fetching session status:", error);
         return false;
       }
+
       return data?.is_active ?? false;
     } catch (e) {
+      console.error("[GameService] Exception in getSessionStatus:", e);
       return false;
     }
   }
@@ -178,18 +178,56 @@ class GameBackendService {
   async setSessionStatus(isActive: boolean): Promise<void> {
     if (!supabase) return;
     try {
-      const { error, data } = await supabase
+      // Get the latest record
+      const { data: latest } = await supabase
         .from('event_session')
-        .update({ is_active: isActive })
-        .eq('id', 1)
-        .select();
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (!error && (!data || data.length === 0)) {
-         await supabase.from('event_session').insert({ id: 1, is_active: isActive });
+      if (latest) {
+        const { error } = await supabase
+          .from('event_session')
+          .update({ is_active: isActive })
+          .eq('id', latest.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('event_session')
+          .insert({ is_active: isActive });
+        if (error) throw error;
       }
     } catch (e) {
-      console.error("Failed to set session status", e);
+      console.error("[GameService] Failed to set session status", e);
       throw e;
+    }
+  }
+
+  // --- CHALLENGES ---
+
+  async getChallenges(): Promise<any[]> {
+    if (!supabase) return [];
+    console.log("[GameService] Fetching challenges from public.challenges...");
+    try {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*');
+      
+      if (error) {
+        console.error("[GameService] Error fetching challenges:", error);
+        return [];
+      }
+      
+      // Map text_en/text_fr to a generic text field based on language if needed, 
+      // or just return the raw data and let the hook handle it.
+      // The current app expects { text, type }.
+      // We will return the raw data and handle mapping in useBingoGame.
+      console.log("[GameService] Challenges fetched successfully:", data?.length);
+      return data || [];
+    } catch (e) {
+      console.error("[GameService] Exception in getChallenges:", e);
+      return [];
     }
   }
 
@@ -198,11 +236,12 @@ class GameBackendService {
   async createUser(nickname: string, avatarId: string, country: string): Promise<UserProfile> {
     if (!supabase) throw new Error("Backend not configured");
     const emojiChar = ADULT_EMOJI_MAP[avatarId] || '🎲';
+    const prefixedNickname = `[${country}] ${nickname}`;
 
     const { data, error } = await supabase
       .from('players')
       .insert({
-        pseudo: nickname,
+        pseudo: prefixedNickname,
         emoji: emojiChar
       })
       .select('id, pseudo, emoji')
@@ -212,12 +251,12 @@ class GameBackendService {
     
     return {
       id: data.id,
-      nickname: data.pseudo,
+      nickname: nickname,
       avatarId: data.emoji,
-      country: country, // Keep local
+      country: country,
       gamesPlayed: 0,
       bingosWon: 0,
-      createdAt: Date.now() 
+      createdAt: Date.now()
     };
   }
 
@@ -232,11 +271,19 @@ class GameBackendService {
 
     if (error || !data) return null;
 
+    let nickname = data.pseudo || 'Unknown';
+    let country = 'FR';
+    const match = nickname.match(/^\[([A-Z]{2})\]\s*(.*)/);
+    if (match) {
+      country = match[1];
+      nickname = match[2];
+    }
+
     return {
       id: data.id,
-      nickname: data.pseudo,
+      nickname: nickname,
       avatarId: data.emoji,
-      country: 'FR',
+      country: country,
       gamesPlayed: 0,
       bingosWon: 0,
       createdAt: Date.now()
@@ -298,18 +345,30 @@ class GameBackendService {
         .eq('status', 'ACTIVE')
         .order('started_at', { ascending: false }) 
         .limit(1)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid error on 0 rows
 
-        if (!error && data) {
+        if (error) {
+          console.error("[GameService] Error fetching active session:", error);
+          // Only fallback to cache on real errors, not on "not found"
+          throw error; 
+        }
+
+        if (data) {
             const startedAt = new Date(data.started_at).getTime();
             if (Date.now() - startedAt <= EXPIRATION_TIME) {
                  const session = this.mapDataToSession(data);
                  localStorage.setItem('bingo_last_session', JSON.stringify(session));
                  return session;
             }
+        } else {
+          // Explicitly not found in DB -> clear cache
+          localStorage.removeItem('bingo_last_session');
+          return null;
         }
     } catch (e) {
-        console.warn("Network error getting session, trying offline cache");
+        console.warn("Network error or session not found, checking offline cache if applicable");
+        // If it was a real network error, we might want to fallback, 
+        // but if we are here and data was null, we already returned null.
     }
 
     // Fallback to offline cache
@@ -505,6 +564,11 @@ class GameBackendService {
   async getLeaderboard(currentUserId?: string): Promise<LeaderboardEntry[]> {
     if (!supabase) return [];
 
+    // Lazy cleanup: trigger cleanup of games older than 24h
+    this.cleanupOldPlayers().catch(e => console.error("Cleanup error", e));
+
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     const { data, error } = await supabase
       .from('games')
       .select(`
@@ -512,6 +576,7 @@ class GameBackendService {
         players:player_id (pseudo, emoji)
       `)
       .eq('status', 'ACTIVE')
+      .gt('started_at', last24h)
       .order('score', { ascending: false })
       .limit(100);
 
@@ -522,21 +587,93 @@ class GameBackendService {
       .filter((game: any) => game.players) // Filter out deleted players
       .map((game: any) => {
          const startedAt = new Date(game.started_at).getTime();
+         // Extract country from pseudo if it exists (e.g. [FR] Pseudo)
+         let pseudo = game.players.pseudo || 'Unknown';
+         let country = 'FR';
+         const match = pseudo.match(/^\[([A-Z]{2})\]\s*(.*)/);
+         if (match) {
+           country = match[1];
+           pseudo = match[2];
+         }
+
          return {
            userId: game.player_id,
-           pseudo: game.players.pseudo || 'Unknown',
+           pseudo: pseudo,
            avatarId: game.players.emoji || '🎲',
-           country: 'FR',
+           country: country,
            score: game.score || 0,
            durationSeconds: Math.floor((now - startedAt) / 1000),
            jokersUsed: game.jokers_used || 0,
            isCurrentUser: game.player_id === currentUserId,
            rank: 0 
          };
-      });
+       });
 
     entries.sort((a, b) => b.score - a.score || a.durationSeconds - b.durationSeconds);
     return entries.map((entry, index) => ({ ...entry, rank: index + 1 })).slice(0, 50);
+  }
+
+  async getCountryLeaderboard(): Promise<any[]> {
+    if (!supabase) return [];
+
+    // Get all games from the current month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonthIso = startOfMonth.toISOString();
+
+    const { data, error } = await supabase
+      .from('games')
+      .select(`
+        score, 
+        players:player_id (pseudo)
+      `)
+      .gt('started_at', startOfMonthIso);
+
+    if (error || !data) return [];
+
+    const countryStats = new Map<string, { totalScore: number, playerCount: number }>();
+
+    data.forEach((game: any) => {
+      if (game.players && game.players.pseudo) {
+        let country = 'FR';
+        const match = game.players.pseudo.match(/^\[([A-Z]{2})\]/);
+        if (match) {
+          country = match[1];
+        }
+
+        const current = countryStats.get(country) || { totalScore: 0, playerCount: 0 };
+        countryStats.set(country, {
+          totalScore: current.totalScore + (game.score || 0),
+          playerCount: current.playerCount + 1
+        });
+      }
+    });
+
+    const entries = Array.from(countryStats.entries()).map(([country, stats]) => ({
+      country,
+      totalScore: stats.totalScore,
+      playerCount: stats.playerCount
+    }));
+
+    entries.sort((a, b) => b.totalScore - a.totalScore);
+    return entries.map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }
+
+  async cleanupOldPlayers(): Promise<void> {
+    if (!supabase) return;
+    try {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      // Delete games older than 24h
+      await supabase
+        .from('games')
+        .delete()
+        .lt('started_at', yesterday);
+        
+    } catch (e) {
+      console.error("Cleanup failed", e);
+    }
   }
 
   async unlockBadge(playerId: string, badgeType: string, forceNetwork = false): Promise<void> {
@@ -567,6 +704,137 @@ class GameBackendService {
                 timestamp: Date.now()
             });
         }
+    }
+  }
+
+  // --- ACTIVITY FEED ---
+
+  async postActivity(playerId: string, pseudo: string, emoji: string, type: 'LINE_COMPLETED' | 'GRID_COMPLETED'): Promise<void> {
+    if (!supabase) return;
+    try {
+      await supabase.from('activities').insert({
+        player_id: playerId,
+        player_pseudo: pseudo,
+        player_emoji: emoji,
+        type: type
+      });
+    } catch (e) {
+      console.error("Failed to post activity", e);
+    }
+  }
+
+  subscribeToActivities(callback: (activity: any) => void) {
+    if (!supabase) return () => {};
+
+    const channel = supabase
+      .channel('activities-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'activities' },
+        (payload) => {
+          callback(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }
+
+  async createNewSession(): Promise<void> {
+    if (!supabase) return;
+    try {
+      console.log("[GameService] Creating new session...");
+      // 1. Reset everything (this also sets is_active to false)
+      await this.resetSession();
+      
+      // 2. Small delay to ensure DB consistency and Realtime propagation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. Open the new session
+      await this.setSessionStatus(true);
+      console.log("[GameService] New session created and opened.");
+    } catch (e) {
+      console.error("[GameService] Failed to create new session", e);
+      throw e;
+    }
+  }
+
+  async resetSession(): Promise<void> {
+    if (!supabase) return;
+    try {
+      console.log("[GameService] Starting full session reset...");
+      // 1. Close session
+      await this.setSessionStatus(false);
+
+      // 2. Delete all game data in correct order (children first)
+      console.log("[GameService] Deleting activities...");
+      const { error: actErr } = await supabase.from('activities').delete().not('id', 'is', null);
+      if (actErr) console.warn("[GameService] Error deleting activities:", actErr);
+
+      console.log("[GameService] Deleting player badges...");
+      const { error: badgeErr } = await supabase.from('player_badges').delete().not('id', 'is', null);
+      if (badgeErr) console.warn("[GameService] Error deleting badges:", badgeErr);
+
+      console.log("[GameService] Deleting games...");
+      const { error: gameErr } = await supabase.from('games').delete().not('id', 'is', null);
+      if (gameErr) console.warn("[GameService] Error deleting games:", gameErr);
+
+      console.log("[GameService] Deleting players...");
+      const { error: playerErr } = await supabase.from('players').delete().not('id', 'is', null);
+      if (playerErr) console.warn("[GameService] Error deleting players:", playerErr);
+
+      console.log("[GameService] Reset complete!");
+    } catch (e) {
+      console.error("[GameService] Failed to reset session", e);
+      throw e;
+    }
+  }
+
+  async simulatePlayers(challenges: any[]): Promise<void> {
+    if (!supabase) return;
+    
+    const mockPlayers = [
+      { name: 'Agent Alpha', avatar: 'PartyKing', country: 'FR', score: 18 },
+      { name: 'Agent Bravo', avatar: 'DancingQueen', country: 'US', score: 12 },
+      { name: 'Agent Charlie', avatar: 'BeerMaster', country: 'GB', score: 22 },
+      { name: 'Agent Delta', avatar: 'CocktailDiva', country: 'ES', score: 8 },
+      { name: 'Agent Echo', avatar: 'DiscoBall', country: 'DE', score: 15 }
+    ];
+
+    for (const p of mockPlayers) {
+      try {
+        const user = await this.createUser(p.name, p.avatar, p.country);
+        const game = await this.startGame(user.id, challenges);
+        
+        // Validate random cells to reach the target score
+        const cellIds = Array.from({length: 25}, (_, i) => i);
+        const shuffled = shuffleArray(cellIds);
+        const toValidate = shuffled.slice(0, p.score);
+        
+        for (const cellId of toValidate) {
+          await this.validateCell(game.id, cellId, { witnessName: 'Test Witness', witnessSignature: 'Test Sig' }, true);
+        }
+      } catch (e) {
+        console.error("Simulate error for", p.name, e);
+      }
+    }
+  }
+
+  async getRecentActivities(limit = 10): Promise<any[]> {
+    if (!supabase) return [];
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) return [];
+      return data || [];
+    } catch (e) {
+      return [];
     }
   }
 

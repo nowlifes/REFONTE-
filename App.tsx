@@ -4,6 +4,7 @@ import { Smartphone, X, KeyRound } from 'lucide-react';
 import canvasConfetti from 'canvas-confetti';
 
 import { AppView, CellStatus, TutorialStep, ChallengeType } from './types';
+import { HIDDEN_MASTER_PASSWORD } from './constants';
 import { useBingoGame } from './hooks/useBingoGame';
 import { useAppUI } from './hooks/useAppUI';
 import { useLanguage } from './contexts/LanguageContext';
@@ -20,6 +21,8 @@ import NetworkStatus from './components/NetworkStatus';
 import Leaderboard from './components/Leaderboard';
 import LockedPage from './components/LockedPage';
 import SessionStartOverlay from './components/SessionStartOverlay';
+import SessionEndOverlay from './components/SessionEndOverlay';
+import MissionReport from './components/MissionReport';
 
 // PAGE COMPONENTS
 import NicknamePage from './components/NicknamePage';
@@ -33,7 +36,7 @@ const RotateDeviceOverlay = () => {
             <div className="mb-6 animate-[spin_3s_linear_infinite] origin-center">
                  <Smartphone className="w-20 h-20 text-gold-500 rotate-90" />
             </div>
-            <h2 className="text-3xl font-playbook font-bold text-white mb-4 uppercase tracking-widest">{t('rotate_device')}</h2>
+            <h2 className="text-3xl font-black font-bold text-white mb-4 uppercase tracking-widest">{t('rotate_device')}</h2>
             <p className="text-slate-400 text-lg font-sans max-w-md">{t('rotate_desc')}</p>
         </div>
     );
@@ -43,16 +46,50 @@ const App: React.FC = () => {
   const { t } = useLanguage();
   const { state: s, actions: a } = useBingoGame();
   const { state: ui, actions: uia } = useAppUI(a.setView);
-  const { isSessionActive, setSessionActive, checkSession, isLoading: isSessionLoading } = useEventSession();
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading } = useEventSession();
+
+  const resetSession = async () => {
+    await baseResetSession();
+    a.resetGame();
+  };
+
+  const createNewSession = async () => {
+    await baseCreateNewSession();
+    a.resetGame();
+  };
   const tut = useTutorial();
   
   const [vipBypass, setVipBypass] = useState(false);
   const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
+  const [showHiddenLogin, setShowHiddenLogin] = useState(false);
+  const [hiddenCodeInput, setHiddenCodeInput] = useState('');
+  const [hiddenLoginError, setHiddenLoginError] = useState(false);
   
   // Session Start Animation State
   const [showStartAnimation, setShowStartAnimation] = useState(false);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const isFirstLoad = useRef(true);
   const prevSessionActive = useRef(isSessionActive);
+
+  const handleHiddenLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // DEV MODE: Bypass check
+    a.setView(AppView.MASTER_DASHBOARD);
+    setShowHiddenLogin(false);
+    setHiddenCodeInput('');
+    setHiddenLoginError(false);
+    return;
+
+    if (hiddenCodeInput === HIDDEN_MASTER_PASSWORD) {
+       a.setView(AppView.MASTER_DASHBOARD);
+       setShowHiddenLogin(false);
+       setHiddenCodeInput('');
+       setHiddenLoginError(false);
+    } else {
+       setHiddenLoginError(true);
+       setTimeout(() => setHiddenLoginError(false), 500);
+    }
+  };
 
   // --- LANDSCAPE DETECTION ---
   useEffect(() => {
@@ -79,12 +116,21 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isSessionLoading) return;
 
+    console.log(`[SessionEffect] Active: ${isSessionActive}, Prev: ${prevSessionActive.current}, View: ${s.view}`);
+
     // 1. KICK LOGIC
     if (!isSessionActive) {
       setVipBypass(false);
-      // KICK: Force redirect to NICKNAME if user is in GAME view when session closes
-      if (s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.NICKNAME) {
+      // If session was active and now is not, and user was in game or leaderboard, show end overlay
+      if (prevSessionActive.current && !isFirstLoad.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
+         setShowEndOverlay(true);
+      }
+      
+      // KICK: Force redirect to NICKNAME if user is in a restricted view when session closes
+      // But only if they haven't seen the end overlay yet
+      if (!showEndOverlay && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
          a.setView(AppView.NICKNAME);
+         a.resetGame();
       }
     }
 
@@ -92,6 +138,11 @@ const App: React.FC = () => {
     // We only trigger if it WAS false and IS NOW true, and it's NOT the very first load
     if (!prevSessionActive.current && isSessionActive && !isFirstLoad.current && s.view !== AppView.MASTER_DASHBOARD) {
         setShowStartAnimation(true);
+        
+        // FORCE RESET FOR NEW SESSION: Return to character creation
+        a.resetGame();
+        a.setView(AppView.NICKNAME);
+        setShowEndOverlay(false);
         
         // Confetti Explosion
         const duration = 2000;
@@ -184,10 +235,10 @@ const App: React.FC = () => {
            <div className="absolute inset-0 border-4 border-gold-500/30 rounded-full animate-pulse"></div>
            <div className="absolute inset-0 border-t-4 border-gold-500 rounded-full animate-spin"></div>
            <div className="absolute inset-0 flex items-center justify-center">
-             <ShieldLogo className="w-12 h-12 animate-pulse" />
+             <ShieldLogo onCrownClick={() => setShowHiddenLogin(true)} className="w-12 h-12 animate-pulse" />
            </div>
         </div>
-        <p className="text-gold-400 font-playbook text-xl tracking-widest animate-pulse">{t('loading')}</p>
+        <p className="text-gold-400 font-black text-xl tracking-widest animate-pulse">{t('loading')}</p>
       </div>
     );
   }
@@ -202,7 +253,7 @@ const App: React.FC = () => {
      This forces the LockedPage if the Master has not opened the session.
      Only the Master Login is accessible here OR via QR Code scan.
   */
-  if (!isSessionActive && s.view !== AppView.MASTER_DASHBOARD && !vipBypass) {
+  if (!isSessionActive && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && !showEndOverlay && !vipBypass) {
      return (
        <>
          <NetworkStatus />
@@ -210,6 +261,7 @@ const App: React.FC = () => {
             onMasterAccess={() => uia.setShowMasterLogin(true)} 
             onVipBypass={() => setVipBypass(true)}
             onRefresh={checkSession}
+            onCrownClick={() => setShowHiddenLogin(true)}
          />
          {ui.showMasterLogin && (
            <div className="fixed inset-0 z-[100] bg-navy-950/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
@@ -217,10 +269,10 @@ const App: React.FC = () => {
                  <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X className="w-6 h-6" /></button>
                  <div className="text-center mb-6">
                    <div className="w-16 h-16 bg-navy-800 rounded-full border border-gold-500 flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-gold-400" /></div>
-                   <h3 className="text-2xl font-playbook font-bold text-gold-400 uppercase">{t('master_access_title')}</h3>
+                   <h3 className="text-2xl font-black font-bold text-gold-400 uppercase">{t('master_access_title')}</h3>
                  </div>
                  <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
-                    <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="Code" className={`w-full bg-navy-950 border-2 rounded-lg p-4 text-center text-white text-xl font-bold tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-gold-500/50 focus:border-gold-400'}`} autoFocus />
+                    <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="Code" className={`w-full bg-white border-2 rounded-lg p-4 text-center text-black text-xl font-bold tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-gold-500/50 focus:border-gold-400'}`} autoFocus />
                     <button type="submit" className="w-full bg-gold-600 hover:bg-gold-500 text-navy-950 font-bold py-3 rounded-lg uppercase tracking-wider transition-colors">{t('unlock')}</button>
                  </form>
               </div>
@@ -235,15 +287,24 @@ const App: React.FC = () => {
   return (
     <>
       {showStartAnimation && <SessionStartOverlay />}
+      {showEndOverlay && (
+         <SessionEndOverlay 
+            nickname={s.nickname} 
+            onViewReport={() => {
+               setShowEndOverlay(false);
+               a.setView(AppView.MISSION_REPORT);
+            }} 
+         />
+      )}
       
       {/* 1. NICKNAME PAGE */}
       {s.view === AppView.NICKNAME && (
-         <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} />
+         <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
       )}
 
       {/* 2. MASTER PAGE */}
       {s.view === AppView.MASTER_DASHBOARD && (
-         <MasterPage isSessionActive={isSessionActive} setSessionActive={setSessionActive} state={s} actions={a} />
+         <MasterPage isSessionActive={isSessionActive} setSessionActive={setSessionActive} resetSession={resetSession} createNewSession={createNewSession} state={s} actions={a} />
       )}
 
       {/* 3. LEADERBOARD */}
@@ -280,7 +341,63 @@ const App: React.FC = () => {
 
       {/* 6. GAME PAGE (Main View) */}
       {s.view === AppView.GAME && (
-         <GamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onTutorialNext={handleTutorialNext} />
+         <GamePage 
+            state={s} 
+            actions={a} 
+            ui={ui} 
+            uiActions={uia} 
+            tutorialActions={tut} 
+            onTutorialNext={handleTutorialNext} 
+            onCrownClick={() => setShowHiddenLogin(true)}
+         />
+      )}
+
+      {/* 7. MISSION REPORT */}
+      {s.view === AppView.MISSION_REPORT && (
+         <MissionReport 
+            nickname={s.nickname}
+            avatarId={s.avatarId}
+            country={s.country}
+            cells={s.cells}
+            badges={s.badges}
+            startedAt={s.gameSession?.startedAt || Date.now()}
+            onBack={() => a.setView(AppView.GAME)}
+            onReset={() => {
+               a.resetGame();
+               a.setView(AppView.NICKNAME);
+            }}
+         />
+      )}
+
+      {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
+      {showHiddenLogin && (
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+           <div className="w-full max-w-sm bg-navy-950 border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
+              <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-slate-600 hover:text-white"><X className="w-6 h-6" /></button>
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                  <KeyRound className="w-10 h-10 text-red-500" />
+                </div>
+                <h3 className="text-2xl font-black font-bold text-red-500 uppercase tracking-tighter italic">
+                  {t('master_access_title')}
+                </h3>
+                <p className="text-[10px] text-slate-500 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
+              </div>
+              <form onSubmit={handleHiddenLoginSubmit} className="space-y-6">
+                 <input 
+                   type="password" 
+                   value={hiddenCodeInput} 
+                   onChange={(e) => setHiddenCodeInput(e.target.value)} 
+                   placeholder="SECRET KEY" 
+                   className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${hiddenLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`} 
+                   autoFocus 
+                 />
+                 <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
+                   {t('unlock')}
+                 </button>
+              </form>
+           </div>
+        </div>
       )}
     </>
   );

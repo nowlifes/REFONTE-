@@ -91,5 +91,11 @@ export function useBadges(playerId: string | undefined) {
     setNewBadge(null);
   }, []);
 
-  return { badges, newBadge, injectBadge, clearNewBadge };
+  const resetBadges = useCallback(() => {
+    setBadges([]);
+    setNewBadge(null);
+    badgesRef.current = [];
+  }, []);
+
+  return { badges, newBadge, injectBadge, clearNewBadge, resetBadges };
 }

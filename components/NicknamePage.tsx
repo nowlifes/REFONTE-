@@ -7,6 +7,7 @@ import { AVATAR_SEEDS, COUNTRIES, APP_VERSION } from '../constants';
 import BackgroundParticles from './BackgroundParticles';
 import Avatar from './Avatar';
 import NetworkStatus from './NetworkStatus';
+import ShieldLogo from './ShieldLogo';
 
 interface NicknamePageProps {
   state: any;
@@ -14,14 +15,47 @@ interface NicknamePageProps {
   ui: any;
   uiActions: any;
   tutorialActions: any;
+  onCrownClick?: () => void;
 }
 
-const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut }) => {
+const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut, onCrownClick }) => {
   const { t, language, setLanguage } = useLanguage();
   const [selectorMode, setSelectorMode] = useState<'NONE' | 'AVATAR' | 'COUNTRY'>('NONE');
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'fr' : 'en');
+  };
+
+  const [isPressing, setIsPressing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPress = () => {
+    setIsPressing(true);
+    setProgress(0);
+    let p = 0;
+    intervalRef.current = setInterval(() => {
+      p += 1;
+      setProgress(p);
+      if (navigator.vibrate) navigator.vibrate(20);
+      if (p >= 3) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
+        if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+        onCrownClick?.();
+        setIsPressing(false);
+        setProgress(0);
+      }
+    }, 1000);
+  };
+
+  const endPress = () => {
+    setIsPressing(false);
+    setProgress(0);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   };
 
   const currentCountry = COUNTRIES.find(c => c.code === s.country) || COUNTRIES[0];
@@ -38,7 +72,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
               >
                 <span className="text-lg">{language === 'en' ? '🇬🇧' : '🇫🇷'}</span>
                 <span className="text-[10px] font-impact font-[900] text-black">
-                  {language === 'en' ? 'EN' : 'FR'}
+                   {language === 'en' ? 'EN' : 'FR'}
                 </span>
               </button>
               
@@ -51,12 +85,31 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
               </div>
          </div>
          
-         <button 
-             onClick={() => uia.setShowMasterLogin(true)} 
-             className="fixed top-4 left-4 z-50 text-white/20 hover:text-white p-2"
-         >
-            <Lock className="w-5 h-5" />
-         </button>
+         <div className="fixed top-4 left-4 z-50 flex items-center gap-4">
+            <div className="relative">
+              <button 
+                  onClick={() => uia.setShowMasterLogin(true)} 
+                  onMouseDown={startPress}
+                  onMouseUp={endPress}
+                  onMouseLeave={endPress}
+                  onTouchStart={startPress}
+                  onTouchEnd={endPress}
+                  className={`p-2 transition-all duration-300 ${isPressing ? 'text-gold-400 scale-125' : 'text-white/20 hover:text-white'}`}
+              >
+                 <Lock className="w-5 h-5" />
+              </button>
+              {isPressing && (
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  {[1, 2, 3].map((dot) => (
+                    <div 
+                      key={dot} 
+                      className={`w-1 h-1 rounded-full transition-all duration-300 ${progress >= dot ? 'bg-gold-400 shadow-[0_0_5px_#EAB308]' : 'bg-white/10'}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+         </div>
 
          <BackgroundParticles />
          

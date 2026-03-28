@@ -34,7 +34,7 @@ export const useBingoGame = () => {
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
 
   // Badge System
-  const { badges, newBadge, injectBadge, clearNewBadge } = useBadges(user?.id);
+  const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
 
   // --- AUDIO SYSTEM OPTIMIZED (PRELOAD) ---
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
@@ -141,6 +141,17 @@ export const useBingoGame = () => {
       playSound('WIN');
       triggerHaptic('success');
       canvasConfetti({ particleCount: 80, spread: 100, origin: { y: 0.5 }, colors: ['#FFFFFF', '#FDE047'] });
+      
+      // Post Activity
+      if (user) {
+        const isGridComplete = uniqueWinningIds.length === 25;
+        gameService.postActivity(
+          user.id, 
+          user.nickname, 
+          user.avatarId, 
+          isGridComplete ? 'GRID_COMPLETED' : 'LINE_COMPLETED'
+        );
+      }
     }
 
     const uniqueFeverIds = [...new Set(potentialFeverIndices)].filter(id => !uniqueWinningIds.includes(id));
@@ -208,7 +219,23 @@ export const useBingoGame = () => {
            currentUserId = newUser.id;
            localStorage.setItem('bingo_user_id', newUser.id);
         }
-        const selectedChallenges = language === 'fr' ? CHALLENGES_FR : CHALLENGES_EN;
+        
+        // Fetch challenges from Supabase first, fallback to hardcoded
+        let selectedChallenges = language === 'fr' ? CHALLENGES_FR : CHALLENGES_EN;
+        try {
+          const dbChallenges = await gameService.getChallenges();
+          console.log(`[BingoGame] Supabase returned ${dbChallenges?.length || 0} challenges`);
+          if (dbChallenges && dbChallenges.length >= 25) {
+            console.log("Using challenges from Supabase", dbChallenges.length);
+            selectedChallenges = dbChallenges.map(c => ({
+              text: language === 'fr' ? (c.text_fr || c.text) : (c.text_en || c.text),
+              type: c.type as ChallengeType
+            }));
+          }
+        } catch (e) {
+          console.warn("Error fetching challenges, using defaults", e);
+        }
+
         const newGame = await gameService.startGame(currentUserId, selectedChallenges);
         setGameSession(newGame);
         setCells(newGame.grid);
@@ -303,6 +330,21 @@ export const useBingoGame = () => {
            setJokers(oldJokers);
         }
       }
+    },
+
+    resetGame: () => {
+      setGameSession(null);
+      setUser(null);
+      setCells([]);
+      setWinningIds([]);
+      setFeverCells([]);
+      resetBadges();
+      setJokers(INITIAL_JOKERS);
+      setNickname('');
+      setAvatarId('PartyKing');
+      setCountry('FR');
+      localStorage.removeItem('bingo_last_session');
+      localStorage.removeItem('bingo_user_id');
     }
   };
 
@@ -310,7 +352,7 @@ export const useBingoGame = () => {
     state: {
       view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
-      badges, newBadge
+      badges, newBadge, gameSession
     },
     actions
   };

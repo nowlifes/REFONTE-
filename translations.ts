@@ -20,7 +20,7 @@ export const TRANSLATIONS = {
     find_player_badge: "Find another Player's Badge",
     
     // Landing
-    landing_title: "Your Official Playbook",
+    landing_title: "Your Official Guide",
     start_btn: "Start Quest",
     
     // Nickname / Avatar
@@ -62,6 +62,10 @@ export const TRANSLATIONS = {
     open: "OPEN",
     back_to_game: "BACK TO GAME",
     show_master_code_desc: "SHOW THIS CODE TO VALIDATE MASTER CHALLENGES",
+    reset_session: "RESET SESSION",
+    reset_session_confirm: "ARE YOU SURE? This will delete ALL players and games forever!",
+    reset_session_btn: "YES, DELETE EVERYTHING",
+    cancel: "CANCEL",
     
     // Tutorial / Rewards
     tutorial_got_it: "GOT IT",
@@ -192,7 +196,17 @@ export const TRANSLATIONS = {
     offline_mode: "Offline Mode",
     syncing: "Synchronizing...",
     connected: "Connected",
-    data_saved: "Data saved locally"
+    data_saved: "Data saved locally",
+    line_completed_msg: "LINE COMPLETED!",
+    grid_completed_msg: "GRID COMPLETED!",
+    players_tab: "PLAYERS",
+    nations_tab: "NATIONS",
+    monthly_nation_war: "MONTHLY NATION WAR",
+    players_label: "PLAYERS",
+    mission_report: "REPORT",
+    create_new_session: "CREATE NEW SESSION",
+    create_new_session_confirm: "This will DELETE ALL DATA and start a fresh session immediately. Are you sure?",
+    create_new_session_btn: "START FRESH SESSION"
   },
   fr: {
     // General
@@ -254,6 +268,10 @@ export const TRANSLATIONS = {
     open: "OUVERT",
     back_to_game: "RETOUR AU JEU",
     show_master_code_desc: "MONTREZ CE CODE POUR VALIDER LES DÉFIS MAÎTRE",
+    reset_session: "RÉINITIALISER LA SESSION",
+    reset_session_confirm: "ÊTES-VOUS SÛR ? Cela supprimera TOUS les joueurs et parties définitivement !",
+    reset_session_btn: "OUI, TOUT SUPPRIMER",
+    cancel: "ANNULER",
     
     // Tutorial / Rewards
     tutorial_got_it: "COMPRIS",
@@ -384,6 +402,16 @@ export const TRANSLATIONS = {
     offline_mode: "Mode Hors-ligne",
     syncing: "Synchronisation...",
     connected: "Connecté",
-    data_saved: "Données sauvées localement"
+    data_saved: "Données sauvées localement",
+    line_completed_msg: "LIGNE COMPLÉTÉE !",
+    grid_completed_msg: "GRILLE COMPLÉTÉE !",
+    players_tab: "JOUEURS",
+    nations_tab: "NATIONS",
+    monthly_nation_war: "GUERRE DES NATIONS (MENSUEL)",
+    players_label: "JOUEURS",
+    mission_report: "RAPPORT",
+    create_new_session: "CRÉER NOUVELLE SESSION",
+    create_new_session_confirm: "Cela SUPPRIMERA TOUTES LES DONNÉES et lancera une session propre immédiatement. Êtes-vous sûr ?",
+    create_new_session_btn: "LANCER SESSION PROPRE"
   }
 };

@@ -26,53 +26,61 @@ export const useEventSession = () => {
     // 1. Fetch initial status
     checkSession();
 
-    // 2. Subscribe to Realtime updates on table 'event_session' row id=1
+    // 2. Subscribe to Realtime updates on table 'event_session'
     if (supabase) {
         const subscription = supabase
-          .channel('public:event_session')
+          .channel('session_updates')
           .on(
             'postgres_changes',
             {
-              event: 'UPDATE',
+              event: '*',
               schema: 'public',
-              table: 'event_session',
-              filter: 'id=eq.1'
+              table: 'event_session'
             },
-            (payload) => {
-              if (payload.new && typeof payload.new.is_active === 'boolean') {
-                 setIsSessionActive(payload.new.is_active);
-              }
+            (payload: any) => {
+              console.log("[Realtime] Session change detected:", payload.eventType, payload.new);
+              
+              // On any change, we re-fetch the latest status to be 100% sure
+              // This is more robust than relying on payload.new if the user has multiple rows
+              checkSession();
             }
           )
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'event_session',
-              filter: 'id=eq.1'
-            },
-            (payload) => {
-               if (payload.new && typeof payload.new.is_active === 'boolean') {
-                 setIsSessionActive(payload.new.is_active);
-               }
-            }
-          )
-          .subscribe();
+          .subscribe((status) => {
+            console.log("[Realtime] Subscription status:", status);
+          });
 
         return () => {
-          subscription.unsubscribe();
+          supabase.removeChannel(subscription);
         };
-    } else {
+    }
+ else {
         setIsLoading(false);
     }
   }, [checkSession]);
 
   const setSessionActive = async (active: boolean) => {
-    // Optimistic update
-    setIsSessionActive(active);
-    await gameService.setSessionStatus(active);
+    const previous = isSessionActive;
+    try {
+      // Optimistic update
+      setIsSessionActive(active);
+      await gameService.setSessionStatus(active);
+    } catch (e) {
+      console.error("Failed to update session status", e);
+      setIsSessionActive(previous); // Rollback
+      alert("Erreur: Impossible de changer le statut de la session. Vérifiez votre connexion.");
+    }
   };
 
-  return { isSessionActive, isLoading, setSessionActive, checkSession };
+  const resetSession = async () => {
+    setIsSessionActive(false);
+    await gameService.resetSession();
+  };
+
+  const createNewSession = async () => {
+    setIsSessionActive(false); // Optimistic close
+    await gameService.createNewSession();
+    setIsSessionActive(true); // Optimistic open
+  };
+
+  return { isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession };
 };
