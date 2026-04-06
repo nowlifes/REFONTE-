@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, RefreshCw, Crown, Medal, Users, Globe } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Crown, Medal, Users, Globe, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { gameService } from '../services/gameService';
 import { LeaderboardEntry, NationLeaderboardEntry } from '../types';
@@ -8,9 +8,13 @@ import { LeaderboardEntry, NationLeaderboardEntry } from '../types';
 interface LeaderboardProps {
   onBack: () => void;
   currentUserId?: string;
+  currentGameId?: string;
+  tauntsLeft?: number;
+  onTaunt?: (targetUserId: string) => Promise<void>;
 }
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId }) => {
+const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, currentGameId, tauntsLeft = 0, onTaunt }) => {
+  const [tauntingId, setTauntingId] = useState<string | null>(null);
   const { t } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [nationEntries, setNationEntries] = useState<NationLeaderboardEntry[]>([]);
@@ -49,9 +53,17 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId }) => {
           <h2 className="font-impact text-2xl font-[900] text-black uppercase tracking-tighter italic">
             {tab === 'PLAYERS' ? t('leaderboard_title') : 'NATION WARS'}
           </h2>
-          <button onClick={fetchData} className="p-2 bg-black text-white rounded-xl active:rotate-180 transition-transform">
-             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onTaunt && (
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border-2 border-black text-[9px] font-impact uppercase ${tauntsLeft > 0 ? 'bg-[#FF2E63] text-white' : 'bg-black/20 text-black/40'}`}>
+                <Zap className="w-3 h-3" fill="currentColor" />
+                {tauntsLeft}
+              </div>
+            )}
+            <button onClick={fetchData} className="p-2 bg-black text-white rounded-xl active:rotate-180 transition-transform">
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Switcher */}
@@ -135,7 +147,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId }) => {
                 {/* RESTE DU CLASSEMENT */}
                 <div className="space-y-4 pt-8">
                     {others.map((entry) => (
-                        <div key={entry.userId} className={`flex items-center gap-4 p-5 rounded-[1.5rem] border-[4px] border-black shadow-[6px_6px_0px_black] transition-all ${entry.isCurrentUser ? 'bg-[#00FF9D] text-black ring-4 ring-white/20' : 'bg-white text-black'}`}>
+                        <div key={entry.userId} className={`flex items-center gap-3 p-4 rounded-[1.5rem] border-[4px] border-black shadow-[6px_6px_0px_black] transition-all ${entry.isCurrentUser ? 'bg-[#00FF9D] text-black' : 'bg-white text-black'}`}>
                             <div className="w-10 h-10 shrink-0 bg-black text-white rounded-xl flex items-center justify-center font-impact text-xl italic">
                                {entry.rank}
                             </div>
@@ -144,9 +156,23 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId }) => {
                                <div className="font-impact uppercase text-sm tracking-tighter truncate leading-none mb-1">{entry.pseudo}</div>
                                <div className="text-[9px] font-impact uppercase tracking-widest text-black/40">{entry.country || 'FR'}</div>
                             </div>
-                            <div className="flex flex-col items-end">
-                               <span className="font-impact text-2xl italic leading-none">{entry.score}</span>
-                            </div>
+                            <span className="font-impact text-2xl italic leading-none">{entry.score}</span>
+                            {!entry.isCurrentUser && onTaunt && (
+                              <button
+                                disabled={tauntsLeft === 0 || tauntingId === entry.userId}
+                                onClick={async () => {
+                                  setTauntingId(entry.userId);
+                                  try { await onTaunt(entry.userId); } finally { setTauntingId(null); }
+                                }}
+                                className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border-2 border-black bg-[#FF2E63] text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                title={tauntsLeft === 0 ? 'Plus de taunts' : 'Figer ce joueur 30s'}
+                              >
+                                {tauntingId === entry.userId
+                                  ? <RefreshCw className="w-4 h-4 animate-spin" />
+                                  : <Zap className="w-4 h-4" fill="currentColor" />
+                                }
+                              </button>
+                            )}
                         </div>
                     ))}
                 </div>

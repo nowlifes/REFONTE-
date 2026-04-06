@@ -823,6 +823,42 @@ async resetSession(): Promise<void> {
     }
   }
 
+  async sendTaunt(senderGameId: string, targetPlayerId: string): Promise<void> {
+    if (!supabase) return;
+
+    // Find target's active game
+    const { data: targetGame, error } = await supabase
+      .from('games')
+      .select('id')
+      .eq('player_id', targetPlayerId)
+      .eq('status', 'ACTIVE')
+      .maybeSingle();
+
+    if (error || !targetGame) throw new Error('Target game not found');
+
+    const frozenUntil = new Date(Date.now() + 30000).toISOString();
+
+    // Freeze target
+    await supabase
+      .from('games')
+      .update({ frozen_until: frozenUntil })
+      .eq('id', targetGame.id);
+
+    // Increment sender's taunt count
+    await supabase.rpc('increment_taunts_sent', { game_id: senderGameId });
+  }
+
+  subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {
+    if (!supabase) return () => {};
+    const channel = supabase
+      .channel(`game-${gameId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
+        (payload) => callback(payload.new)
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }
+
   private mapDataToSession(data: any): GameSession {
     const validatedMap = new Map<number, any>((data.validated_cells || []).map((v: any) => [v.id, v]));
     
@@ -853,7 +889,9 @@ async resetSession(): Promise<void> {
       grid,
       status: data.status,
       score: data.score || 0,
-      jokers: Math.max(0, 2 - (data.jokers_used || 0)), 
+      jokers: Math.max(0, 2 - (data.jokers_used || 0)),
+      tauntsSent: data.taunts_sent || 0,
+      frozenUntil: data.frozen_until ? new Date(data.frozen_until).getTime() : undefined,
       startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
       lastUpdated: Date.now()
     };

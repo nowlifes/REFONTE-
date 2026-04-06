@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { ArrowRight, Lock, KeyRound, X, Loader2, Globe } from 'lucide-react';
+import OnboardingCards from './OnboardingCards';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
 import { AVATAR_SEEDS, COUNTRIES, APP_VERSION } from '../constants';
@@ -21,6 +22,7 @@ interface NicknamePageProps {
 const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut, onCrownClick }) => {
   const { t, language, setLanguage } = useLanguage();
   const [selectorMode, setSelectorMode] = useState<'NONE' | 'AVATAR' | 'COUNTRY'>('NONE');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'fr' : 'en');
@@ -185,16 +187,17 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
              />
            </div>
 
-           <button 
-                onClick={() => {
-                    tut.startTutorial();
-                    a.setView(AppView.ONBOARDING_STYLES);
-                }} 
-                disabled={!s.nickname.trim()} 
+           <button
+                onClick={() => setShowOnboarding(true)}
+                disabled={!s.nickname.trim()}
                 className="w-full bg-[#00FF9D] text-black py-5 rounded-xl text-xl font-impact font-[900] uppercase tracking-widest shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-30 flex items-center justify-center gap-3"
             >
              {t('lets_go_btn')} <ArrowRight className="w-6 h-6" strokeWidth={5} />
            </button>
+
+           {showOnboarding && (
+             <OnboardingCards onDone={() => { setShowOnboarding(false); a.startGame(s.nickname); }} />
+           )}
          </div>
 
          <div className="text-[9px] text-white/20 mt-8 font-impact uppercase tracking-widest">VERSION {APP_VERSION}</div>

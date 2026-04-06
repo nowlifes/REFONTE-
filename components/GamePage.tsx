@@ -1,12 +1,11 @@
 
-import React, { useState, useRef } from 'react';
-import { Trophy, Crown, Settings, Sparkles, FileText, LogOut } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Trophy, Crown, Settings, Sparkles, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AppView, TutorialStep, BingoCellData } from '../types';
+import { AppView, BingoCellData } from '../types';
 import BingoCell from './BingoCell';
 import QRScanner from './QRScanner';
 import ValidationModal from './ValidationModal';
-import TutorialLayer from './TutorialLayer';
 import LegendsModal from './LegendsModal';
 import NFTBadgeModal from './NFTBadgeModal';
 import BackgroundParticles from './BackgroundParticles';
@@ -20,12 +19,24 @@ interface GamePageProps {
   actions: any;
   ui: any;
   uiActions: any;
-  tutorialActions: any;
-  onTutorialNext: () => void;
+  tutorialActions?: any;
+  onTutorialNext?: () => void;
   onCrownClick?: () => void;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, tutorialActions: tut, onTutorialNext, onCrownClick }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick }) => {
+  const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!s.frozenUntil) return;
+    const update = () => {
+      const left = Math.ceil((s.frozenUntil - Date.now()) / 1000);
+      setFreezeSecondsLeft(Math.max(0, left));
+    };
+    update();
+    const interval = setInterval(update, 500);
+    return () => clearInterval(interval);
+  }, [s.frozenUntil]);
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
   
@@ -124,8 +135,25 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       <ActivityFeed />
       <BackgroundParticles />
       
-      <TutorialLayer step={tut.currentStep} onNext={onTutorialNext} />
       <BadgeNotification badge={s.newBadge} onClose={a.clearNewBadge} />
+
+      {/* FREEZE OVERLAY */}
+      {s.isFrozen && freezeSecondsLeft > 0 && (
+        <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
+            <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
+            <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
+              TAUNTÉ !
+            </h2>
+            <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
+              Un joueur t'a figé
+            </p>
+            <div className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-5xl font-impact text-white">{freezeSecondsLeft}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header compact */}
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
@@ -182,14 +210,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             style={{ width: '350px', height: '350px' }}
           >
               {s.cells.map((cell: BingoCellData) => (
-                <BingoCell 
-                  key={cell.id} 
-                  data={cell} 
-                  onClick={(id) => {
-                    a.handleCellClick(id);
-                    if (tut.currentStep === TutorialStep.GRID) tut.nextStep();
-                  }} 
-                  isWinning={s.winningIds.includes(cell.id)} 
+                <BingoCell
+                  key={cell.id}
+                  data={cell}
+                  onClick={(id) => { if (!s.isFrozen) a.handleCellClick(id); }}
+                  isWinning={s.winningIds.includes(cell.id)}
                   isFeverTarget={s.feverCells.includes(cell.id)}
                 />
               ))}

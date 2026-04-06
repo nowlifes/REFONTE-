@@ -32,6 +32,7 @@ export const useBingoGame = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
+  const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
 
   // Badge System
   const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
@@ -110,6 +111,21 @@ export const useBingoGame = () => {
     };
     initApp();
   }, []);
+
+  // FREEZE SUBSCRIPTION
+  useEffect(() => {
+    if (!gameSession?.id) return;
+    if (gameSession.frozenUntil) setFrozenUntil(gameSession.frozenUntil);
+    const unsub = gameService.subscribeToGameUpdates(gameSession.id, (data) => {
+      if (data.frozen_until) {
+        setFrozenUntil(new Date(data.frozen_until).getTime());
+      }
+      if (data.taunts_sent !== undefined) {
+        setGameSession(prev => prev ? { ...prev, tauntsSent: data.taunts_sent } : prev);
+      }
+    });
+    return unsub;
+  }, [gameSession?.id]);
 
   // WIN CONDITION CHECKER
   useEffect(() => {
@@ -353,7 +369,9 @@ export const useBingoGame = () => {
     state: {
       view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
-      badges, newBadge, gameSession
+      badges, newBadge, gameSession, frozenUntil,
+      isFrozen: !!frozenUntil && Date.now() < frozenUntil,
+      tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0))
     },
     actions
   };

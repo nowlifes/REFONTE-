@@ -88,6 +88,8 @@ export interface GameSession {
   startedAt: number;
   lastUpdated: number;
   jokers: number;
+  tauntsSent: number;
+  frozenUntil?: number;
 }
 
 export interface LeaderboardEntry {

@@ -12,9 +12,6 @@ import { useEventSession } from './hooks/useEventSession';
 import { useTutorial } from './hooks/useTutorial';
 import { gameService } from './services/gameService';
 
-import TutorialOverlay from './components/TutorialOverlay'; 
-import StyleSelection from './components/StyleSelection'; 
-import TutorialLayer from './components/TutorialLayer'; 
 import ShieldLogo from './components/ShieldLogo';
 import BackgroundParticles from './components/BackgroundParticles';
 import NetworkStatus from './components/NetworkStatus';
@@ -317,45 +314,26 @@ const App: React.FC = () => {
 
       {/* 3. LEADERBOARD */}
       {s.view === AppView.LEADERBOARD && (
-         <Leaderboard onBack={() => a.setView(AppView.GAME)} currentUserId={localStorage.getItem('bingo_user_id') || undefined} />
+         <Leaderboard
+           onBack={() => a.setView(AppView.GAME)}
+           currentUserId={localStorage.getItem('bingo_user_id') || undefined}
+           currentGameId={s.gameSession?.id}
+           tauntsLeft={s.tauntsLeft}
+           onTaunt={s.gameSession?.id ? async (targetUserId) => {
+             await gameService.sendTaunt(s.gameSession!.id, targetUserId);
+           } : undefined}
+         />
       )}
 
-      {/* 4. ONBOARDING (STYLES) */}
-      {s.view === AppView.ONBOARDING_STYLES && (
-        <div className="min-h-[100dvh] bg-navy-950 flex flex-col relative overflow-hidden">
-           <BackgroundParticles />
-           <TutorialLayer step={tut.currentStep} onNext={handleTutorialNext} />
-           <StyleSelection onSelect={() => {
-               if (tut.currentStep === TutorialStep.STYLES) {
-                   tut.nextStep();
-               }
-               a.setView(AppView.ONBOARDING_REWARDS);
-           }} />
-        </div>
-      )}
-
-      {/* 5. ONBOARDING (REWARDS) */}
-      {s.view === AppView.ONBOARDING_REWARDS && (
-          <>
-            <TutorialLayer step={tut.currentStep} onNext={handleTutorialNext} />
-            <TutorialOverlay onClose={() => {
-                if (tut.currentStep === TutorialStep.REWARDS) {
-                    tut.nextStep(); 
-                }
-                a.startGame(s.nickname || "Player"); 
-            }} />
-          </>
-      )}
+      {/* 4 & 5. ONBOARDING — handled inline in NicknamePage via OnboardingCards */}
 
       {/* 6. GAME PAGE (Main View) */}
       {s.view === AppView.GAME && (
-         <GamePage 
-            state={s} 
-            actions={a} 
-            ui={ui} 
-            uiActions={uia} 
-            tutorialActions={tut} 
-            onTutorialNext={handleTutorialNext} 
+         <GamePage
+            state={s}
+            actions={a}
+            ui={ui}
+            uiActions={uia}
             onCrownClick={() => setShowHiddenLogin(true)}
          />
       )}
