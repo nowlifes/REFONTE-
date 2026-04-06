@@ -1,0 +1,4 @@
+package-lock.json
+migrated_prompt_history/
+node_modules/
+.git/
