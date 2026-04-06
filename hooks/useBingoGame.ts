@@ -343,6 +343,9 @@ export const useBingoGame = () => {
       setNickname('');
       setAvatarId('PartyKing');
       setCountry('FR');
+      
+      setView(AppView.NICKNAME);
+      
       localStorage.removeItem('bingo_last_session');
       localStorage.removeItem('bingo_user_id');
     }
