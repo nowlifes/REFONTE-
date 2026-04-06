@@ -48,14 +48,18 @@ const App: React.FC = () => {
   const { state: ui, actions: uia } = useAppUI(a.setView);
   const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading } = useEventSession();
 
-  const resetSession = async () => {
+    const resetSession = async () => {
     await baseResetSession();
     a.resetGame();
+    a.setView(AppView.NICKNAME);
+    window.location.reload();
   };
 
   const createNewSession = async () => {
     await baseCreateNewSession();
     a.resetGame();
+    a.setView(AppView.NICKNAME);
+    window.location.reload();
   };
   const tut = useTutorial();
   
