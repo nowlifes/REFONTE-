@@ -57,6 +57,7 @@ const App: React.FC = () => {
 
   const createNewSession = async () => {
     await baseCreateNewSession();
+    await new Promise(resolve => setTimeout(resolve, 1500));
     a.resetGame();
     a.setView(AppView.NICKNAME);
     window.location.reload();

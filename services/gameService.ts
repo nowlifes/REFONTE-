@@ -765,42 +765,17 @@ async resetSession(): Promise<void> {
   if (!supabase) return;
   try {
     console.log("[GameService] Starting full session reset...");
-
-    await this.setSessionStatus(false);
-
     const { error } = await supabase.rpc('reset_all_data');
     if (error) throw error;
-
+    localStorage.removeItem('bingo_last_session');
+    localStorage.removeItem('bingo_user_id');
+    localStorage.removeItem(OFFLINE_QUEUE_KEY);
     console.log("[GameService] Reset complete!");
   } catch (e) {
     console.error("[GameService] Failed to reset session", e);
     throw e;
   }
 }
-
-      // 2. Delete all game data in correct order (children first)
-      console.log("[GameService] Deleting activities...");
-      const { error: actErr } = await supabase.from('activities').delete().not('id', 'is', null);
-      if (actErr) console.warn("[GameService] Error deleting activities:", actErr);
-
-      console.log("[GameService] Deleting player badges...");
-      const { error: badgeErr } = await supabase.from('player_badges').delete().not('id', 'is', null);
-      if (badgeErr) console.warn("[GameService] Error deleting badges:", badgeErr);
-
-      console.log("[GameService] Deleting games...");
-      const { error: gameErr } = await supabase.from('games').delete().not('id', 'is', null);
-      if (gameErr) console.warn("[GameService] Error deleting games:", gameErr);
-
-      console.log("[GameService] Deleting players...");
-      const { error: playerErr } = await supabase.from('players').delete().not('id', 'is', null);
-      if (playerErr) console.warn("[GameService] Error deleting players:", playerErr);
-
-      console.log("[GameService] Reset complete!");
-    } catch (e) {
-      console.error("[GameService] Failed to reset session", e);
-      throw e;
-    }
-  }
 
   async simulatePlayers(challenges: any[]): Promise<void> {
     if (!supabase) return;
