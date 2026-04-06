@@ -27,12 +27,6 @@ export const useAppUI = (setAppView: (view: AppView) => void) => {
     setMasterLoginError(false);
 
     try {
-      // DEV MODE: Bypass check
-      setShowMasterLogin(false);
-      setMasterCodeInput('');
-      setAppView(AppView.MASTER_DASHBOARD);
-      return;
-
       // Secure server-side check
       const isValid = await gameService.verifyMasterCode(masterCodeInput.toUpperCase());
       

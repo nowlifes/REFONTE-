@@ -45,6 +45,8 @@ const RotateDeviceOverlay = () => {
 const App: React.FC = () => {
   const { t } = useLanguage();
   const { state: s, actions: a } = useBingoGame();
+  const aRef = React.useRef(a);
+  aRef.current = a;
   const { state: ui, actions: uia } = useAppUI(a.setView);
   const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading } = useEventSession();
 
@@ -78,13 +80,6 @@ const App: React.FC = () => {
 
   const handleHiddenLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // DEV MODE: Bypass check
-    a.setView(AppView.MASTER_DASHBOARD);
-    setShowHiddenLogin(false);
-    setHiddenCodeInput('');
-    setHiddenLoginError(false);
-    return;
-
     if (hiddenCodeInput === HIDDEN_MASTER_PASSWORD) {
        a.setView(AppView.MASTER_DASHBOARD);
        setShowHiddenLogin(false);
@@ -130,12 +125,12 @@ const App: React.FC = () => {
       if (prevSessionActive.current && !isFirstLoad.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
          setShowEndOverlay(true);
       }
-      
+
       // KICK: Force redirect to NICKNAME if user is in a restricted view when session closes
       // But only if they haven't seen the end overlay yet
       if (!showEndOverlay && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
-         a.setView(AppView.NICKNAME);
-         a.resetGame();
+         aRef.current.setView(AppView.NICKNAME);
+         aRef.current.resetGame();
       }
     }
 
@@ -143,10 +138,10 @@ const App: React.FC = () => {
     // We only trigger if it WAS false and IS NOW true, and it's NOT the very first load
     if (!prevSessionActive.current && isSessionActive && !isFirstLoad.current && s.view !== AppView.MASTER_DASHBOARD) {
         setShowStartAnimation(true);
-        
+
         // FORCE RESET FOR NEW SESSION: Return to character creation
-        a.resetGame();
-        a.setView(AppView.NICKNAME);
+        aRef.current.resetGame();
+        aRef.current.setView(AppView.NICKNAME);
         setShowEndOverlay(false);
         
         // Confetti Explosion
@@ -174,7 +169,7 @@ const App: React.FC = () => {
     prevSessionActive.current = isSessionActive;
     if (isFirstLoad.current) isFirstLoad.current = false;
 
-  }, [isSessionActive, s.view, a, isSessionLoading]);
+  }, [isSessionActive, s.view, isSessionLoading, showEndOverlay]);
 
   // --- WAKE LOCK ---
   useEffect(() => {
