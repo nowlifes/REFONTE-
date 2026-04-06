@@ -304,7 +304,15 @@ const App: React.FC = () => {
 
       {/* 2. MASTER PAGE */}
       {s.view === AppView.MASTER_DASHBOARD && (
-         <MasterPage isSessionActive={isSessionActive} setSessionActive={setSessionActive} resetSession={resetSession} createNewSession={createNewSession} state={s} actions={a} />
+         <MasterPage
+           isSessionActive={isSessionActive}
+           setSessionActive={setSessionActive}
+           resetSession={resetSession}
+           createNewSession={createNewSession}
+           onWrapped={async () => { await setSessionActive(false); a.setView(AppView.MISSION_REPORT); }}
+           state={s}
+           actions={a}
+         />
       )}
 
       {/* 3. LEADERBOARD */}

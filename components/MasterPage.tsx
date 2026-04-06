@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles } from 'lucide-react';
+import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
@@ -13,16 +13,18 @@ interface MasterPageProps {
   setSessionActive: (active: boolean) => void;
   resetSession: () => Promise<void>;
   createNewSession: () => Promise<void>;
+  onWrapped: () => Promise<void>;
   state: any;
   actions: any;
 }
 
-const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, state: s, actions: a }) => {
+const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, state: s, actions: a }) => {
   const { t, language } = useLanguage();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isWrapping, setIsWrapping] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [dbChallenges, setDbChallenges] = useState<any[]>([]);
   const [showChallenges, setShowChallenges] = useState(false);
@@ -56,6 +58,17 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
       console.error(e);
     } finally {
       setIsCreatingNew(false);
+    }
+  };
+
+  const handleWrapped = async () => {
+    setIsWrapping(true);
+    try {
+      await onWrapped();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsWrapping(false);
     }
   };
 
@@ -107,8 +120,17 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                     {isSimulating ? 'DEPLOYING AGENTS...' : 'SIMULATE 5 PLAYERS'}
                  </button>
                  
-                 <button 
-                   onClick={() => setShowResetConfirm(true)} 
+                 <button
+                   onClick={handleWrapped}
+                   disabled={isWrapping}
+                   className="w-full py-3 bg-[#FFD700] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[4px_4px_0px_black] border-[3px] border-black disabled:opacity-50"
+                 >
+                   <PartyPopper className={`w-4 h-4 ${isWrapping ? 'animate-bounce' : ''}`} />
+                   {isWrapping ? 'CLOSING...' : 'FIN DE SOIRÉE (WRAPPED)'}
+                 </button>
+
+                 <button
+                   onClick={() => setShowResetConfirm(true)}
                    className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-2 hover:bg-red-100 transition-all"
                  >
                     <Trash2 className="w-3 h-3" /> {t('reset_session')}
