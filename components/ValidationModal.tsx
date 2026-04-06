@@ -155,14 +155,36 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
 
         {step === 'MASTER_PAD' && (
            <div className="flex-1 flex flex-col bg-[#FFD700]">
-              <div className="p-8 border-b-[4px] border-black text-center">
-                 <h3 className="font-impact text-black uppercase text-2xl italic tracking-tighter leading-none">{t('master_access_title')}</h3>
+              {/* Header */}
+              <div className="shrink-0 px-6 pt-6 pb-4 border-b-[3px] border-black/20">
+                <div className="inline-flex items-center gap-1.5 bg-black text-[#FFD700] px-2 py-1 rounded-lg mb-3">
+                  <ScanLine size={10} strokeWidth={3} />
+                  <span className="text-[8px] font-impact uppercase tracking-widest">DÉFI MASTER</span>
+                </div>
+                <p className="font-impact font-[900] text-black text-lg uppercase leading-tight italic">
+                  "{cell.text}"
+                </p>
               </div>
-              <div className="flex-1 p-6 flex flex-col">
-                 <button onClick={onScanRequest} className="w-full py-4 bg-black text-white rounded-2xl font-impact uppercase text-xl flex items-center justify-center gap-3 mb-6 shadow-xl active:scale-95 transition-all">
-                    <ScanLine size={24} strokeWidth={3} /> {t('scan_entry')}
+
+              {/* Actions */}
+              <div className="flex-1 p-5 flex flex-col gap-4 overflow-y-auto">
+                 {/* QR Scan — primary */}
+                 <button
+                   onClick={onScanRequest}
+                   className="w-full py-4 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-base flex items-center justify-center gap-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                 >
+                    <ScanLine size={20} strokeWidth={3} /> Scanner le QR du Master
                  </button>
-                 <div className="flex-1 bg-black/10 rounded-2xl border-2 border-black/10 overflow-hidden">
+
+                 {/* Divider */}
+                 <div className="flex items-center gap-3">
+                   <div className="flex-1 h-px bg-black/20" />
+                   <span className="text-[8px] font-impact uppercase tracking-widest text-black/40">ou code secret</span>
+                   <div className="flex-1 h-px bg-black/20" />
+                 </div>
+
+                 {/* Rune pad */}
+                 <div className="flex-1 bg-black/10 rounded-2xl border-2 border-black/20 overflow-hidden flex items-center justify-center">
                     <MasterRunePad onSuccess={() => onConfirm()} />
                  </div>
               </div>

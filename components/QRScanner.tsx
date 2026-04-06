@@ -1,8 +1,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, ScanLine } from 'lucide-react';
 import jsQR from 'jsqr';
 import { useLanguage } from '../contexts/LanguageContext';
+import { MASTER_VALID_CODE } from '../constants';
 
 interface QRScannerProps {
   mode: 'ENTRY' | 'MASTER' | 'PLAYER';
@@ -40,8 +41,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ mode, onScanSuccess, onClose }) =
           if (code) {
             // Check content based on mode
             let isValid = false;
-            
-            if (mode === 'MASTER' && code.data.includes('MASTER_VALID_CODE')) isValid = true;
+
+            if (mode === 'MASTER' && code.data.trim() === MASTER_VALID_CODE) isValid = true;
             if (mode === 'ENTRY' && code.data.includes('EVENT_START')) isValid = true;
             if (mode === 'PLAYER' && code.data.includes('BINGO_PLAYER')) isValid = true;
             
@@ -84,14 +85,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ mode, onScanSuccess, onClose }) =
     };
   }, [t, mode, onScanSuccess]);
 
-  // Fallback simulation button in case camera fails or env is restricted
-  const handleSimulateScan = () => {
-    setScanning(false);
-    setTimeout(() => {
-      onScanSuccess();
-    }, 800);
-  };
-
   const getTitle = () => {
       switch(mode) {
           case 'ENTRY': return t('scan_entry');
@@ -111,57 +104,53 @@ const QRScanner: React.FC<QRScannerProps> = ({ mode, onScanSuccess, onClose }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-navy-950 flex flex-col items-center justify-center">
-      {/* Decorative Corners */}
-      <div className="absolute top-0 left-0 w-20 h-20 border-t-8 border-l-8 border-gold-600 m-0"></div>
-      <div className="absolute top-0 right-0 w-20 h-20 border-t-8 border-r-8 border-gold-600 m-0"></div>
-      <div className="absolute bottom-0 left-0 w-20 h-20 border-b-8 border-l-8 border-gold-600 m-0"></div>
-      <div className="absolute bottom-0 right-0 w-20 h-20 border-b-8 border-r-8 border-gold-600 m-0"></div>
-
-      <button onClick={onClose} className="absolute top-8 right-8 z-20 bg-navy-900/80 p-3 rounded-full border border-gold-500 text-gold-500 active:scale-95">
-        <X className="w-8 h-8" strokeWidth={3} />
-      </button>
-
-      <div className="relative w-full h-full max-w-lg flex flex-col items-center justify-center p-4">
-        {error ? (
-           <div className="text-red-400 flex flex-col items-center font-playbook">
-             <AlertCircle className="w-12 h-12 mb-2" />
-             <p>{error}</p>
-             <button onClick={handleSimulateScan} className="mt-4 px-6 py-2 bg-navy-800 border border-gold-500/50 rounded-lg text-gold-400 font-bold uppercase text-xs">
-                {t('simulate_scan')} (Dev Mode)
-             </button>
-           </div>
-        ) : (
-          <div className="relative w-72 h-72">
-             <video ref={videoRef} playsInline muted className="w-full h-full object-cover border-4 border-gold-600 rounded-xl" />
-             <canvas ref={canvasRef} className="hidden" />
-             
-             {/* Scan Overlay */}
-             <div className="absolute inset-0 border-2 border-gold-400 opacity-50 m-4 pointer-events-none"></div>
-             {scanning && (
-               <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-red-500 animate-[scan_2s_linear_infinite] shadow-[0_0_10px_rgba(239,68,68,1)] pointer-events-none"></div>
-             )}
-          </div>
-        )}
-
-        <div className="mt-12 text-center px-4 w-full">
-          <h3 className="text-3xl font-playbook font-bold text-gold-500 mb-2 uppercase tracking-widest leading-none">
-            {getTitle()}
-          </h3>
-          <p className="text-lg text-slate-300 font-sans mt-4 font-bold uppercase leading-tight">
-            {getDesc()}
-          </p>
-        </div>
-
-        {/* Optional Manual Override if scanning is hard in testing */}
-        <button 
-          onClick={handleSimulateScan}
-          className="mt-8 text-navy-800 hover:text-gold-600/50 text-[10px] uppercase font-bold tracking-widest transition-colors"
-        >
-          Dev: {t('simulate_scan')}
+    <div className="fixed inset-0 z-50 bg-[#0A1629] flex flex-col">
+      {/* Header */}
+      <div className="shrink-0 bg-[#FFD700] border-b-[4px] border-black px-4 py-4 flex items-center justify-between">
+        <button onClick={onClose} className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+          <X size={20} strokeWidth={3} />
         </button>
+        <h2 className="font-impact text-xl font-[900] text-black uppercase tracking-tighter italic">
+          {getTitle()}
+        </h2>
+        <div className="w-10" />
       </div>
-      
+
+      <div className="flex-1 flex flex-col items-center justify-center p-6 gap-8">
+        {error ? (
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertCircle className="w-14 h-14 text-[#FF2E63]" />
+            <p className="font-impact uppercase text-white/60 text-sm tracking-widest">{error}</p>
+          </div>
+        ) : (
+          <>
+            {/* Camera viewfinder */}
+            <div className="relative w-72 h-72 rounded-2xl overflow-hidden border-[4px] border-[#FFD700] shadow-[0_0_0_4px_black]">
+              <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* Corner brackets */}
+              <div className="absolute top-2 left-2 w-8 h-8 border-t-[4px] border-l-[4px] border-white rounded-tl-lg pointer-events-none" />
+              <div className="absolute top-2 right-2 w-8 h-8 border-t-[4px] border-r-[4px] border-white rounded-tr-lg pointer-events-none" />
+              <div className="absolute bottom-2 left-2 w-8 h-8 border-b-[4px] border-l-[4px] border-white rounded-bl-lg pointer-events-none" />
+              <div className="absolute bottom-2 right-2 w-8 h-8 border-b-[4px] border-r-[4px] border-white rounded-br-lg pointer-events-none" />
+
+              {/* Scan line */}
+              {scanning && (
+                <div className="absolute left-4 right-4 h-0.5 bg-[#FFD700] shadow-[0_0_12px_#FFD700] animate-[scan_2s_linear_infinite] pointer-events-none" />
+              )}
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <ScanLine className="w-4 h-4 text-[#FFD700]" />
+                <span className="font-impact uppercase text-[11px] tracking-widest text-white/60">{getDesc()}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       <style>{`
         @keyframes scan {
           0% { top: 10%; opacity: 0; }
