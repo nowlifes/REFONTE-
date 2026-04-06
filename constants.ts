@@ -157,8 +157,8 @@ export const BADGE_CONFIG: Record<BadgeType, {
 };
 
 export const EVENT_ENTRY_CODE = "EVENT_START_2025";
-export const MASTER_VALID_CODE = "@@Lisboa25";
-export const HIDDEN_MASTER_PASSWORD = "@@Lisboa25";
+export const MASTER_VALID_CODE = "KING";
+export const HIDDEN_MASTER_PASSWORD = "KING";
 export const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1]; 
 export const INITIAL_JOKERS = 2;
 
