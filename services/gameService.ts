@@ -761,12 +761,22 @@ class GameBackendService {
     }
   }
 
-  async resetSession(): Promise<void> {
-    if (!supabase) return;
-    try {
-      console.log("[GameService] Starting full session reset...");
-      // 1. Close session
-      await this.setSessionStatus(false);
+async resetSession(): Promise<void> {
+  if (!supabase) return;
+  try {
+    console.log("[GameService] Starting full session reset...");
+
+    await this.setSessionStatus(false);
+
+    const { error } = await supabase.rpc('reset_all_data');
+    if (error) throw error;
+
+    console.log("[GameService] Reset complete!");
+  } catch (e) {
+    console.error("[GameService] Failed to reset session", e);
+    throw e;
+  }
+}
 
       // 2. Delete all game data in correct order (children first)
       console.log("[GameService] Deleting activities...");
