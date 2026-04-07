@@ -28,13 +28,20 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     }
   };
 
-  const getFontSize = () => {
-    const len = text.length;
-    if (len > 40) return '8px';
-    if (len > 28) return '9px';
-    if (len > 20) return '10px';
-    if (len > 14) return '11px';
-    return '12px';
+  // Short label: first 1-2 meaningful words, max 10 chars
+  const STOP_WORDS = new Set(['tu', 'je', 'il', 'de', 'du', 'un', 'une', 'le', 'la', 'les', 'des', 'à', 'au', 'en', 'et', 'ou', 'sur', 'par', 'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'do', 'get', 'your']);
+  const getShortLabel = (): string => {
+    const words = text.split(/\s+/);
+    let label = '';
+    for (const w of words) {
+      const clean = w.replace(/[^a-zA-ZÀ-ÿ]/g, '');
+      if (clean.length >= 3 && !STOP_WORDS.has(clean.toLowerCase())) {
+        label = clean.toUpperCase();
+        break;
+      }
+    }
+    if (!label) label = words[0]?.toUpperCase() || text.slice(0, 8).toUpperCase();
+    return label.length > 10 ? label.slice(0, 9) + '.' : label;
   };
 
   const winDelay = isWinning && winningIndex >= 0 ? `${winningIndex * 80}ms` : '0ms';
@@ -64,11 +71,13 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               <span className="text-[7px] font-impact uppercase tracking-tight leading-none text-[#FFD700]/50">5 pts</span>
             </div>
           ) : (
-            <div
-              className="font-impact font-bold uppercase pointer-events-none w-full"
-              style={{ fontSize: getFontSize(), lineHeight: '1.1', wordBreak: 'break-word', overflowWrap: 'break-word', hyphens: 'none' }}
-            >
-              {text}
+            <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1">
+              <span
+                className="font-impact uppercase leading-none text-center w-full"
+                style={{ fontSize: getShortLabel().length > 7 ? '11px' : '14px', letterSpacing: '-0.5px' }}
+              >
+                {getShortLabel()}
+              </span>
             </div>
           )}
         </div>

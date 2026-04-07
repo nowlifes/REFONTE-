@@ -13,6 +13,7 @@ import Avatar from './Avatar';
 import NetworkStatus from './NetworkStatus';
 import BadgeNotification from './BadgeNotification';
 import ActivityFeed from './ActivityFeed';
+import ChallengeRevealSheet from './ChallengeRevealSheet';
 
 interface GamePageProps {
   state: any;
@@ -26,6 +27,7 @@ interface GamePageProps {
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
+  const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
 
   // Score count-up animation (#6)
   const [displayScore, setDisplayScore] = useState(s.score);
@@ -253,7 +255,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 <BingoCell
                   key={cell.id}
                   data={cell}
-                  onClick={(id) => { if (!s.isFrozen) a.handleCellClick(id); }}
+                  onClick={(id) => {
+                    if (s.isFrozen) return;
+                    const clicked = s.cells.find((c: BingoCellData) => c.id === id);
+                    if (clicked) setRevealedCell(clicked);
+                  }}
                   isWinning={s.winningIds.includes(cell.id)}
                   winningIndex={s.winningIds.indexOf(cell.id)}
                   isFeverTarget={s.feverCells.includes(cell.id)}
@@ -315,7 +321,19 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* MODALS */}
       {ui.showLegends && <LegendsModal onClose={() => uia.setShowLegends(false)} />}
       {ui.showBadge && <NFTBadgeModal nickname={s.nickname} score={s.score} badges={s.badges} onClose={() => uia.setShowBadge(false)} />}
-      
+
+      {/* Challenge reveal sheet — tap to discover before validating */}
+      {revealedCell && !s.selectedCell && s.activeScannerMode !== 'MASTER' && (
+        <ChallengeRevealSheet
+          cell={revealedCell}
+          onConfirm={() => {
+            a.handleCellClick(revealedCell.id);
+            setRevealedCell(null);
+          }}
+          onClose={() => setRevealedCell(null)}
+        />
+      )}
+
       {s.selectedCell && s.activeScannerMode !== 'MASTER' && (
         <div id="tutorial-validation-actions">
           <ValidationModal 
