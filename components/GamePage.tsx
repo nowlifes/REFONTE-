@@ -23,11 +23,13 @@ interface GamePageProps {
   tutorialActions?: any;
   onTutorialNext?: () => void;
   onCrownClick?: () => void;
+  onPhotoProof?: (cellId: number, url: string) => void;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
+  const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
 
   // Score count-up animation (#6)
   const [displayScore, setDisplayScore] = useState(s.score);
@@ -69,6 +71,15 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     const interval = setInterval(update, 500);
     return () => clearInterval(interval);
   }, [s.frozenUntil]);
+  // Spotlight countdown
+  useEffect(() => {
+    if (!s.spotlightEndsAt) return;
+    const update = () => setSpotlightSecondsLeft(Math.max(0, Math.ceil((s.spotlightEndsAt! - Date.now()) / 1000)));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [s.spotlightEndsAt]);
+
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
   
@@ -169,6 +180,39 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       
       <BadgeNotification badge={s.newBadge} onClose={a.clearNewBadge} />
 
+      {/* COMBO notification */}
+      {s.comboActive && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
+          <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2">
+            <span className="text-white text-2xl">🔥</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-impact text-white uppercase text-xl tracking-tight">COMBO !</span>
+              <span className="font-impact text-white/70 uppercase text-[9px] tracking-widest">+1 joker gagné</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SPOTLIGHT banner */}
+      {s.spotlightCellId !== null && spotlightSecondsLeft > 0 && (
+        <div className="fixed top-20 left-4 right-4 z-[155] pointer-events-none">
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-4 py-2.5 shadow-[5px_5px_0px_black] flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⚡</span>
+              <div className="flex flex-col leading-none">
+                <span className="font-impact text-black uppercase text-[13px] tracking-tight">DÉFI SPOTLIGHT</span>
+                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">Valide-le pour gagner un joker</span>
+              </div>
+            </div>
+            <div className="bg-black/10 border border-black/20 rounded-xl px-2.5 py-1">
+              <span className="font-impact text-black text-sm">
+                {Math.floor(spotlightSecondsLeft / 60)}:{String(spotlightSecondsLeft % 60).padStart(2, '0')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FREEZE OVERLAY */}
       {s.isFrozen && freezeSecondsLeft > 0 && (
         <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -265,6 +309,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   isFeverTarget={s.feverCells.includes(cell.id)}
                   isLocked={cell.id === 12 && isMysteryCellLocked}
                   isUnlocking={cell.id === 12 && mysteryUnlocking}
+                  isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
                 />
               ))}
           </div>
@@ -341,7 +386,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               jokerCount={s.jokers} 
               lastWitnessTime={s.lastWitnessTime} 
               onClose={() => a.setSelectedCell(null)} 
-              onConfirm={(data) => a.validateCell(data)}
+              onConfirm={(data) => {
+                if (data?.proofImage && s.selectedCell) {
+                  onPhotoProof?.(s.selectedCell.id, data.proofImage);
+                }
+                a.validateCell(data);
+              }}
               onUseJoker={a.useJoker} 
               onScanRequest={() => a.setActiveScannerMode('MASTER')} 
               onSubmitProof={() => {}}

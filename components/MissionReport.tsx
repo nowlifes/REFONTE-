@@ -13,6 +13,7 @@ interface MissionReportProps {
   country: string;
   cells: BingoCellData[];
   badges: Badge[];
+  photoProofs?: Record<number, string>;
   startedAt: number;
   onBack: () => void;
   onReset?: () => void;
@@ -35,6 +36,7 @@ const MissionReport: React.FC<MissionReportProps> = ({
   country,
   cells,
   badges,
+  photoProofs = {},
   startedAt,
   onBack,
 }) => {
@@ -230,6 +232,22 @@ const MissionReport: React.FC<MissionReportProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Photo proofs */}
+          {Object.keys(photoProofs).length > 0 && (
+            <div className="px-6 pb-5 bg-[#0A1629] border-t border-white/5">
+              <span className="font-impact text-[9px] text-white/20 uppercase tracking-[0.3em] mb-3 block mt-4">
+                {language === 'fr' ? 'Mes preuves 📸' : 'My proofs 📸'}
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(photoProofs).slice(0, 6).map(([cellId, url]) => (
+                  <div key={cellId} className="aspect-square rounded-xl overflow-hidden border-2 border-black">
+                    <img src={url} alt={`proof ${cellId}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
               </div>
             </div>
           )}

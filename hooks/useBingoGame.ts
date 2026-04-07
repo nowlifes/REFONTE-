@@ -34,6 +34,15 @@ export const useBingoGame = () => {
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
   const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
 
+  // --- SPOTLIGHT ---
+  const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
+  const [spotlightEndsAt, setSpotlightEndsAt] = useState<number | null>(null);
+  const spotlightPicked = useRef(false);
+
+  // --- COMBO ---
+  const validationTimestamps = useRef<number[]>([]);
+  const [comboActive, setComboActive] = useState(false);
+
   // Badge System
   const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
 
@@ -126,6 +135,22 @@ export const useBingoGame = () => {
     });
     return unsub;
   }, [gameSession?.id]);
+
+  // SPOTLIGHT SYSTEM — every 10 min, highlight a random empty cell for a bonus joker
+  useEffect(() => {
+    if (view !== AppView.GAME || cells.length === 0) return;
+    const pickSpotlight = () => {
+      const empty = cells.filter(c => c.status === CellStatus.EMPTY);
+      if (empty.length === 0) return;
+      const pick = empty[Math.floor(Math.random() * empty.length)];
+      setSpotlightCellId(pick.id);
+      setSpotlightEndsAt(Date.now() + 10 * 60 * 1000);
+      spotlightPicked.current = false;
+    };
+    const first = setTimeout(pickSpotlight, 90 * 1000); // first spotlight after 90s
+    const cycle = setInterval(pickSpotlight, 10 * 60 * 1000);
+    return () => { clearTimeout(first); clearInterval(cycle); };
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // WIN CONDITION CHECKER
   useEffect(() => {
@@ -280,10 +305,35 @@ export const useBingoGame = () => {
           setLastWitnessTime(Date.now());
         }
 
+        // SPOTLIGHT BONUS: if this was the spotlight cell, +1 joker
+        const isSpotlightCell = selectedCell.id === spotlightCellId &&
+          spotlightEndsAt !== null && Date.now() < spotlightEndsAt &&
+          !spotlightPicked.current;
+        if (isSpotlightCell) {
+          spotlightPicked.current = true;
+          setJokers(prev => prev + 1);
+          setSpotlightCellId(null);
+          setSpotlightEndsAt(null);
+          if (navigator.vibrate) navigator.vibrate([50, 50, 200]);
+          canvasConfetti({ particleCount: 80, spread: 120, origin: { y: 0.5 }, colors: ['#FFD700', '#FFFFFF', '#FF2D6A'] });
+        }
+
+        // COMBO SYSTEM: 3 validations in 15 min = +1 joker
+        const now = Date.now();
+        const COMBO_WINDOW = 15 * 60 * 1000;
+        validationTimestamps.current = [...validationTimestamps.current.filter(t => now - t < COMBO_WINDOW), now];
+        if (validationTimestamps.current.length >= 3 && !isSpotlightCell) {
+          validationTimestamps.current = []; // reset after combo
+          setJokers(prev => prev + 1);
+          setComboActive(true);
+          setTimeout(() => setComboActive(false), 3500);
+          if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
+        }
+
         // Optimistic UI Update
         const oldCells = [...cells];
-        const newCells = cells.map(c => c.id === selectedCell.id ? { 
-          ...c, 
+        const newCells = cells.map(c => c.id === selectedCell.id ? {
+          ...c,
           status: CellStatus.VALIDATED,
           witnessName: proofData?.witnessName,
           witnessSignature: proofData?.witnessSignature,
@@ -294,14 +344,14 @@ export const useBingoGame = () => {
         setSelectedCell(null);
         setActiveScannerMode(null);
         checkBadges(newCells);
-        
+
         playSound('VALIDATE');
         triggerHaptic('success');
-        canvasConfetti({ 
-            particleCount: 50, 
-            spread: 90, 
-            origin: { y: 0.6 }, 
-            colors: ['#FDE047', '#EAB308', '#FFFFFF'] 
+        canvasConfetti({
+            particleCount: 50,
+            spread: 90,
+            origin: { y: 0.6 },
+            colors: ['#FDE047', '#EAB308', '#FFFFFF']
         });
 
         // Backend Sync
@@ -371,7 +421,8 @@ export const useBingoGame = () => {
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
-      tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0))
+      tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0)),
+      spotlightCellId, spotlightEndsAt, comboActive
     },
     actions
   };

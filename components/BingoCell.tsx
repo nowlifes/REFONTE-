@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, Zap } from 'lucide-react';
 import { BingoCellData, ChallengeType, CellStatus } from '../types';
 
 interface BingoCellProps {
@@ -11,10 +11,11 @@ interface BingoCellProps {
   isFeverTarget?: boolean;
   isLocked?: boolean;
   isUnlocking?: boolean;
+  isSpotlight?: boolean;
 }
 
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
-  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking
+  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight
 }) => {
   const { id, text, type, status } = data;
   const isValidated = status === CellStatus.VALIDATED;
@@ -60,6 +61,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
           className={`absolute inset-0 backface-hidden rounded-[8px] flex items-center justify-center text-center p-[3px] overflow-hidden
             ${getColors()}
             ${isFeverTarget && !isLocked ? 'ring-2 ring-white animate-pulse' : ''}
+            ${isSpotlight ? 'ring-[3px] ring-white ring-offset-[2px] ring-offset-black animate-pulse' : ''}
             ${isLocked ? 'animate-pulse' : ''}
             ${isWinning ? 'cell-winning' : ''}
           `}
@@ -72,6 +74,9 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1">
+              {isSpotlight && (
+                <Zap className="w-3 h-3 mb-0.5 shrink-0" fill="currentColor" strokeWidth={0} style={{ color: type === ChallengeType.AUTO ? '#000' : type === ChallengeType.WITNESS ? '#fff' : '#000' }} />
+              )}
               <span
                 className="font-impact uppercase leading-none text-center w-full"
                 style={{ fontSize: getShortLabel().length > 7 ? '11px' : '14px', letterSpacing: '-0.5px' }}

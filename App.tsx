@@ -45,6 +45,7 @@ const App: React.FC = () => {
   const aRef = React.useRef(a);
   aRef.current = a;
   const { state: ui, actions: uia } = useAppUI(a.setView);
+  const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading } = useEventSession();
 
     const resetSession = async () => {
@@ -333,17 +334,19 @@ const App: React.FC = () => {
             ui={ui}
             uiActions={uia}
             onCrownClick={() => setShowHiddenLogin(true)}
+            onPhotoProof={(cellId, url) => setPhotoProofs(prev => ({ ...prev, [cellId]: url }))}
          />
       )}
 
       {/* 7. MISSION REPORT */}
       {s.view === AppView.MISSION_REPORT && (
-         <MissionReport 
+         <MissionReport
             nickname={s.nickname}
             avatarId={s.avatarId}
             country={s.country}
             cells={s.cells}
             badges={s.badges}
+            photoProofs={photoProofs}
             startedAt={s.gameSession?.startedAt || Date.now()}
             onBack={() => a.setView(AppView.GAME)}
             onReset={() => {

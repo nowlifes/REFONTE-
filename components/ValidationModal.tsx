@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useLayoutEffect } from 'react';
-import { X, Check, RefreshCw, ScanLine } from 'lucide-react';
+import { X, Check, RefreshCw, ScanLine, Camera, Trash2 } from 'lucide-react';
 import { BingoCellData, ChallengeType } from '../types';
 import MasterRunePad from './MasterRunePad';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -24,7 +24,17 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
   
   const [witnessName, setWitnessName] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  
+  const [photoData, setPhotoData] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoData(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -99,8 +109,34 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                </div>
                
                <div className="w-full space-y-4">
-                  <button 
-                    onClick={() => cell.type === ChallengeType.WITNESS ? setStep('WITNESS_MODE') : onConfirm()} 
+                  {/* Photo proof for SOLO */}
+                  {cell.type === ChallengeType.AUTO && (
+                    <div className="w-full">
+                      <input ref={photoInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+                      {photoData ? (
+                        <div className="relative w-full h-28 rounded-2xl overflow-hidden border-[3px] border-[#00FF9D] mb-2">
+                          <img src={photoData} alt="proof" className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => setPhotoData(null)}
+                            className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-lg flex items-center justify-center"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => photoInputRef.current?.click()}
+                          className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-white/40 font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:border-white/40 hover:text-white/60 transition-all mb-2"
+                        >
+                          <Camera className="w-4 h-4" strokeWidth={2.5} />
+                          Photo preuve (optionnel)
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => cell.type === ChallengeType.WITNESS ? setStep('WITNESS_MODE') : onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined })}
                     className={`w-full py-5 rounded-2xl font-impact uppercase text-xl transition-all active:scale-95 shadow-lg ${cell.type === ChallengeType.WITNESS ? 'bg-[#FF2E63] text-white shadow-[#FF2E63]/20' : 'bg-[#00FF9D] text-black shadow-[#00FF9D]/20'}`}
                   >
                      {t('i_did_it')}
