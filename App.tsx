@@ -20,6 +20,7 @@ import LockedPage from './components/LockedPage';
 import SessionStartOverlay from './components/SessionStartOverlay';
 import SessionEndOverlay from './components/SessionEndOverlay';
 import MissionReport from './components/MissionReport';
+import BarTransitionOverlay from './components/BarTransitionOverlay';
 
 // PAGE COMPONENTS
 import NicknamePage from './components/NicknamePage';
@@ -46,7 +47,23 @@ const App: React.FC = () => {
   aRef.current = a;
   const { state: ui, actions: uia } = useAppUI(a.setView);
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading } = useEventSession();
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition } = useEventSession();
+  const { language } = useLanguage();
+
+  // Countdown timer + trigger overlay at T=0
+  useEffect(() => {
+    if (!transitionEndsAt) { setTransitionSecondsLeft(0); setShowTransitionOverlay(false); return; }
+    const update = () => {
+      const left = Math.max(0, Math.ceil((transitionEndsAt - Date.now()) / 1000));
+      setTransitionSecondsLeft(left);
+      if (left === 0 && s.view === AppView.GAME) setShowTransitionOverlay(true);
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [transitionEndsAt, s.view]);
 
     const resetSession = async () => {
     await baseResetSession();
@@ -306,6 +323,10 @@ const App: React.FC = () => {
            resetSession={resetSession}
            createNewSession={createNewSession}
            onWrapped={async () => { await setSessionActive(false); a.setView(AppView.MISSION_REPORT); }}
+           triggerBarTransition={triggerBarTransition}
+           clearBarTransition={clearBarTransition}
+           transitionEndsAt={transitionEndsAt}
+           nextBarName={nextBarName}
            state={s}
            actions={a}
          />
@@ -336,6 +357,49 @@ const App: React.FC = () => {
             onCrownClick={() => setShowHiddenLogin(true)}
             onPhotoProof={(cellId, url) => setPhotoProofs(prev => ({ ...prev, [cellId]: url }))}
          />
+      )}
+
+      {/* BAR TRANSITION — Badge B (countdown visible on game screen) */}
+      {s.view === AppView.GAME && transitionEndsAt && transitionSecondsLeft > 0 && (
+        <div className="fixed bottom-28 left-4 right-4 z-[140] pointer-events-none animate-in slide-in-from-bottom-2 duration-300">
+          <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_black] transition-all duration-500 ${
+            transitionSecondsLeft <= 60
+              ? 'bg-[#FF2D6A] animate-pulse'
+              : transitionSecondsLeft <= 120
+              ? 'bg-[#FF8C00]'
+              : 'bg-[#FFD700]'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="text-lg leading-none">🚶</span>
+              <div className="flex flex-col leading-none">
+                <span className="font-impact text-black uppercase text-[13px] tracking-tight">
+                  {language === 'fr' ? 'On bouge bientôt' : 'Moving soon'}
+                  {nextBarName ? ` — ${nextBarName}` : ''}
+                </span>
+                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
+                  {language === 'fr' ? 'Finis tes défis !' : 'Finish your challenges!'}
+                </span>
+              </div>
+            </div>
+            <div className="bg-black/15 border border-black/20 rounded-xl px-2.5 py-1 shrink-0">
+              <span className="font-impact text-black text-sm tabular-nums">
+                {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BAR TRANSITION — Overlay C (full screen at T=0) */}
+      {showTransitionOverlay && (
+        <BarTransitionOverlay
+          nextBarName={nextBarName}
+          language={language as 'fr' | 'en'}
+          onDismiss={async () => {
+            setShowTransitionOverlay(false);
+            await clearBarTransition();
+          }}
+        />
       )}
 
       {/* 7. MISSION REPORT */}

@@ -4,19 +4,23 @@ import { supabase } from '../lib/supabaseClient';
 import { gameService } from '../services/gameService';
 
 export const useEventSession = () => {
-  // On initialise à FALSE par sécurité (fermé par défaut) jusqu'à confirmation du serveur
-  const [isSessionActive, setIsSessionActive] = useState<boolean>(false); 
+  const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [transitionEndsAt, setTransitionEndsAt] = useState<number | null>(null);
+  const [nextBarName, setNextBarName] = useState<string | null>(null);
 
   const checkSession = useCallback(async () => {
-    // Note: We don't set global isLoading to true here to avoid full page spinner on manual refresh
-    // unless it is the initial load, which is handled by the initial state of isLoading
     try {
-      const status = await gameService.getSessionStatus();
+      const [status, transition] = await Promise.all([
+        gameService.getSessionStatus(),
+        gameService.getTransitionState(),
+      ]);
       setIsSessionActive(status);
+      setTransitionEndsAt(transition.endsAt);
+      setNextBarName(transition.barName);
     } catch (e) {
       console.warn("Could not fetch session status, defaulting to CLOSED (Strict Mode)");
-      setIsSessionActive(false); 
+      setIsSessionActive(false);
     } finally {
       setIsLoading(false);
     }
@@ -82,5 +86,16 @@ export const useEventSession = () => {
     setIsSessionActive(true); // Optimistic open
   };
 
-  return { isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession };
+  const triggerBarTransition = async (durationMinutes: number, barName?: string) => {
+    await gameService.triggerBarTransition(durationMinutes, barName);
+    // checkSession will be called via realtime
+  };
+
+  const clearBarTransition = async () => {
+    await gameService.clearBarTransition();
+    setTransitionEndsAt(null);
+    setNextBarName(null);
+  };
+
+  return { isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition };
 };

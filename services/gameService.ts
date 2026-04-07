@@ -162,17 +162,60 @@ class GameBackendService {
         .order('id', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
-      if (error) {
-        console.error("[GameService] Error fetching session status:", error);
-        return false;
-      }
-
+      if (error) { console.error("[GameService] Error fetching session status:", error); return false; }
       return data?.is_active ?? false;
     } catch (e) {
       console.error("[GameService] Exception in getSessionStatus:", e);
       return false;
     }
+  }
+
+  async getTransitionState(): Promise<{ endsAt: number | null; barName: string | null }> {
+    if (!supabase) return { endsAt: null, barName: null };
+    try {
+      const { data } = await supabase
+        .from('event_session')
+        .select('transition_ends_at, next_bar_name')
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return {
+        endsAt: data?.transition_ends_at ? new Date(data.transition_ends_at).getTime() : null,
+        barName: data?.next_bar_name ?? null,
+      };
+    } catch { return { endsAt: null, barName: null }; }
+  }
+
+  async triggerBarTransition(durationMinutes: number, barName?: string): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return;
+    const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from('event_session')
+      .update({ transition_ends_at: endsAt, next_bar_name: barName || null })
+      .eq('id', latest.id);
+    if (error) throw error;
+  }
+
+  async clearBarTransition(): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return;
+    await supabase
+      .from('event_session')
+      .update({ transition_ends_at: null, next_bar_name: null })
+      .eq('id', latest.id);
   }
 
   async setSessionStatus(isActive: boolean): Promise<void> {

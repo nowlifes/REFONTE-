@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper } from 'lucide-react';
+import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
@@ -14,11 +14,15 @@ interface MasterPageProps {
   resetSession: () => Promise<void>;
   createNewSession: () => Promise<void>;
   onWrapped: () => Promise<void>;
+  triggerBarTransition: (durationMinutes: number, barName?: string) => Promise<void>;
+  clearBarTransition: () => Promise<void>;
+  transitionEndsAt: number | null;
+  nextBarName: string | null;
   state: any;
   actions: any;
 }
 
-const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, state: s, actions: a }) => {
+const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, state: s, actions: a }) => {
   const { t, language } = useLanguage();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false);
@@ -28,6 +32,29 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
   const [isSimulating, setIsSimulating] = useState(false);
   const [dbChallenges, setDbChallenges] = useState<any[]>([]);
   const [showChallenges, setShowChallenges] = useState(false);
+
+  // Bar transition state
+  const [selectedDuration, setSelectedDuration] = useState<number>(5);
+  const [barNameInput, setBarNameInput] = useState('');
+  const [isTriggeringTransition, setIsTriggeringTransition] = useState(false);
+  const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!transitionEndsAt) { setTransitionSecondsLeft(0); return; }
+    const update = () => setTransitionSecondsLeft(Math.max(0, Math.ceil((transitionEndsAt - Date.now()) / 1000)));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [transitionEndsAt]);
+
+  const handleTriggerTransition = async () => {
+    setIsTriggeringTransition(true);
+    try {
+      await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined);
+      setBarNameInput('');
+    } catch (e) { console.error(e); }
+    finally { setIsTriggeringTransition(false); }
+  };
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -150,6 +177,78 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                      <List className="w-4 h-4" /> {dbChallenges.length} CHALLENGES LOADED
                   </button>
                </div>
+            </div>
+
+            {/* BAR TRANSITION SECTION */}
+            <div className="mb-6 pb-6 border-b-2 border-black/10">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="w-4 h-4 text-[#FF2D6A]" strokeWidth={3} fill="currentColor" />
+                <span className="font-impact text-[11px] uppercase tracking-widest text-black">
+                  {language === 'fr' ? 'Changement de bar' : 'Bar Change'}
+                </span>
+              </div>
+
+              {transitionEndsAt && transitionSecondsLeft > 0 ? (
+                /* Active transition — show countdown + cancel */
+                <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                  <div className="flex flex-col leading-none">
+                    <span className="font-impact text-white uppercase text-[9px] tracking-widest opacity-70">
+                      {language === 'fr' ? 'Countdown actif' : 'Countdown active'}
+                      {nextBarName ? ` — ${nextBarName}` : ''}
+                    </span>
+                    <span className="font-impact text-white text-2xl italic">
+                      {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={clearBarTransition}
+                    className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                  >
+                    <XCircle className="w-5 h-5 text-[#FF2D6A]" strokeWidth={3} />
+                  </button>
+                </div>
+              ) : (
+                /* Setup form */
+                <div className="flex flex-col gap-2">
+                  {/* Duration pills */}
+                  <div className="flex gap-1.5">
+                    {[2, 5, 10, 15].map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setSelectedDuration(d)}
+                        className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
+                          selectedDuration === d
+                            ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]'
+                            : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                        }`}
+                      >
+                        {d}{language === 'fr' ? 'min' : 'm'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bar name input */}
+                  <input
+                    type="text"
+                    value={barNameInput}
+                    onChange={e => setBarNameInput(e.target.value)}
+                    placeholder={language === 'fr' ? 'Nom du prochain bar (optionnel)' : 'Next bar name (optional)'}
+                    className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none transition-all placeholder:text-black/20"
+                  />
+
+                  {/* Trigger button */}
+                  <button
+                    onClick={handleTriggerTransition}
+                    disabled={isTriggeringTransition}
+                    className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+                  >
+                    <Clock className="w-4 h-4" strokeWidth={3} />
+                    {isTriggeringTransition
+                      ? (language === 'fr' ? 'Envoi...' : 'Sending...')
+                      : (language === 'fr' ? `Lancer le countdown (${selectedDuration} min)` : `Start countdown (${selectedDuration} min)`)}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-4 border-[3px] border-black shadow-[4px_4px_0px_#FFD700]">
