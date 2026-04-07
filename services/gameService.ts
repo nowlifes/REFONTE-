@@ -338,22 +338,20 @@ class GameBackendService {
   async startGame(userId: string, challenges: any[]): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
-    // Partner challenges always appear — random ones fill the rest
-    const MYSTERY_CELL_INDEX = 12;
-    const partnerChallenges = challenges.filter((c: any) => c.is_partner);
-    const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner));
-    const picked = [...partnerChallenges, ...regularChallenges].slice(0, 25);
-    const shuffled = shuffleArray(picked);
+    // Partner challenges always appear at the 4 corners (indices 0, 4, 20, 24)
+    const CORNER_INDICES = [0, 4, 20, 24];
+    const partnerChallenges = shuffleArray(challenges.filter((c: any) => c.is_partner));
+    const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner)).slice(0, 21);
 
-    // Ensure position 12 (mystery cell) is never a partner challenge
-    if (shuffled[MYSTERY_CELL_INDEX]?.is_partner) {
-      const swapIdx = shuffled.findIndex((c: any, i: number) => i !== MYSTERY_CELL_INDEX && !c.is_partner);
-      if (swapIdx !== -1) {
-        [shuffled[MYSTERY_CELL_INDEX], shuffled[swapIdx]] = [shuffled[swapIdx], shuffled[MYSTERY_CELL_INDEX]];
-      }
+    // Build the 25-cell grid: corners = partners, rest = regular challenges
+    const grid: any[] = new Array(25).fill(null);
+    CORNER_INDICES.forEach((pos, i) => { grid[pos] = partnerChallenges[i] ?? partnerChallenges[0]; });
+    let regularIdx = 0;
+    for (let i = 0; i < 25; i++) {
+      if (grid[i] === null) grid[i] = regularChallenges[regularIdx++];
     }
 
-    const gridChallenges = shuffled.map((item: any, index: number) => ({
+    const gridChallenges = grid.map((item: any, index: number) => ({
       id: index,
       text: item.text,
       type: item.type,

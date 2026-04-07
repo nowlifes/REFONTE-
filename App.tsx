@@ -398,6 +398,7 @@ const App: React.FC = () => {
           onDismiss={async () => {
             setShowTransitionOverlay(false);
             await clearBarTransition();
+            a.resetSpotlightCount(); // new bar = reset spotlight quota
           }}
         />
       )}

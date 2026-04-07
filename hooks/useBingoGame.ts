@@ -38,6 +38,7 @@ export const useBingoGame = () => {
   const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
   const [spotlightEndsAt, setSpotlightEndsAt] = useState<number | null>(null);
   const spotlightPicked = useRef(false);
+  const spotlightBarCount = useRef(0); // resets on each bar transition
 
   // --- COMBO ---
   const validationTimestamps = useRef<number[]>([]);
@@ -136,19 +137,25 @@ export const useBingoGame = () => {
     return unsub;
   }, [gameSession?.id]);
 
-  // SPOTLIGHT SYSTEM — every 10 min, highlight a random empty cell for a bonus joker
+  // SPOTLIGHT SYSTEM — every 3 min, max 2 per bar, highlight a random empty cell for a bonus joker
+  const SPOTLIGHT_INTERVAL_MS = 3 * 60 * 1000;
+  const SPOTLIGHT_DURATION_MS = 3 * 60 * 1000;
+  const SPOTLIGHT_MAX_PER_BAR = 2;
+
   useEffect(() => {
     if (view !== AppView.GAME || cells.length === 0) return;
     const pickSpotlight = () => {
+      if (spotlightBarCount.current >= SPOTLIGHT_MAX_PER_BAR) return;
       const empty = cells.filter(c => c.status === CellStatus.EMPTY);
       if (empty.length === 0) return;
       const pick = empty[Math.floor(Math.random() * empty.length)];
       setSpotlightCellId(pick.id);
-      setSpotlightEndsAt(Date.now() + 10 * 60 * 1000);
+      setSpotlightEndsAt(Date.now() + SPOTLIGHT_DURATION_MS);
       spotlightPicked.current = false;
+      spotlightBarCount.current += 1;
     };
-    const first = setTimeout(pickSpotlight, 90 * 1000); // first spotlight after 90s
-    const cycle = setInterval(pickSpotlight, 10 * 60 * 1000);
+    const first = setTimeout(pickSpotlight, 60 * 1000); // first spotlight after 1 min
+    const cycle = setInterval(pickSpotlight, SPOTLIGHT_INTERVAL_MS);
     return () => { clearTimeout(first); clearInterval(cycle); };
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -227,6 +234,7 @@ export const useBingoGame = () => {
     setSoundEnabled,
     setActiveScannerMode,
     setSelectedCell,
+    resetSpotlightCount: () => { spotlightBarCount.current = 0; },
     clearNewBadge,
     completeOnboarding: () => {},
     
