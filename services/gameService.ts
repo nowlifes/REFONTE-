@@ -338,11 +338,16 @@ class GameBackendService {
   async startGame(userId: string, challenges: any[]): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
-    const shuffledChallenges = shuffleArray(challenges);
-    const gridChallenges = shuffledChallenges.slice(0, 25).map((item, index) => ({
+    // Partner challenges always appear — random ones fill the rest
+    const partnerChallenges = challenges.filter((c: any) => c.is_partner);
+    const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner));
+    const picked = [...partnerChallenges, ...regularChallenges].slice(0, 25);
+    const gridChallenges = shuffleArray(picked).map((item: any, index: number) => ({
       id: index,
       text: item.text,
       type: item.type,
+      isPartner: item.is_partner ?? false,
+      partnerHandle: item.partner_handle ?? undefined,
     }));
 
     try {
@@ -907,23 +912,23 @@ async resetSession(): Promise<void> {
     
     const grid: BingoCellData[] = (data.grid_challenges || []).map((c: any) => {
       const validation = validatedMap.get(c.id);
+      const base = {
+        id: c.id,
+        text: c.text,
+        type: c.type,
+        isPartner: c.isPartner ?? false,
+        partnerHandle: c.partnerHandle ?? undefined,
+      };
       if (validation) {
         return {
-          id: c.id,
-          text: c.text,
-          type: c.type,
+          ...base,
           status: CellStatus.VALIDATED,
           witnessName: validation.proof?.witnessName,
           witnessSignature: validation.proof?.witnessSignature,
           timestamp: validation.timestamp
         };
       }
-      return {
-        id: c.id,
-        text: c.text,
-        type: c.type,
-        status: CellStatus.EMPTY
-      };
+      return { ...base, status: CellStatus.EMPTY };
     });
 
     return {

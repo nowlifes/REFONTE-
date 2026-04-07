@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, Lock, Zap } from 'lucide-react';
+import { Check, Lock, Zap, Star } from 'lucide-react';
 import { BingoCellData, ChallengeType, CellStatus } from '../types';
 
 interface BingoCellProps {
@@ -17,7 +17,7 @@ interface BingoCellProps {
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
   data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight
 }) => {
-  const { id, text, type, status } = data;
+  const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
 
   const getColors = () => {
@@ -60,6 +60,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
         <div
           className={`absolute inset-0 backface-hidden rounded-[8px] flex items-center justify-center text-center p-[3px] overflow-hidden
             ${getColors()}
+            ${isPartner && !isValidated ? 'ring-[2px] ring-[#FFD700] ring-offset-[1px] ring-offset-black' : ''}
             ${isFeverTarget && !isLocked ? 'ring-2 ring-white animate-pulse' : ''}
             ${isSpotlight ? 'ring-[3px] ring-white ring-offset-[2px] ring-offset-black animate-pulse' : ''}
             ${isLocked ? 'animate-pulse' : ''}
@@ -73,7 +74,13 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               <span className="text-[7px] font-impact uppercase tracking-tight leading-none text-[#FFD700]/50">5 pts</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1">
+            <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1 relative">
+              {/* Partner badge — top-right corner */}
+              {isPartner && (
+                <div className="absolute -top-[3px] -right-[3px] w-4 h-4 bg-[#FFD700] border border-black rounded-bl-md rounded-tr-[6px] flex items-center justify-center">
+                  <Star className="w-2.5 h-2.5 text-black" fill="currentColor" strokeWidth={0} />
+                </div>
+              )}
               {isSpotlight && (
                 <Zap className="w-3 h-3 mb-0.5 shrink-0" fill="currentColor" strokeWidth={0} style={{ color: type === ChallengeType.AUTO ? '#000' : type === ChallengeType.WITNESS ? '#fff' : '#000' }} />
               )}

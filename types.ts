@@ -27,6 +27,8 @@ export interface BingoCellData {
   witnessName?: string;
   witnessSignature?: string;
   timestamp?: number;
+  isPartner?: boolean;
+  partnerHandle?: string;
 }
 
 export enum AppView {

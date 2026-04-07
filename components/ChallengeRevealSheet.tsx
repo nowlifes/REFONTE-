@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { X, HandMetal, Users, Crown, Zap } from 'lucide-react';
+import { X, HandMetal, Users, Crown, Zap, Star, Instagram } from 'lucide-react';
 import { BingoCellData, ChallengeType } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -40,6 +40,17 @@ const TYPE_CONFIG = {
 const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onConfirm, onClose }) => {
   const { language } = useLanguage();
   const cfg = TYPE_CONFIG[cell.type];
+  const isPartner = cell.isPartner ?? false;
+  const partnerHandle = cell.partnerHandle;
+
+  const openInstagram = () => {
+    if (!partnerHandle) return;
+    const appUrl = `instagram://user?username=${partnerHandle}`;
+    const webUrl = `https://www.instagram.com/${partnerHandle}`;
+    // Try app first, fallback to web after 500ms
+    window.location.href = appUrl;
+    setTimeout(() => { window.open(webUrl, '_blank'); }, 600);
+  };
 
   // Vibration on open
   useEffect(() => {
@@ -69,6 +80,14 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
             <X className="w-4 h-4 text-white/50" strokeWidth={3} />
           </button>
 
+          {/* Partner badge */}
+          {isPartner && (
+            <div className="inline-flex items-center gap-1.5 bg-[#FFD700] border-[2px] border-black rounded-xl px-2.5 py-1 shadow-[2px_2px_0px_black] mb-3">
+              <Star className="w-3 h-3 text-black" fill="currentColor" strokeWidth={0} />
+              <span className="font-impact text-[9px] uppercase tracking-widest text-black">PARTENAIRE OFFICIEL</span>
+            </div>
+          )}
+
           {/* Type badge */}
           <div className={`inline-flex items-center gap-2 ${cfg.bg} border-[2px] border-black rounded-xl px-3 py-1.5 shadow-[3px_3px_0px_black] mb-4`}>
             {cfg.icon}
@@ -84,6 +103,20 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
           <p className="font-impact text-[11px] uppercase tracking-widest text-white/30 mb-6">
             {language === 'fr' ? cfg.desc.fr : cfg.desc.en}
           </p>
+
+          {/* Instagram shortcut for partner cells */}
+          {isPartner && partnerHandle && (
+            <button
+              onClick={openInstagram}
+              className="w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-[14px] border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              style={{ background: 'linear-gradient(135deg, #833AB4, #FD1D1D, #F77737)' }}
+            >
+              <Instagram className="w-4 h-4 text-white" strokeWidth={2.5} />
+              <span className="font-impact uppercase text-white text-[13px] tracking-widest">
+                @{partnerHandle}
+              </span>
+            </button>
+          )}
 
           {/* CTA */}
           <button
