@@ -270,7 +270,9 @@ export const useBingoGame = () => {
             console.log("Using challenges from Supabase", dbChallenges.length);
             selectedChallenges = dbChallenges.map(c => ({
               text: language === 'fr' ? (c.text_fr || c.text) : (c.text_en || c.text),
-              type: c.type as ChallengeType
+              type: c.type as ChallengeType,
+              is_partner: c.is_partner ?? false,
+              partner_handle: c.partner_handle ?? undefined,
             }));
           }
         } catch (e) {
