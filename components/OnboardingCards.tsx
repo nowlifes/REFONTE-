@@ -81,27 +81,36 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
   const isLast = current === CARDS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#0A1629]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] bg-[#0A1629] flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 overflow-hidden">
+
+      {/* Animated background blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#FFD700] opacity-20 blur-3xl animate-pulse" />
+        <div className="absolute bottom-[5%] right-[-25%] w-[70%] h-[70%] rounded-full bg-[#FF2E63] opacity-20 blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+        <div className="absolute top-[40%] right-[10%] w-[40%] h-[40%] rounded-full bg-[#00FF9D] opacity-20 blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
 
       {/* Skip */}
       <button
         onClick={onDone}
-        className="absolute top-6 right-6 flex items-center gap-1 text-white/30 hover:text-white/60 transition-colors"
+        className="absolute top-6 right-6 flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border-2 border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all z-10"
       >
-        <X className="w-4 h-4" />
+        <X className="w-3.5 h-3.5" strokeWidth={3} />
         <span className="text-[10px] font-impact uppercase tracking-widest">Passer</span>
       </button>
 
       {/* Card */}
       <div
         key={current}
-        className="w-full max-w-sm rounded-[2rem] border-[4px] border-black shadow-[10px_10px_0px_black] p-7 flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-sm rounded-[2rem] border-[4px] border-black shadow-[10px_10px_0px_black] p-7 flex flex-col gap-5 animate-in fade-in slide-in-from-right-8 duration-300 relative z-10"
         style={{ backgroundColor: card.color }}
       >
         {/* Tag + icon */}
         <div className="flex items-center justify-between">
-          <span className={`text-[9px] font-impact uppercase tracking-widest opacity-50 ${card.textColor}`}>{card.tag}</span>
-          <div className="w-14 h-14 bg-black/10 border-2 border-black/20 rounded-2xl flex items-center justify-center">
+          <span className={`text-[10px] font-impact uppercase tracking-widest font-[900] px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : current === 1 ? 'bg-black text-[#00FF9D]' : 'bg-white text-[#FF2E63]'}`}>
+            {card.tag}
+          </span>
+          <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${current === 0 ? 'bg-white' : current === 1 ? 'bg-white' : 'bg-white'}`}>
             {card.icon}
           </div>
         </div>
@@ -118,28 +127,40 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
 
         {/* Body */}
         {card.body && (
-          <p className={`text-[11px] font-impact uppercase tracking-wide leading-relaxed opacity-70 ${card.textColor}`}>
+          <p className={`text-[11px] font-impact uppercase tracking-wide leading-relaxed ${card.textColor} opacity-80`}>
             {card.body}
           </p>
         )}
       </div>
 
       {/* Dots + Button */}
-      <div className="flex flex-col items-center gap-5 mt-6 w-full max-w-sm">
+      <div className="flex flex-col items-center gap-5 mt-6 w-full max-w-sm relative z-10">
         <div className="flex gap-2">
-          {CARDS.map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full border-2 border-white transition-all duration-300 ${i === current ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-transparent'}`}
-            />
-          ))}
+          {CARDS.map((_, i) => {
+            const dotColor = i === 0 ? '#FFD700' : i === 1 ? '#00FF9D' : '#FF2E63';
+            return (
+              <div
+                key={i}
+                className={`rounded-full border-2 border-black transition-all duration-300 ${
+                  i === current
+                    ? 'w-8 h-3 shadow-[2px_2px_0px_black]'
+                    : i < current
+                    ? 'w-3 h-3'
+                    : 'w-3 h-3 bg-white/20'
+                }`}
+                style={i <= current ? { backgroundColor: dotColor } : undefined}
+              />
+            );
+          })}
         </div>
 
         <button
           onClick={() => isLast ? onDone() : setCurrent(c => c + 1)}
-          className="w-full bg-white text-black font-impact uppercase text-lg py-4 rounded-2xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2"
+          className={`w-full font-impact uppercase text-lg py-4 rounded-2xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 ${
+            isLast ? 'bg-[#00FF9D] text-black' : 'bg-white text-black'
+          }`}
         >
-          {isLast ? "C'est parti !" : 'Suivant'}
+          {isLast ? "C'EST PARTI !" : 'SUIVANT'}
           <ArrowRight className="w-5 h-5" strokeWidth={4} />
         </button>
       </div>

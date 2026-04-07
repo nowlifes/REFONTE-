@@ -280,14 +280,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               jokerCount={s.jokers} 
               lastWitnessTime={s.lastWitnessTime} 
               onClose={() => a.setSelectedCell(null)} 
-              onConfirm={(data) => {
-                  if (tut.currentStep === TutorialStep.CHALLENGE_MODAL) {
-                     a.setSelectedCell(null);
-                     tut.nextStep(); 
-                  } else {
-                     a.validateCell(data);
-                  }
-              }} 
+              onConfirm={(data) => a.validateCell(data)}
               onUseJoker={a.useJoker} 
               onScanRequest={() => a.setActiveScannerMode('MASTER')} 
               onSubmitProof={() => {}}
