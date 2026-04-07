@@ -27,6 +27,36 @@ interface GamePageProps {
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
 
+  // Score count-up animation (#6)
+  const [displayScore, setDisplayScore] = useState(s.score);
+  const scoreAnimRef = useRef(s.score);
+  useEffect(() => {
+    if (s.score === scoreAnimRef.current) return;
+    const target = s.score;
+    let current = scoreAnimRef.current;
+    scoreAnimRef.current = target;
+    const step = () => {
+      current = Math.min(current + 1, target);
+      setDisplayScore(current);
+      if (current < target) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [s.score]);
+
+  // Mystery cell unlock detection (#2)
+  const prevScoreRef = useRef(s.score);
+  const [mysteryUnlocking, setMysteryUnlocking] = useState(false);
+  useEffect(() => {
+    if (prevScoreRef.current < 5 && s.score >= 5) {
+      setMysteryUnlocking(true);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
+      setTimeout(() => setMysteryUnlocking(false), 800);
+    }
+    prevScoreRef.current = s.score;
+  }, [s.score]);
+
+  const isMysteryCellLocked = s.score < 5;
+
   useEffect(() => {
     if (!s.frozenUntil) return;
     const update = () => {
@@ -158,7 +188,17 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* Header compact */}
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
         <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10 active:scale-95 transition-transform">
-          <Avatar seed={s.avatarId} size={36} className="border border-white/20 rounded-lg" />
+          <Avatar
+            seed={s.avatarId}
+            size={36}
+            className={`rounded-lg transition-all duration-300 ${
+              s.isFrozen
+                ? 'ring-2 ring-[#FF2E63] ring-offset-1 ring-offset-[#0A1629]'
+                : isFever
+                ? 'ring-2 ring-[#FFD700] ring-offset-1 ring-offset-[#0A1629]'
+                : 'ring-1 ring-[#00F5A0]/50 ring-offset-1 ring-offset-[#0A1629]'
+            }`}
+          />
           <div className="flex flex-col items-start leading-none">
             <span className="font-impact text-[10px] text-[#00F5A0] uppercase tracking-tighter">{s.nickname}</span>
             <span className="text-[7px] text-slate-500 font-impact uppercase tracking-widest mt-0.5">{s.country || 'FR'}</span>
@@ -186,7 +226,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 onTouchEnd={endResetPress}
              >
                 <span className="text-[7px] text-black/60 font-impact uppercase leading-none mb-0.5 font-black tracking-widest">{isResetPressing ? 'RESET' : t('score')}</span>
-                <span className="font-impact text-lg text-black leading-none italic">{s.score}/25</span>
+                <span className="font-impact text-lg text-black leading-none italic">{displayScore}/25</span>
                 {isResetPressing && (
                   <div className="flex gap-0.5 mt-0.5">
                     {[1, 2, 3, 4, 5].map((dot) => (
@@ -215,7 +255,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   data={cell}
                   onClick={(id) => { if (!s.isFrozen) a.handleCellClick(id); }}
                   isWinning={s.winningIds.includes(cell.id)}
+                  winningIndex={s.winningIds.indexOf(cell.id)}
                   isFeverTarget={s.feverCells.includes(cell.id)}
+                  isLocked={cell.id === 12 && isMysteryCellLocked}
+                  isUnlocking={cell.id === 12 && mysteryUnlocking}
                 />
               ))}
           </div>

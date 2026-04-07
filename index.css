@@ -64,3 +64,23 @@
 .shadow-gold-lg {
   box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
 }
+
+/* WINNING CELL — domino stagger */
+@keyframes winning-pop {
+  0%   { transform: scale(1); box-shadow: none; }
+  40%  { transform: scale(1.18); box-shadow: 0 0 18px #FFD700, 0 0 36px #FFD70066; }
+  100% { transform: scale(1);   box-shadow: 0 0 8px #FFD70088; }
+}
+.cell-winning {
+  animation: winning-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* MYSTERY CELL — unlock reveal */
+@keyframes mystery-unlock {
+  0%   { transform: scale(0.8) rotate(-5deg); opacity: 0.5; box-shadow: none; }
+  50%  { transform: scale(1.25) rotate(3deg); box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD70066; }
+  100% { transform: scale(1)   rotate(0deg); box-shadow: 0 0 10px #FFD70055; }
+}
+.cell-mystery-unlock {
+  animation: mystery-unlock 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
