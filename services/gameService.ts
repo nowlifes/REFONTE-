@@ -339,10 +339,21 @@ class GameBackendService {
     if (!supabase) throw new Error("Backend not configured");
 
     // Partner challenges always appear — random ones fill the rest
+    const MYSTERY_CELL_INDEX = 12;
     const partnerChallenges = challenges.filter((c: any) => c.is_partner);
     const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner));
     const picked = [...partnerChallenges, ...regularChallenges].slice(0, 25);
-    const gridChallenges = shuffleArray(picked).map((item: any, index: number) => ({
+    const shuffled = shuffleArray(picked);
+
+    // Ensure position 12 (mystery cell) is never a partner challenge
+    if (shuffled[MYSTERY_CELL_INDEX]?.is_partner) {
+      const swapIdx = shuffled.findIndex((c: any, i: number) => i !== MYSTERY_CELL_INDEX && !c.is_partner);
+      if (swapIdx !== -1) {
+        [shuffled[MYSTERY_CELL_INDEX], shuffled[swapIdx]] = [shuffled[swapIdx], shuffled[MYSTERY_CELL_INDEX]];
+      }
+    }
+
+    const gridChallenges = shuffled.map((item: any, index: number) => ({
       id: index,
       text: item.text,
       type: item.type,
