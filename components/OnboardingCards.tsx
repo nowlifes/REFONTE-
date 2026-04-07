@@ -26,49 +26,67 @@ const CARDS = [
     )
   },
   {
-    color: '#00FF9D',
-    textColor: 'text-black',
-    icon: <HandMetal className="w-10 h-10 text-black" strokeWidth={2.5} />,
+    color: '#1A1A2E',
+    textColor: 'text-white',
+    icon: <HandMetal className="w-10 h-10 text-white" strokeWidth={2.5} />,
     tag: '02 / 03',
     title: '3 façons\nde valider',
     body: '',
     visual: (
-      <div className="flex flex-col gap-2 w-full">
-        <div className="flex items-center gap-2 bg-black/10 border-2 border-black rounded-xl px-3 py-2">
-          <HandMetal className="w-4 h-4 shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight">Solo — tu l'as fait, tu valides</span>
+      <div className="flex flex-col gap-3 w-full">
+        <div className="flex items-center gap-3 bg-[#00F5A0] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <HandMetal className="w-5 h-5 shrink-0 text-black" strokeWidth={3} />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-black font-black">Solo</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-black/60 mt-0.5">Tu l'as fait, tu valides toi-même</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-black/10 border-2 border-black rounded-xl px-3 py-2">
-          <Users className="w-4 h-4 shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight">Témoin — un ami confirme</span>
+        <div className="flex items-center gap-3 bg-[#FF2D6A] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <Users className="w-5 h-5 shrink-0 text-white" strokeWidth={3} />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-white font-black">Témoin</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-white/60 mt-0.5">Un pote signe sur ton écran</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-black/10 border-2 border-black rounded-xl px-3 py-2">
-          <Crown className="w-4 h-4 shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight">Master — le Game Master valide</span>
+        <div className="flex items-center gap-3 bg-[#FFD700] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <Crown className="w-5 h-5 shrink-0 text-black" strokeWidth={3} fill="currentColor" />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-black font-black">Master</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-black/60 mt-0.5">Le Game Master valide en direct</span>
+          </div>
         </div>
       </div>
     )
   },
   {
-    color: '#FF2E63',
+    color: '#0A1629',
     textColor: 'text-white',
-    icon: <Gift className="w-10 h-10 text-white" strokeWidth={2.5} />,
+    icon: <Gift className="w-10 h-10 text-[#FFD700]" strokeWidth={2.5} />,
     tag: '03 / 03',
-    title: 'Lignes =\nRécompenses',
-    body: 'Complète une ligne entière sur ta grille pour gagner un reward. Plus tu en fais, plus tu gagnes.',
+    title: 'Fais des\nlignes. Gagne.',
+    body: '',
     visual: (
-      <div className="flex flex-col gap-2 w-full">
-        <div className="flex items-center gap-2 bg-white/15 border-2 border-white/40 rounded-xl px-3 py-2">
-          <Wine className="w-4 h-4 text-white shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight text-white">1 ligne → 1 verre offert</span>
+      <div className="flex flex-col gap-3 w-full">
+        <div className="flex items-center gap-3 bg-[#00F5A0] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <Wine className="w-5 h-5 text-black shrink-0" strokeWidth={3} />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-black font-black">1 ligne complète</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-black/60 mt-0.5">1 shot offert au bar 🥃</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-white/15 border-2 border-white/40 rounded-xl px-3 py-2">
-          <Gift className="w-4 h-4 text-white shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight text-white">2 lignes → récompense spéciale</span>
+        <div className="flex items-center gap-3 bg-[#FF2D6A] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <Gift className="w-5 h-5 text-white shrink-0" strokeWidth={3} />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-white font-black">Toutes les 2 lignes</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-white/60 mt-0.5">1 cadeau mystère 🎁</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-white/15 border-2 border-white/40 rounded-xl px-3 py-2">
-          <Crown className="w-4 h-4 text-white shrink-0" strokeWidth={3} />
-          <span className="font-impact uppercase text-[10px] tracking-tight text-white">Grille complète → LÉGENDAIRE</span>
+        <div className="flex items-center gap-3 bg-[#FFD700] border-[3px] border-black rounded-xl px-3 py-2.5 shadow-[3px_3px_0px_black]">
+          <Crown className="w-5 h-5 text-black shrink-0" strokeWidth={3} fill="currentColor" />
+          <div className="flex flex-col leading-none">
+            <span className="font-impact uppercase text-[11px] tracking-tight text-black font-black">Grille 100% complète</span>
+            <span className="font-impact uppercase text-[9px] tracking-tight text-black/60 mt-0.5">Statut LÉGENDAIRE + surprise 👑</span>
+          </div>
         </div>
       </div>
     )
@@ -107,10 +125,10 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
       >
         {/* Tag + icon */}
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-impact uppercase tracking-widest font-[900] px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : current === 1 ? 'bg-black text-[#00FF9D]' : 'bg-white text-[#FF2E63]'}`}>
+          <span className={`text-[10px] font-impact uppercase tracking-widest font-[900] px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : current === 1 ? 'bg-[#FFD700] text-black' : 'bg-[#FFD700] text-black'}`}>
             {card.tag}
           </span>
-          <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${current === 0 ? 'bg-white' : current === 1 ? 'bg-white' : 'bg-white'}`}>
+          <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${current === 0 ? 'bg-white' : current === 1 ? 'bg-[#00F5A0]' : 'bg-[#1A1A2E]'}`}>
             {card.icon}
           </div>
         </div>
@@ -137,7 +155,7 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
       <div className="flex flex-col items-center gap-5 mt-6 w-full max-w-sm relative z-10">
         <div className="flex gap-2">
           {CARDS.map((_, i) => {
-            const dotColor = i === 0 ? '#FFD700' : i === 1 ? '#00FF9D' : '#FF2E63';
+            const dotColor = i === 0 ? '#FFD700' : i === 1 ? '#00F5A0' : '#FFD700';
             return (
               <div
                 key={i}

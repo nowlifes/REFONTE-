@@ -75,6 +75,15 @@
   animation: winning-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* MYSTERY CELL — pulsing halo to make it enticing */
+@keyframes mystery-halo-pulse {
+  0%, 100% { box-shadow: 0 0 8px #FFD70055, 0 0 16px #FFD70022; }
+  50%       { box-shadow: 0 0 18px #FFD700AA, 0 0 36px #FFD70055; }
+}
+.mystery-halo {
+  animation: mystery-halo-pulse 2s ease-in-out infinite;
+}
+
 /* MYSTERY CELL — unlock reveal */
 @keyframes mystery-unlock {
   0%   { transform: scale(0.8) rotate(-5deg); opacity: 0.5; box-shadow: none; }

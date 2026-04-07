@@ -20,7 +20,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
   const isValidated = status === CellStatus.VALIDATED;
 
   const getColors = () => {
-    if (isLocked) return 'bg-[#0D1527] text-white/20 border-2 border-white/10 border-dashed';
+    if (isLocked) return 'bg-[#0D1527] text-white/20 border-2 border-white/10 border-dashed mystery-halo';
     switch (type) {
       case ChallengeType.MASTER:  return 'bg-[#FFD93D] text-black';
       case ChallengeType.WITNESS: return 'bg-[#FF2D6A] text-white';
@@ -59,9 +59,9 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
           style={isWinning ? { animationDelay: winDelay } : undefined}
         >
           {isLocked ? (
-            <div className="flex flex-col items-center gap-0.5 opacity-40">
-              <Lock className="w-4 h-4" strokeWidth={2} />
-              <span className="text-[7px] font-impact uppercase tracking-tight leading-none">5 défis</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <Lock className="w-4 h-4 text-[#FFD700]/60" strokeWidth={2} />
+              <span className="text-[7px] font-impact uppercase tracking-tight leading-none text-[#FFD700]/50">5 pts</span>
             </div>
           ) : (
             <div
