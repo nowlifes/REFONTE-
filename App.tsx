@@ -268,7 +268,7 @@ const App: React.FC = () => {
      This forces the LockedPage if the Master has not opened the session.
      Only the Master Login is accessible here OR via QR Code scan.
   */
-  if (!isSessionActive && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && !showEndOverlay && !vipBypass) {
+  if (!isSessionActive && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME_OVER && !showEndOverlay && !vipBypass) {
      return (
        <>
          <NetworkStatus />

@@ -55,10 +55,19 @@ export const useEventSession = () => {
             },
             (payload: any) => {
               console.log("[Realtime] Session change detected:", payload.eventType, payload.new);
-              
-              // On any change, we re-fetch the latest status to be 100% sure
-              // This is more robust than relying on payload.new if the user has multiple rows
-              checkSession();
+
+              // Instant update from payload — zero extra DB calls, countdown starts immediately
+              if (payload.new && typeof payload.new === 'object') {
+                const p = payload.new;
+                setIsSessionActive(!!p.is_active);
+                setTransitionEndsAt(p.transition_ends_at ? new Date(p.transition_ends_at).getTime() : null);
+                setNextBarName(p.next_bar_name ?? null);
+                if (!p.is_active) {
+                  setSecureSessionId(null);
+                } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
+                  gameService.recoverSecureSessionId().then(id => { if (id) setSecureSessionId(id); });
+                }
+              }
             }
           )
           .subscribe((status) => {
@@ -109,8 +118,11 @@ export const useEventSession = () => {
   };
 
   const triggerBarTransition = async (durationMinutes: number, barName?: string) => {
+    // Optimistic update — countdown starts immediately on the master device
+    const newEndsAt = Date.now() + durationMinutes * 60 * 1000;
+    setTransitionEndsAt(newEndsAt);
+    setNextBarName(barName || null);
     await gameService.triggerBarTransition(durationMinutes, barName);
-    // checkSession will be called via realtime
   };
 
   const clearBarTransition = async () => {

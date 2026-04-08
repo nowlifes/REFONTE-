@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle } from 'lucide-react';
+import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle, Expand } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
@@ -27,6 +27,7 @@ interface MasterPageProps {
 
 const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, secureSessionId, state: s, actions: a }) => {
   const { t, language } = useLanguage();
+  const [showQRFullscreen, setShowQRFullscreen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -288,18 +289,27 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
             {/* Session QR code — points to ?s=UUID, invalidated on each new session */}
             {secureSessionId ? (
               <>
-                <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-2 border-[3px] border-black shadow-[4px_4px_0px_#FFD700]">
-                  <QRCodeSVG
-                    value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
-                    size={180}
-                    level="H"
-                  />
-                </div>
-                <p className="text-[8px] font-impact text-black/40 uppercase tracking-widest italic mb-1">
-                  Scanne pour rejoindre
-                </p>
-                <p className="text-[7px] font-mono text-black/25 break-all px-2 select-all">
-                  ?s={secureSessionId.slice(0, 8)}…
+                {/* Preview + fullscreen button */}
+                <button
+                  onClick={() => setShowQRFullscreen(true)}
+                  className="relative mx-auto block group"
+                >
+                  <div className="bg-white p-3 rounded-xl mx-auto w-fit border-[3px] border-black shadow-[4px_4px_0px_#FFD700] transition-all group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-none">
+                    <QRCodeSVG
+                      value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
+                      size={140}
+                      level="H"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 rounded-xl transition-all flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-all bg-black text-white rounded-lg px-3 py-1.5 flex items-center gap-1.5 shadow-lg">
+                      <Expand className="w-3.5 h-3.5" />
+                      <span className="font-impact text-[10px] uppercase tracking-widest">Afficher</span>
+                    </div>
+                  </div>
+                </button>
+                <p className="text-[8px] font-impact text-black/40 uppercase tracking-widest italic mt-2 mb-0.5">
+                  Tap pour afficher en grand
                 </p>
               </>
             ) : (
@@ -415,6 +425,52 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN QR DISPLAY — for players to scan */}
+      {showQRFullscreen && secureSessionId && (
+        <div className="fixed inset-0 z-[200] bg-[#0A1629] flex flex-col items-center justify-center p-8 animate-in fade-in duration-200">
+          {/* Close button */}
+          <button
+            onClick={() => setShowQRFullscreen(false)}
+            className="absolute top-6 right-6 w-12 h-12 bg-white/10 border-[2px] border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-90"
+          >
+            <X className="w-6 h-6" strokeWidth={3} />
+          </button>
+
+          {/* Instruction */}
+          <p className="font-impact text-white/40 uppercase text-[11px] tracking-[0.4em] mb-6">
+            {language === 'fr' ? 'Scanne pour rejoindre' : 'Scan to join'}
+          </p>
+
+          {/* Giant QR */}
+          <div className="bg-white p-6 rounded-3xl border-[5px] border-[#FFD700] shadow-[10px_10px_0px_black] mb-8">
+            <QRCodeSVG
+              value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
+              size={260}
+              level="H"
+              fgColor="#000000"
+            />
+          </div>
+
+          {/* Title */}
+          <h1 className="font-impact text-white uppercase italic tracking-tighter text-5xl leading-none mb-2">
+            BINGO CRAWL
+          </h1>
+          <p className="font-impact text-[#FFD700] uppercase text-xl tracking-widest mb-8">
+            🍺 LISBONNE
+          </p>
+
+          {/* Player count pill */}
+          {playerCount > 0 && (
+            <div className="flex items-center gap-2 bg-[#00F5A0] border-[3px] border-black rounded-2xl px-5 py-2 shadow-[4px_4px_0px_black]">
+              <Users className="w-5 h-5 text-black" strokeWidth={3} />
+              <span className="font-impact text-black uppercase text-lg tracking-wide">
+                {playerCount} {language === 'fr' ? 'joueur' : 'player'}{playerCount > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
