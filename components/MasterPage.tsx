@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
 import { APP_VERSION, MASTER_VALID_CODE, CHALLENGES_EN, CHALLENGES_FR } from '../constants';
 import { gameService } from '../services/gameService';
+import { supabase } from '../lib/supabaseClient';
 import BackgroundParticles from './BackgroundParticles';
 
 interface MasterPageProps {
@@ -34,6 +35,27 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
   const [isSimulating, setIsSimulating] = useState(false);
   const [dbChallenges, setDbChallenges] = useState<any[]>([]);
   const [showChallenges, setShowChallenges] = useState(false);
+
+  // Fix 3: realtime player count for the current secure session
+  const [playerCount, setPlayerCount] = useState(0);
+  useEffect(() => {
+    if (!secureSessionId) { setPlayerCount(0); return; }
+    // Initial count
+    supabase
+      .from('players')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', secureSessionId)
+      .then(({ count }) => setPlayerCount(count ?? 0));
+    // Realtime: increment on each new player JOIN
+    const ch = supabase
+      .channel(`player_count_${secureSessionId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'players',
+        filter: `session_id=eq.${secureSessionId}`,
+      }, () => setPlayerCount(prev => prev + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [secureSessionId]);
 
   // Bar transition state
   const [selectedDuration, setSelectedDuration] = useState<number>(5);
@@ -121,9 +143,19 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
          <div className="bg-white border-[4px] border-black rounded-2xl p-6 shadow-[10px_10px_0px_black] text-center overflow-hidden">
             <div className="mb-6 pb-6 border-b-2 border-black/10">
                <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic mb-1">{t('master_control')}</h2>
-               <p className="text-[10px] font-impact text-black/40 uppercase tracking-widest mb-4">
-                 Session: {isSessionActive ? 'ACTIVE' : 'CLOSED'}
-               </p>
+               <div className="flex items-center justify-center gap-3 mb-4">
+                 <p className="text-[10px] font-impact text-black/40 uppercase tracking-widest">
+                   Session: {isSessionActive ? 'ACTIVE' : 'CLOSED'}
+                 </p>
+                 {isSessionActive && secureSessionId && (
+                   <div className="flex items-center gap-1 bg-[#00FF9D] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_black]">
+                     <Users className="w-3 h-3 text-black" strokeWidth={3} />
+                     <span className="font-impact text-[10px] text-black uppercase tracking-wide">
+                       {playerCount}
+                     </span>
+                   </div>
+                 )}
+               </div>
                <div className="grid grid-cols-2 gap-3 mb-4">
                   <button onClick={() => setSessionActive(true)} className={`p-4 rounded-xl border-[3px] border-black flex flex-col items-center justify-center gap-1 transition-all ${isSessionActive ? 'bg-[#00FF9D] shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[3px_3px_0px_black] active:translate-x-1 active:translate-y-1 active:shadow-none'}`}>
                      <DoorOpen className="w-8 h-8 text-black" strokeWidth={3} />

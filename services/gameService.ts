@@ -282,9 +282,10 @@ class GameBackendService {
 
   async createSecureSession(): Promise<string> {
     if (!supabase) throw new Error("Backend not configured");
+    const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(); // +6h
     const { data, error } = await supabase
       .from('sessions')
-      .insert({ status: 'open' })
+      .insert({ status: 'open', expires_at: expiresAt })
       .select('id')
       .single();
     if (error) throw error;
@@ -307,11 +308,14 @@ class GameBackendService {
     try {
       const { data, error } = await supabase
         .from('sessions')
-        .select('status')
+        .select('status, expires_at')
         .eq('id', sessionId)
         .single();
       if (error || !data) return false;
-      return data.status === 'open';
+      if (data.status !== 'open') return false;
+      // Fix 4: auto-expiry check (6h)
+      if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
+      return true;
     } catch {
       return false;
     }
@@ -319,6 +323,28 @@ class GameBackendService {
 
   getCurrentSecureSessionId(): string | null {
     return localStorage.getItem(this.SECURE_SESSION_KEY);
+  }
+
+  /** Fix 1: recover the active session UUID from DB (survives page reload / cache clear) */
+  async recoverSecureSessionId(): Promise<string | null> {
+    if (!supabase) return null;
+    try {
+      const { data } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('status', 'open')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.id) {
+        localStorage.setItem(this.SECURE_SESSION_KEY, data.id);
+        return data.id;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   // --- PLAYER CREATION ---

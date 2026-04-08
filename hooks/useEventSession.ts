@@ -22,6 +22,14 @@ export const useEventSession = () => {
       setIsSessionActive(status);
       setTransitionEndsAt(transition.endsAt);
       setNextBarName(transition.barName);
+
+      // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
+      if (status) {
+        const recovered = await gameService.recoverSecureSessionId();
+        if (recovered) setSecureSessionId(recovered);
+      } else {
+        setSecureSessionId(null);
+      }
     } catch (e) {
       console.warn("Could not fetch session status, defaulting to CLOSED (Strict Mode)");
       setIsSessionActive(false);
