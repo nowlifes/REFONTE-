@@ -116,14 +116,14 @@ const TutorialLayer: React.FC<TutorialLayerProps> = ({ step, onNext }) => {
 
       <div className="absolute flex flex-col items-center justify-center px-4" style={tooltipStyle}>
          <div className="bg-[#FFD700] text-black p-6 rounded-[2rem] border-[4px] border-black shadow-[10px_10px_0px_black] w-full max-w-xs animate-in zoom-in-95 duration-200">
-            <p className="text-center font-impact font-[900] uppercase text-xs leading-tight mb-5 tracking-tighter italic">
+            <p className="text-center font-impact font-[900] uppercase text-base leading-snug mb-5 tracking-tight italic">
                 {t(config.textKey as any)}
             </p>
-            <button 
+            <button
               onClick={onNext}
-              className="w-full py-4 rounded-xl bg-black text-white font-impact uppercase text-[10px] tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl bg-black text-white font-impact uppercase text-sm tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-               {t('tutorial_got_it')} <ChevronRight size={16} strokeWidth={4} />
+               {t('tutorial_got_it')} <ChevronRight size={18} strokeWidth={4} />
             </button>
          </div>
       </div>

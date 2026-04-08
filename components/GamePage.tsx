@@ -200,8 +200,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <div className="flex items-center gap-2">
               <span className="text-xl">⚡</span>
               <div className="flex flex-col leading-none">
-                <span className="font-impact text-black uppercase text-[13px] tracking-tight">DÉFI SPOTLIGHT</span>
-                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">Valide-le pour gagner un joker</span>
+                <span className="font-impact text-black uppercase text-[13px] tracking-tight">
+                  {language === 'fr' ? 'SPOTLIGHT CHALLENGE' : 'DÉFI SPOTLIGHT'}
+                </span>
+                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
+                  {language === 'fr' ? 'Complete it to win a joker' : 'Valide-le pour gagner un joker'}
+                </span>
               </div>
             </div>
             <div className="bg-black/10 border border-black/20 rounded-xl px-2.5 py-1">
@@ -219,10 +223,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
             <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
             <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
-              TAUNTÉ !
+              {language === 'fr' ? 'TAUNTED!' : 'TAUNTÉ !'}
             </h2>
             <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
-              Un joueur t'a figé
+              {language === 'fr' ? 'A player froze you' : 'Un joueur t\'a figé'}
             </p>
             <div className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-full flex items-center justify-center mx-auto">
               <span className="text-5xl font-impact text-white">{freezeSecondsLeft}</span>

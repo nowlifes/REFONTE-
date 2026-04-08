@@ -104,8 +104,8 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
             {language === 'fr' ? cfg.desc.fr : cfg.desc.en}
           </p>
 
-          {/* Instagram shortcut for partner cells */}
-          {isPartner && partnerHandle && (
+          {/* Instagram shortcut for partner cells (not for bar-follow/bar-story challenges) */}
+          {isPartner && partnerHandle && cell.id !== 2 && cell.id !== 4 && (
             <button
               onClick={openInstagram}
               className="w-full mb-3 flex items-center justify-center gap-2 py-3 rounded-[14px] border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
