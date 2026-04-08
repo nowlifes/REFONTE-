@@ -26,6 +26,8 @@ import BarTransitionOverlay from './components/BarTransitionOverlay';
 import NicknamePage from './components/NicknamePage';
 import MasterPage from './components/MasterPage';
 import GamePage from './components/GamePage';
+import GameRoom from './components/GameRoom';
+import GameOverPage from './components/GameOverPage';
 
 const RotateDeviceOverlay = () => {
     const { t } = useLanguage();
@@ -49,7 +51,7 @@ const App: React.FC = () => {
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition } = useEventSession();
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId } = useEventSession();
   const { language } = useLanguage();
 
   // Countdown timer + trigger overlay at T=0
@@ -297,19 +299,28 @@ const App: React.FC = () => {
 
   // --- ROUTING ---
 
+  // Game over: shown when useSessionGuard kicks a player (stale/closed session)
+  if (s.view === AppView.GAME_OVER) {
+    return <GameOverPage />;
+  }
+
   return (
     <>
       {showStartAnimation && <SessionStartOverlay />}
       {showEndOverlay && (
-         <SessionEndOverlay 
-            nickname={s.nickname} 
+         <SessionEndOverlay
+            nickname={s.nickname}
             onViewReport={() => {
                setShowEndOverlay(false);
                a.setView(AppView.MISSION_REPORT);
-            }} 
+            }}
          />
       )}
-      
+
+      {/* GameRoom gates access for players who arrived via ?s=UUID QR code.
+          When no ?s= param is present it is a transparent no-op wrapper. */}
+      <GameRoom setView={a.setView}>
+
       {/* 1. NICKNAME PAGE */}
       {s.view === AppView.NICKNAME && (
          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
@@ -327,6 +338,7 @@ const App: React.FC = () => {
            clearBarTransition={clearBarTransition}
            transitionEndsAt={transitionEndsAt}
            nextBarName={nextBarName}
+           secureSessionId={secureSessionId}
            state={s}
            actions={a}
          />
@@ -420,6 +432,8 @@ const App: React.FC = () => {
             }}
          />
       )}
+
+      </GameRoom>{/* end GameRoom session guard */}
 
       {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
       {showHiddenLogin && (

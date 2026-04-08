@@ -8,6 +8,10 @@ export const useEventSession = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [transitionEndsAt, setTransitionEndsAt] = useState<number | null>(null);
   const [nextBarName, setNextBarName] = useState<string | null>(null);
+  // UUID for the current secure session (drives the QR code in MasterPage)
+  const [secureSessionId, setSecureSessionId] = useState<string | null>(
+    gameService.getCurrentSecureSessionId()
+  );
 
   const checkSession = useCallback(async () => {
     try {
@@ -65,8 +69,17 @@ export const useEventSession = () => {
   const setSessionActive = async (active: boolean) => {
     const previous = isSessionActive;
     try {
-      // Optimistic update
-      setIsSessionActive(active);
+      setIsSessionActive(active); // Optimistic update
+      if (!active) {
+        // Closing the session: kill all open secure sessions.
+        // Non-blocking if sessions table doesn't exist yet.
+        try {
+          await gameService.closeAllOpenSessions();
+        } catch (e) {
+          console.warn("[EventSession] closeAllOpenSessions failed:", e);
+        }
+        setSecureSessionId(null);
+      }
       await gameService.setSessionStatus(active);
     } catch (e) {
       console.error("Failed to update session status", e);
@@ -82,7 +95,8 @@ export const useEventSession = () => {
 
   const createNewSession = async () => {
     setIsSessionActive(false); // Optimistic close
-    await gameService.createNewSession();
+    const uuid = await gameService.createNewSession();
+    setSecureSessionId(uuid);
     setIsSessionActive(true); // Optimistic open
   };
 
@@ -97,5 +111,5 @@ export const useEventSession = () => {
     setNextBarName(null);
   };
 
-  return { isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition };
+  return { isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId };
 };

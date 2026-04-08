@@ -18,11 +18,13 @@ interface MasterPageProps {
   clearBarTransition: () => Promise<void>;
   transitionEndsAt: number | null;
   nextBarName: string | null;
+  /** UUID of the current secure session — drives the QR code URL */
+  secureSessionId: string | null;
   state: any;
   actions: any;
 }
 
-const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, state: s, actions: a }) => {
+const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, secureSessionId, state: s, actions: a }) => {
   const { t, language } = useLanguage();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showNewSessionConfirm, setShowNewSessionConfirm] = useState(false);
@@ -251,11 +253,30 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
               )}
             </div>
 
-            <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-4 border-[3px] border-black shadow-[4px_4px_0px_#FFD700]">
-              <QRCodeSVG value={MASTER_VALID_CODE} size={180} level="H" />
-            </div>
-            
-            <p className="text-[8px] font-impact text-black/40 uppercase tracking-widest italic">{t('show_master_code_desc')}</p>
+            {/* Session QR code — points to ?s=UUID, invalidated on each new session */}
+            {secureSessionId ? (
+              <>
+                <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-2 border-[3px] border-black shadow-[4px_4px_0px_#FFD700]">
+                  <QRCodeSVG
+                    value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
+                    size={180}
+                    level="H"
+                  />
+                </div>
+                <p className="text-[8px] font-impact text-black/40 uppercase tracking-widest italic mb-1">
+                  Scanne pour rejoindre
+                </p>
+                <p className="text-[7px] font-mono text-black/25 break-all px-2 select-all">
+                  ?s={secureSessionId.slice(0, 8)}…
+                </p>
+              </>
+            ) : (
+              <div className="bg-black/5 border-[2px] border-dashed border-black/20 rounded-xl p-6 mx-auto text-center mb-2">
+                <p className="font-impact text-[10px] uppercase tracking-widest text-black/40">
+                  Crée une nouvelle session<br />pour générer le QR code
+                </p>
+              </div>
+            )}
          </div>
          <div className="text-center mt-4">
            <span className="text-[9px] font-impact text-white/20 uppercase tracking-widest">V{APP_VERSION}</span>

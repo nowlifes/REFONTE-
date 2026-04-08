@@ -46,7 +46,8 @@ export enum AppView {
   GAME = 'GAME',                           // Step 4-6
   MASTER_DASHBOARD = 'MASTER_DASHBOARD',
   LEADERBOARD = 'LEADERBOARD',
-  MISSION_REPORT = 'MISSION_REPORT'
+  MISSION_REPORT = 'MISSION_REPORT',
+  GAME_OVER = 'GAME_OVER'                  // Session closed / stale QR
 }
 
 export enum TutorialStep {

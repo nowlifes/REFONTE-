@@ -78,12 +78,25 @@ export const CHALLENGES_EN: ChallengeDef[] = [
 export const INITIAL_CHALLENGES = CHALLENGES_FR;
 
 export const AVATAR_SEEDS = [
-  'PartyKing', 'BeerQueen', 'Jester', 'HappyHour', 
-  'Sparkle', 'Ace', 'Cheers', 'Martini', 
-  'Gentleman', 'Target', 'Yolo', 'Festive', 
-  'Wolf', 'Eagle', 'Dragon', 'Lion', 
-  'Cocktail', 'Wine', 'EightBall', 'Lucky',
-  'Bingo', 'Winner', 'Star', 'Legend'
+  // — Héros médiévaux (nouveau) —
+  'Knight',    'Wizard',    'Archer',    'Viking',
+  // — Créatures & légendes —
+  'Dragon',    'Wolf',      'Eagle',     'Lion',
+  // — Ombre & mystère (nouveau) —
+  'Pirate',    'Vampire',   'Ninja',     'Rogue',
+  // — Magie & savoir (nouveau) —
+  'Oracle',    'Alchemist', 'Trickster', 'Bard',
+  // — Icônes du jeu (original) —
+  'PartyKing', 'Jester',    'Legend',    'Winner',
+  'Bingo',     'Lucky',     'Ace',       'Target',
+  // — Festif & bar (original) —
+  'BeerQueen', 'Cheers',    'Cocktail',  'Martini',
+  'Wine',      'HappyHour', 'Festive',   'Gentleman',
+  // — Autres originaux —
+  'Diamond',   'Star',      'Sparkle',   'Yolo',
+  'EightBall',
+  // — Feu & aventure (nouveau) —
+  'Fire',      'Explorer',  'Sailor',    'Phoenix',
 ];
 
 export const COUNTRIES = [
@@ -103,19 +116,35 @@ export const COUNTRIES = [
 ];
 
 export const ADULT_EMOJI_MAP: Record<string, string> = {
-  'PartyKing': '👑',    'BeerQueen': '🥂', 
-  'HappyHour': '🥃',    'Cheers': '🍻', 
-  'Martini': '🍸',      'Festive': '🍾',
-  'Cocktail': '🍹',     'Wine': '🍷',
-  'Jester': '🃏',       'Lucky': '🎲', 
-  'Bingo': '🎰',        'Winner': '🏆', 
-  'Ace': '♠️',          'EightBall': '🎱',
-  'Target': '🎯',       'Diamond': '💎',
-  'Yolo': '🕶️',         'Sparkle': '✨',
-  'Gentleman': '🎩',    'Star': '🌟',
-  'Fire': '🔥',         'Legend': '🛡️',
-  'Wolf': '🐺',         'Eagle': '🦅', 
-  'Dragon': '🐉',       'Lion': '🦁', 
+  // — Héros médiévaux (nouveau) —
+  'Knight':    '⚔️',    'Wizard':    '🧙',
+  'Archer':    '🏹',    'Viking':    '🪖',
+  // — Créatures & légendes —
+  'Dragon':    '🐉',    'Wolf':      '🐺',
+  'Eagle':     '🦅',    'Lion':      '🦁',
+  // — Ombre & mystère (nouveau) —
+  'Pirate':    '🏴‍☠️',  'Vampire':   '🧛',
+  'Ninja':     '🥷',    'Rogue':     '🗡️',
+  // — Magie & savoir (nouveau) —
+  'Oracle':    '🔮',    'Alchemist': '⚗️',
+  'Trickster': '🎭',    'Bard':      '🎵',
+  // — Icônes du jeu (original) —
+  'PartyKing': '👑',    'Jester':    '🃏',
+  'Legend':    '🛡️',    'Winner':    '🏆',
+  'Bingo':     '🎰',    'Lucky':     '🎲',
+  'Ace':       '♠️',    'Target':    '🎯',
+  // — Festif & bar (original) —
+  'BeerQueen': '🥂',    'Cheers':    '🍻',
+  'Cocktail':  '🍹',    'Martini':   '🍸',
+  'Wine':      '🍷',    'HappyHour': '🥃',
+  'Festive':   '🍾',    'Gentleman': '🎩',
+  // — Autres originaux —
+  'Diamond':   '💎',    'Star':      '🌟',
+  'Sparkle':   '✨',    'Yolo':      '🕶️',
+  'EightBall': '🎱',
+  // — Feu & aventure (nouveau) —
+  'Fire':      '🔥',    'Explorer':  '🗺️',
+  'Sailor':    '⚓',    'Phoenix':   '🦚',
 };
 
 export const BADGE_CONFIG: Record<BadgeType, {

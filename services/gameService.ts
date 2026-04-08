@@ -276,17 +276,73 @@ class GameBackendService {
 
   // --- USER ROUTES ---
 
+  // --- SECURE SESSION MANAGEMENT ---
+
+  private readonly SECURE_SESSION_KEY = 'bingo_secure_session_id';
+
+  async createSecureSession(): Promise<string> {
+    if (!supabase) throw new Error("Backend not configured");
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert({ status: 'open' })
+      .select('id')
+      .single();
+    if (error) throw error;
+    localStorage.setItem(this.SECURE_SESSION_KEY, data.id);
+    return data.id;
+  }
+
+  async closeSecureSession(sessionId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('sessions')
+      .update({ status: 'closed' })
+      .eq('id', sessionId);
+    if (error) throw error;
+    localStorage.removeItem(this.SECURE_SESSION_KEY);
+  }
+
+  async validateSecureSession(sessionId: string): Promise<boolean> {
+    if (!supabase) return false;
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('status')
+        .eq('id', sessionId)
+        .single();
+      if (error || !data) return false;
+      return data.status === 'open';
+    } catch {
+      return false;
+    }
+  }
+
+  getCurrentSecureSessionId(): string | null {
+    return localStorage.getItem(this.SECURE_SESSION_KEY);
+  }
+
+  // --- PLAYER CREATION ---
+
   async createUser(nickname: string, avatarId: string, country: string): Promise<UserProfile> {
     if (!supabase) throw new Error("Backend not configured");
     const emojiChar = ADULT_EMOJI_MAP[avatarId] || '🎲';
     const prefixedNickname = `[${country}] ${nickname}`;
 
+    // Layer 2 — guard before DB insert: re-validate session is still open
+    const sessionUUID = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('s')
+      : null;
+    if (sessionUUID) {
+      const valid = await this.validateSecureSession(sessionUUID);
+      if (!valid) throw new Error("La session est fermée. Scanne un nouveau QR code pour rejoindre.");
+    }
+
+    const insertData: Record<string, string> = { pseudo: prefixedNickname, emoji: emojiChar };
+    if (sessionUUID) insertData.session_id = sessionUUID;
+
     const { data, error } = await supabase
       .from('players')
-      .insert({
-        pseudo: prefixedNickname,
-        emoji: emojiChar
-      })
+      .insert(insertData)
       .select('id, pseudo, emoji')
       .single();
 
@@ -799,19 +855,46 @@ class GameBackendService {
     };
   }
 
-  async createNewSession(): Promise<void> {
+  async closeAllOpenSessions(): Promise<void> {
     if (!supabase) return;
     try {
-      console.log("[GameService] Creating new session...");
-      // 1. Reset everything (this also sets is_active to false)
-      await this.resetSession();
-      
-      // 2. Small delay to ensure DB consistency and Realtime propagation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Close ALL open sessions — any saved QR code / bookmarked URL becomes dead instantly
+      await supabase.from('sessions').update({ status: 'closed' }).eq('status', 'open');
+      localStorage.removeItem(this.SECURE_SESSION_KEY);
+    } catch (e) {
+      // Table may not exist yet (migration not applied) — non-blocking
+      console.warn("[GameService] closeAllOpenSessions skipped (sessions table may not exist):", e);
+    }
+  }
 
-      // 3. Open the new session
+  async createNewSession(): Promise<string> {
+    if (!supabase) return '';
+    try {
+      console.log("[GameService] Creating new session...");
+
+      // 1. Kill all existing open sessions — triggers realtime kick for connected players.
+      //    Non-blocking: runs silently if sessions table doesn't exist yet.
+      await this.closeAllOpenSessions();
+
+      // 2. Reset game data (players, scores, etc.)
+      await this.resetSession();
+
+      // 3. Small delay for DB consistency and Realtime propagation
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // 4. Create the new secure session row → fresh UUID → new QR code.
+      //    Non-blocking: if sessions table doesn't exist, session still opens normally.
+      let secureSessionId = '';
+      try {
+        secureSessionId = await this.createSecureSession();
+      } catch (e) {
+        console.warn("[GameService] createSecureSession skipped (run SQL migration to enable QR security):", e);
+      }
+
+      // 5. Open the global event session (existing on/off switch) — always runs
       await this.setSessionStatus(true);
-      console.log("[GameService] New session created and opened.");
+      console.log("[GameService] New session created. UUID:", secureSessionId || '(no secure session)');
+      return secureSessionId;
     } catch (e) {
       console.error("[GameService] Failed to create new session", e);
       throw e;

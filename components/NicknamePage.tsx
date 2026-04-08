@@ -142,15 +142,49 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
                    </div>
                 </div>
 
-                {/* Grid Selector for Avatars */}
+                {/* Grid Selector for Avatars — Premium */}
                 {selectorMode === 'AVATAR' && (
-                  <div className="mb-6 w-full animate-in fade-in zoom-in-95">
-                    <div className="bg-black/10 border-2 border-black rounded-xl p-2 grid grid-cols-4 gap-2 max-h-40 overflow-y-auto no-scrollbar">
-                        {AVATAR_SEEDS.map((seed) => (
-                        <div key={seed} onClick={() => { a.setAvatarId(seed); setSelectorMode('NONE'); }} className={`cursor-pointer transition-all hover:scale-105 active:scale-90 ${s.avatarId === seed ? 'ring-2 ring-black rounded-lg bg-white/20' : ''}`}>
-                          <Avatar seed={seed} size={40} className="border border-black/10" />
-                        </div>
-                        ))}
+                  <div className="mb-4 w-full animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <span className="font-impact text-[9px] uppercase tracking-[0.18em] text-black/50">
+                        ⚔️ CHOISIR TON HÉROS
+                      </span>
+                      <span className="font-impact text-[8px] uppercase tracking-wider text-black/30">
+                        {AVATAR_SEEDS.length} CLASSES
+                      </span>
+                    </div>
+
+                    {/* Grid */}
+                    <div className="bg-black/10 border-[2.5px] border-black rounded-xl p-2 grid grid-cols-4 gap-2 max-h-56 overflow-y-auto no-scrollbar">
+                      {AVATAR_SEEDS.map((seed) => {
+                        const isSelected = s.avatarId === seed;
+                        return (
+                          <button
+                            key={seed}
+                            type="button"
+                            onClick={() => { a.setAvatarId(seed); setSelectorMode('NONE'); }}
+                            className={`relative flex flex-col items-center gap-1 p-1.5 rounded-xl transition-all duration-150 active:scale-90 ${
+                              isSelected
+                                ? 'bg-white border-[2.5px] border-black shadow-[2px_2px_0px_black] scale-[1.06]'
+                                : 'bg-white/30 border-[2px] border-transparent hover:bg-white/50 hover:border-black/30'
+                            }`}
+                          >
+                            {/* Checkmark badge */}
+                            {isSelected && (
+                              <div className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] bg-black rounded-full flex items-center justify-center border-[2px] border-white z-10">
+                                <span className="text-[#FFD700] text-[9px] font-black leading-none">✓</span>
+                              </div>
+                            )}
+
+                            <Avatar seed={seed} size={52} />
+
+                            <span className={`font-impact text-[7px] uppercase tracking-tight leading-none w-full text-center truncate ${isSelected ? 'text-black' : 'text-black/50'}`}>
+                              {seed}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
