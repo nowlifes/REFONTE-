@@ -410,6 +410,11 @@ export const useBingoGame = () => {
       }
     },
 
+    // Déblocage anticipé côté client (Ice Block, Tiny Target, Blob complétés avant expiration)
+    clearFreezeLocally: () => {
+      setFrozenUntil(undefined);
+    },
+
        resetGame: () => {
       setGameSession(null);
       setUser(null);

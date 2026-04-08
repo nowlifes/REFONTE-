@@ -2,14 +2,14 @@ import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface IceBlockOverlayProps {
-  /** Seconds remaining on the taunt */
   secondsLeft: number;
+  onUnlocked?: () => void;
 }
 
 const TOTAL_BLOCKS = 12;
 const TAPS_PER_BLOCK = 3;
 
-const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft }) => {
+const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft, onUnlocked }) => {
   const { language } = useLanguage();
   // Each block tracks how many times it's been tapped
   const [taps, setTaps] = useState<number[]>(Array(TOTAL_BLOCKS).fill(0));
@@ -19,9 +19,13 @@ const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft }) => {
     setTaps(prev => {
       const next = [...prev];
       next[index] = Math.min(next[index] + 1, TAPS_PER_BLOCK);
+      // All melted → unlock immediately
+      if (next.every(t => t >= TAPS_PER_BLOCK)) {
+        setTimeout(() => onUnlocked?.(), 400);
+      }
       return next;
     });
-  }, []);
+  }, [onUnlocked]);
 
   const melted = taps.filter(t => t >= TAPS_PER_BLOCK).length;
   const pct = Math.round((melted / TOTAL_BLOCKS) * 100);

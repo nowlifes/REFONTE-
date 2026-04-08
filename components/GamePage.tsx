@@ -224,11 +224,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {s.isFrozen && freezeSecondsLeft > 0 && (() => {
         switch (s.tauntType) {
           case TauntType.ICE_BLOCK:
-            return <IceBlockOverlay secondsLeft={freezeSecondsLeft} />;
+            return <IceBlockOverlay secondsLeft={freezeSecondsLeft} onUnlocked={a.clearFreezeLocally} />;
           case TauntType.TINY_TARGET:
-            return <TinyTargetOverlay secondsLeft={freezeSecondsLeft} onCaught={() => {/* le timer expire tout seul */}} />;
+            return <TinyTargetOverlay secondsLeft={freezeSecondsLeft} onCaught={a.clearFreezeLocally} />;
           case TauntType.BLOB:
-            return <BlobOverlay secondsLeft={freezeSecondsLeft} onCleaned={() => {/* le timer expire tout seul */}} />;
+            return <BlobOverlay secondsLeft={freezeSecondsLeft} onCleaned={a.clearFreezeLocally} />;
           default: // FREEZE
             return (
               <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">

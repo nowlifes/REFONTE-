@@ -315,8 +315,8 @@ export const TRANSLATIONS = {
     invite_friends: "INVITE TES POTES",
 
     // Taunts / Tones
-    taunts_section_title: "TONES",
-    taunts_section_desc: "2 tones par session. Choisis un type dans le classement et envoie-le.",
+    taunts_section_title: "TAUNTS",
+    taunts_section_desc: "2 taunts par session. Choisis un type dans le classement et envoie-le.",
     taunt_freeze_title: "Freeze",
     taunt_freeze_desc: "La cible est bloquée 30 secondes. Elle ne peut rien valider.",
     taunt_ice_title: "Ice Block",

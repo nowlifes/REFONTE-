@@ -17,13 +17,14 @@ const BlobOverlay: React.FC<BlobOverlayProps> = ({ secondsLeft, onCleaned }) => 
   const totalPixels = useRef(0);
 
   useEffect(() => {
+    const draw = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    canvas.width = canvas.offsetWidth || window.innerWidth;
+    canvas.height = canvas.offsetHeight || Math.round(window.innerHeight * 0.55);
     totalPixels.current = canvas.width * canvas.height;
 
     // Draw blobs
@@ -56,6 +57,9 @@ const BlobOverlay: React.FC<BlobOverlayProps> = ({ secondsLeft, onCleaned }) => 
       ctx.fillText(s, canvas.width * (0.25 + i * 0.18), canvas.height * (0.38 + (i % 2) * 0.18));
     });
     ctx.globalAlpha = 1;
+    };
+    // Wait one frame to ensure the canvas has its layout dimensions
+    requestAnimationFrame(draw);
   }, []);
 
   const computePct = () => {
