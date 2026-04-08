@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import canvasConfetti from 'canvas-confetti';
-import { BingoCellData, ChallengeType, CellStatus, AppView, UserProfile, GameSession } from '../types';
+import { BingoCellData, ChallengeType, CellStatus, AppView, UserProfile, GameSession, TauntType } from '../types';
 import { CHALLENGES_EN, CHALLENGES_FR, INITIAL_JOKERS, SOUNDS } from '../constants';
 import { gameService } from '../services/gameService';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,6 +33,7 @@ export const useBingoGame = () => {
 
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
   const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
+  const [tauntType, setTauntType] = useState<TauntType>(TauntType.FREEZE);
 
   // --- SPOTLIGHT ---
   const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
@@ -129,6 +130,7 @@ export const useBingoGame = () => {
     const unsub = gameService.subscribeToGameUpdates(gameSession.id, (data) => {
       if (data.frozen_until) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
+        if (data.taunt_type) setTauntType(data.taunt_type as TauntType);
       }
       if (data.taunts_sent !== undefined) {
         setGameSession(prev => prev ? { ...prev, tauntsSent: data.taunts_sent } : prev);
@@ -429,7 +431,7 @@ export const useBingoGame = () => {
     state: {
       view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
-      badges, newBadge, gameSession, frozenUntil,
+      badges, newBadge, gameSession, frozenUntil, tauntType,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive

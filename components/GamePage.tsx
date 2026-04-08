@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trophy, Crown, Settings, Sparkles, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AppView, BingoCellData } from '../types';
+import { AppView, BingoCellData, TauntType } from '../types';
 import BingoCell from './BingoCell';
 import QRScanner from './QRScanner';
 import ValidationModal from './ValidationModal';
@@ -14,6 +14,9 @@ import NetworkStatus from './NetworkStatus';
 import BadgeNotification from './BadgeNotification';
 import ActivityFeed from './ActivityFeed';
 import ChallengeRevealSheet from './ChallengeRevealSheet';
+import IceBlockOverlay from './IceBlockOverlay';
+import TinyTargetOverlay from './TinyTargetOverlay';
+import BlobOverlay from './BlobOverlay';
 
 interface GamePageProps {
   state: any;
@@ -217,23 +220,34 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* FREEZE OVERLAY */}
-      {s.isFrozen && freezeSecondsLeft > 0 && (
-        <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
-            <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
-            <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
-              {language === 'fr' ? 'TAUNTED!' : 'TAUNTÉ !'}
-            </h2>
-            <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
-              {language === 'fr' ? 'A player froze you' : 'Un joueur t\'a figé'}
-            </p>
-            <div className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-full flex items-center justify-center mx-auto">
-              <span className="text-5xl font-impact text-white">{freezeSecondsLeft}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* TAUNT OVERLAYS — router selon tauntType */}
+      {s.isFrozen && freezeSecondsLeft > 0 && (() => {
+        switch (s.tauntType) {
+          case TauntType.ICE_BLOCK:
+            return <IceBlockOverlay secondsLeft={freezeSecondsLeft} />;
+          case TauntType.TINY_TARGET:
+            return <TinyTargetOverlay secondsLeft={freezeSecondsLeft} onCaught={() => {/* le timer expire tout seul */}} />;
+          case TauntType.BLOB:
+            return <BlobOverlay secondsLeft={freezeSecondsLeft} onCleaned={() => {/* le timer expire tout seul */}} />;
+          default: // FREEZE
+            return (
+              <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
+                <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
+                  <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
+                  <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
+                    {language === 'fr' ? 'TAUNTED!' : 'TAUNTÉ !'}
+                  </h2>
+                  <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
+                    {language === 'fr' ? 'A player froze you' : 'Un joueur t\'a figé'}
+                  </p>
+                  <div className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-5xl font-impact text-white">{freezeSecondsLeft}</span>
+                  </div>
+                </div>
+              </div>
+            );
+        }
+      })()}
 
       {/* Header compact */}
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">

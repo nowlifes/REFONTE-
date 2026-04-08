@@ -1,4 +1,11 @@
 
+export enum TauntType {
+  FREEZE     = 'FREEZE',      // Figé 30s — ne peut pas valider
+  ICE_BLOCK  = 'ICE_BLOCK',   // Cases recouvertes de glace à tapoter
+  TINY_TARGET = 'TINY_TARGET',// Bouton minuscule qui fuit
+  BLOB       = 'BLOB',        // Splash à nettoyer avant de valider
+}
+
 export enum ChallengeType {
   AUTO = 'AUTO',       // User clicks "I Did It"
   WITNESS = 'WITNESS', // User hands phone to a friend/stranger to confirm
@@ -92,6 +99,7 @@ export interface GameSession {
   jokers: number;
   tauntsSent: number;
   frozenUntil?: number;
+  tauntType?: TauntType;
 }
 
 export interface LeaderboardEntry {

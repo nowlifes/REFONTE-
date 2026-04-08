@@ -3,14 +3,21 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, RefreshCw, Crown, Users, Globe, Zap, Star } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { gameService } from '../services/gameService';
-import { LeaderboardEntry, NationLeaderboardEntry } from '../types';
+import { LeaderboardEntry, NationLeaderboardEntry, TauntType } from '../types';
+
+const TAUNT_OPTIONS: { type: TauntType; emoji: string; labelFr: string; labelEn: string }[] = [
+  { type: TauntType.FREEZE,      emoji: '🥶', labelFr: 'Freeze',      labelEn: 'Freeze' },
+  { type: TauntType.ICE_BLOCK,   emoji: '🧊', labelFr: 'Ice Block',   labelEn: 'Ice Block' },
+  { type: TauntType.TINY_TARGET, emoji: '🎯', labelFr: 'Tiny Target', labelEn: 'Tiny Target' },
+  { type: TauntType.BLOB,        emoji: '🤢', labelFr: 'Blob',        labelEn: 'Blob' },
+];
 
 interface LeaderboardProps {
   onBack: () => void;
   currentUserId?: string;
   currentGameId?: string;
   tauntsLeft?: number;
-  onTaunt?: (targetUserId: string) => Promise<void>;
+  onTaunt?: (targetUserId: string, tauntType: TauntType) => Promise<void>;
 }
 
 const FLAG: Record<string, string> = {
@@ -22,7 +29,8 @@ const RANK_MEDAL = ['🥇', '🥈', '🥉'];
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, currentGameId, tauntsLeft = 0, onTaunt }) => {
   const [tauntingId, setTauntingId] = useState<string | null>(null);
-  const { t } = useLanguage();
+  const [selectedTaunt, setSelectedTaunt] = useState<TauntType>(TauntType.FREEZE);
+  const { t, language } = useLanguage();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [nationEntries, setNationEntries] = useState<NationLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +92,33 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, curren
             </button>
           </div>
         </div>
+
+        {/* Taunt type picker — visible only when taunts are available */}
+        {onTaunt && tauntsLeft > 0 && (
+          <div className="px-4 pb-3 flex items-center gap-2">
+            <span className="font-impact text-[9px] uppercase tracking-widest text-black/40 shrink-0">
+              {language === 'fr' ? 'TYPE' : 'TYPE'}
+            </span>
+            <div className="flex gap-1.5 flex-1">
+              {TAUNT_OPTIONS.map(opt => (
+                <button
+                  key={opt.type}
+                  onClick={() => setSelectedTaunt(opt.type)}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl border-[2px] transition-all active:scale-95 ${
+                    selectedTaunt === opt.type
+                      ? 'bg-[#FF2E63] border-black shadow-[2px_2px_0px_black]'
+                      : 'bg-black/10 border-black/20'
+                  }`}
+                >
+                  <span className="text-base leading-none">{opt.emoji}</span>
+                  <span className={`font-impact text-[7px] uppercase tracking-tight leading-none ${selectedTaunt === opt.type ? 'text-white' : 'text-black/50'}`}>
+                    {language === 'fr' ? opt.labelFr : opt.labelEn}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-0 px-4 pb-0">
@@ -224,14 +259,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, curren
                           disabled={tauntsLeft === 0 || tauntingId === entry.userId}
                           onClick={async () => {
                             setTauntingId(entry.userId);
-                            try { await onTaunt(entry.userId); } finally { setTauntingId(null); }
+                            try { await onTaunt(entry.userId, selectedTaunt); } finally { setTauntingId(null); }
                           }}
                           className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border-2 border-black bg-[#FF2E63] text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={tauntsLeft === 0 ? 'Plus de taunts' : 'Figer ce joueur 30s'}
+                          title={tauntsLeft === 0 ? 'Plus de taunts' : `Envoyer ${selectedTaunt}`}
                         >
                           {tauntingId === entry.userId
                             ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            : <Zap className="w-3.5 h-3.5" fill="currentColor" />
+                            : <span className="text-sm leading-none">{TAUNT_OPTIONS.find(o => o.type === selectedTaunt)?.emoji ?? '⚡'}</span>
                           }
                         </button>
                       )}

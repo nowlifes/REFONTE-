@@ -339,8 +339,8 @@ const App: React.FC = () => {
            currentUserId={localStorage.getItem('bingo_user_id') || undefined}
            currentGameId={s.gameSession?.id}
            tauntsLeft={s.tauntsLeft}
-           onTaunt={s.gameSession?.id ? async (targetUserId) => {
-             await gameService.sendTaunt(s.gameSession!.id, targetUserId);
+           onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
+             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType);
            } : undefined}
          />
       )}

@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabaseClient';
-import { UserProfile, GameSession, BingoCellData, CellStatus, LeaderboardEntry } from '../types';
+import { UserProfile, GameSession, BingoCellData, CellStatus, LeaderboardEntry, TauntType } from '../types';
 import { ADULT_EMOJI_MAP } from '../constants';
 
 // Helper to shuffle array (Fisher-Yates)
@@ -880,7 +880,7 @@ async resetSession(): Promise<void> {
     }
   }
 
-  async sendTaunt(senderGameId: string, targetPlayerId: string): Promise<void> {
+  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE): Promise<void> {
     if (!supabase) return;
 
     // Find target's active game
@@ -895,10 +895,10 @@ async resetSession(): Promise<void> {
 
     const frozenUntil = new Date(Date.now() + 30000).toISOString();
 
-    // Freeze target
+    // Apply taunt — always set frozen_until + taunt_type so realtime fires once
     await supabase
       .from('games')
-      .update({ frozen_until: frozenUntil })
+      .update({ frozen_until: frozenUntil, taunt_type: tauntType })
       .eq('id', targetGame.id);
 
     // Increment sender's taunt count
@@ -949,6 +949,7 @@ async resetSession(): Promise<void> {
       jokers: Math.max(0, 2 - (data.jokers_used || 0)),
       tauntsSent: data.taunts_sent || 0,
       frozenUntil: data.frozen_until ? new Date(data.frozen_until).getTime() : undefined,
+      tauntType: (data.taunt_type as TauntType) || TauntType.FREEZE,
       startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
       lastUpdated: Date.now()
     };
