@@ -354,11 +354,17 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <Sparkles size={11} className={s.jokers > 0 ? 'animate-pulse' : ''} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">{t('jokers')} : {s.jokers}</span>
         </div>
-        {/* Taunt credits */}
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63]' : 'bg-black/80 border-white/5 text-white/10'}`}>
+        {/* Taunt credits — tap to go to leaderboard */}
+        <button
+          onClick={() => a.setView(AppView.LEADERBOARD)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all active:scale-95 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63] animate-pulse' : 'bg-black/80 border-white/5 text-white/10'}`}
+        >
           <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? '' : 'opacity-30'} />
-          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">TAUNTS : {s.tauntsLeft}</span>
-        </div>
+          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
+            TAUNTS : {s.tauntsLeft}
+            {s.tauntsLeft > 0 && <span className="ml-1 opacity-60">→</span>}
+          </span>
+        </button>
       </div>
 
       {/* Footer Nav */}

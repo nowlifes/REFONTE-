@@ -169,6 +169,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, curren
                         <div className="bg-black px-2 py-0.5 rounded max-w-full">
                           <span className="text-[9px] font-impact uppercase text-white truncate block max-w-[70px] text-center">{top3[1].pseudo}</span>
                         </div>
+                        {!top3[1].isCurrentUser && onTaunt && tauntsLeft > 0 && (
+                          <button
+                            disabled={tauntingId === top3[1].userId}
+                            onClick={async () => { setTauntingId(top3[1].userId); try { await onTaunt(top3[1].userId, selectedTaunt); } finally { setTauntingId(null); } }}
+                            className="mt-1 w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-[#FF2E63] shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-30"
+                          >
+                            {tauntingId === top3[1].userId ? <RefreshCw className="w-3 h-3 animate-spin text-white" /> : <span className="text-xs">{TAUNT_OPTIONS.find(o => o.type === selectedTaunt)?.emoji ?? '⚡'}</span>}
+                          </button>
+                        )}
                       </div>
                     ) : <div className="flex-1" />}
 
@@ -188,6 +197,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, curren
                         <div className="bg-white border-2 border-black px-2 py-0.5 rounded max-w-full">
                           <span className="text-[10px] font-impact uppercase text-black truncate block max-w-[80px] text-center">{top3[0].pseudo}</span>
                         </div>
+                        {!top3[0].isCurrentUser && onTaunt && tauntsLeft > 0 && (
+                          <button
+                            disabled={tauntingId === top3[0].userId}
+                            onClick={async () => { setTauntingId(top3[0].userId); try { await onTaunt(top3[0].userId, selectedTaunt); } finally { setTauntingId(null); } }}
+                            className="mt-1 w-9 h-9 flex items-center justify-center rounded-xl border-2 border-black bg-[#FF2E63] shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-30"
+                          >
+                            {tauntingId === top3[0].userId ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" /> : <span className="text-sm">{TAUNT_OPTIONS.find(o => o.type === selectedTaunt)?.emoji ?? '⚡'}</span>}
+                          </button>
+                        )}
                       </div>
                     )}
 
@@ -206,6 +224,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onBack, currentUserId, curren
                         <div className="bg-black px-2 py-0.5 rounded max-w-full">
                           <span className="text-[9px] font-impact uppercase text-white truncate block max-w-[70px] text-center">{top3[2].pseudo}</span>
                         </div>
+                        {!top3[2].isCurrentUser && onTaunt && tauntsLeft > 0 && (
+                          <button
+                            disabled={tauntingId === top3[2].userId}
+                            onClick={async () => { setTauntingId(top3[2].userId); try { await onTaunt(top3[2].userId, selectedTaunt); } finally { setTauntingId(null); } }}
+                            className="mt-1 w-8 h-8 flex items-center justify-center rounded-xl border-2 border-black bg-[#FF2E63] shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-30"
+                          >
+                            {tauntingId === top3[2].userId ? <RefreshCw className="w-3 h-3 animate-spin text-white" /> : <span className="text-xs">{TAUNT_OPTIONS.find(o => o.type === selectedTaunt)?.emoji ?? '⚡'}</span>}
+                          </button>
+                        )}
                       </div>
                     ) : <div className="flex-1" />}
 
