@@ -96,6 +96,18 @@ export const TRANSLATIONS = {
     share: "SHARE",
     invite_friends: "INVITE YOUR CREW",
 
+    // Taunts / Tones
+    taunts_section_title: "TAUNTS",
+    taunts_section_desc: "2 taunts per session. Pick a tone from the leaderboard and send it.",
+    taunt_freeze_title: "Freeze",
+    taunt_freeze_desc: "Target is locked out for 30 seconds. Can't validate anything.",
+    taunt_ice_title: "Ice Block",
+    taunt_ice_desc: "Grid covered in ice. Tap each block to melt it before playing.",
+    taunt_tiny_title: "Tiny Target",
+    taunt_tiny_desc: "Validation button shrinks and runs away. Catch it 3 times to unlock.",
+    taunt_blob_title: "Blob",
+    taunt_blob_desc: "A mystery splash covers the screen. Wipe it off to play.",
+
     // Validation Modal
     social_feat: "Witness Challenge",
     solo_feat: "Solo Challenge",
@@ -301,6 +313,18 @@ export const TRANSLATIONS = {
     tap_close: "Touche pour fermer",
     share: "PARTAGER",
     invite_friends: "INVITE TES POTES",
+
+    // Taunts / Tones
+    taunts_section_title: "TONES",
+    taunts_section_desc: "2 tones par session. Choisis un type dans le classement et envoie-le.",
+    taunt_freeze_title: "Freeze",
+    taunt_freeze_desc: "La cible est bloquée 30 secondes. Elle ne peut rien valider.",
+    taunt_ice_title: "Ice Block",
+    taunt_ice_desc: "La grille se couvre de glace. Il faut tapoter chaque bloc pour le faire fondre.",
+    taunt_tiny_title: "Tiny Target",
+    taunt_tiny_desc: "Le bouton de validation rétrécit et se sauve. Il faut l'attraper 3 fois.",
+    taunt_blob_title: "Blob",
+    taunt_blob_desc: "Une éclaboussure mystérieuse envahit l'écran. Il faut la frotter pour jouer.",
 
     // Validation Modal
     social_feat: "Défi Témoin",

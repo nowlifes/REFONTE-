@@ -30,7 +30,8 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
           </h2>
         </div>
 
-        <div className="p-6 space-y-5 bg-white overflow-y-auto no-scrollbar max-h-[50vh]">
+        <div className="p-6 space-y-5 bg-white overflow-y-auto no-scrollbar max-h-[55vh]">
+            {/* Challenge modes */}
             <div className="bg-[#00FF9D] border-[4px] border-black rounded-3xl p-5 flex items-center gap-5 shadow-[6px_6px_0px_black] transition-all">
                 <div className="bg-white p-3 rounded-2xl border-2 border-black">
                   <HandMetal className="w-8 h-8 text-black shrink-0" strokeWidth={3} />
@@ -59,6 +60,31 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
                     <h3 className="font-impact text-base uppercase italic">{t('mode_master_title')}</h3>
                     <p className="text-black/60 text-[10px] font-impact uppercase leading-tight tracking-tight mt-1">{t('mode_master_desc')}</p>
                 </div>
+            </div>
+
+            {/* Taunts section */}
+            <div className="pt-2">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 h-[2px] bg-black/10 rounded-full" />
+                <span className="font-impact text-[11px] uppercase tracking-widest text-black/30">{t('taunts_section_title')}</span>
+                <div className="flex-1 h-[2px] bg-black/10 rounded-full" />
+              </div>
+              <p className="text-center text-black/40 font-impact uppercase text-[9px] tracking-widest mb-3">{t('taunts_section_desc')}</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { emoji: '🥶', titleKey: 'taunt_freeze_title', descKey: 'taunt_freeze_desc', bg: 'bg-[#93C5FD]' },
+                  { emoji: '🧊', titleKey: 'taunt_ice_title',    descKey: 'taunt_ice_desc',    bg: 'bg-[#BAE6FD]' },
+                  { emoji: '🎯', titleKey: 'taunt_tiny_title',   descKey: 'taunt_tiny_desc',   bg: 'bg-[#FCA5A5]' },
+                  { emoji: '🤢', titleKey: 'taunt_blob_title',   descKey: 'taunt_blob_desc',   bg: 'bg-[#86EFAC]' },
+                ] as const).map(({ emoji, titleKey, descKey, bg }) => (
+                  <div key={titleKey} className={`${bg} border-[3px] border-black rounded-2xl p-3 shadow-[4px_4px_0px_black]`}>
+                    <span className="text-2xl block mb-1">{emoji}</span>
+                    <h4 className="font-impact text-black text-sm uppercase italic leading-none">{t(titleKey)}</h4>
+                    <p className="text-black/60 text-[9px] font-impact uppercase leading-tight tracking-tight mt-1">{t(descKey)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
         </div>
 
