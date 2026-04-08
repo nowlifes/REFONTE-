@@ -45,6 +45,9 @@ export const useBingoGame = () => {
   const validationTimestamps = useRef<number[]>([]);
   const [comboActive, setComboActive] = useState(false);
 
+  // --- BONUS JOKER NOTIFICATION ---
+  const [bonusJokerActive, setBonusJokerActive] = useState(false);
+
   // Badge System
   const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
 
@@ -328,6 +331,10 @@ export const useBingoGame = () => {
           setSpotlightEndsAt(null);
           if (navigator.vibrate) navigator.vibrate([50, 50, 200]);
           canvasConfetti({ particleCount: 80, spread: 120, origin: { y: 0.5 }, colors: ['#FFD700', '#FFFFFF', '#FF2D6A'] });
+          // Persist + notify
+          setBonusJokerActive(true);
+          setTimeout(() => setBonusJokerActive(false), 2500);
+          if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
         }
 
         // COMBO SYSTEM: 3 validations in 15 min = +1 joker
@@ -340,6 +347,10 @@ export const useBingoGame = () => {
           setComboActive(true);
           setTimeout(() => setComboActive(false), 3500);
           if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
+          // Persist + notify
+          setBonusJokerActive(true);
+          setTimeout(() => setBonusJokerActive(false), 2500);
+          if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
         }
 
         // Optimistic UI Update
@@ -439,7 +450,7 @@ export const useBingoGame = () => {
       badges, newBadge, gameSession, frozenUntil, tauntType,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0)),
-      spotlightCellId, spotlightEndsAt, comboActive
+      spotlightCellId, spotlightEndsAt, comboActive, bonusJokerActive
     },
     actions
   };

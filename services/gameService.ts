@@ -379,7 +379,7 @@ class GameBackendService {
         started_at: new Date().toISOString(),
         jokers_used: 0
       })
-      .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used')
+      .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
       .single();
 
     if (error) throw error;
@@ -397,7 +397,7 @@ class GameBackendService {
     try {
         const { data, error } = await supabase
         .from('games')
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
         .eq('player_id', userId)
         .eq('status', 'ACTIVE')
         .order('started_at', { ascending: false }) 
@@ -508,7 +508,7 @@ class GameBackendService {
             score: newScore
         })
         .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
         .single();
 
         if (updateError) throw updateError;
@@ -594,7 +594,7 @@ class GameBackendService {
             jokers_used: jokersUsed + 1
         })
         .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
         .single();
 
         if (updateError) throw updateError;
@@ -880,6 +880,11 @@ async resetSession(): Promise<void> {
     }
   }
 
+  async awardBonusJoker(gameId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.rpc('award_bonus_joker', { game_id: gameId });
+  }
+
   async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE): Promise<void> {
     if (!supabase) return;
 
@@ -946,7 +951,7 @@ async resetSession(): Promise<void> {
       grid,
       status: data.status,
       score: data.score || 0,
-      jokers: Math.max(0, 2 - (data.jokers_used || 0)),
+      jokers: Math.max(0, 2 - (data.jokers_used || 0) + (data.jokers_bonus || 0)),
       tauntsSent: data.taunts_sent || 0,
       frozenUntil: data.frozen_until ? new Date(data.frozen_until).getTime() : undefined,
       tauntType: (data.taunt_type as TauntType) || TauntType.FREEZE,

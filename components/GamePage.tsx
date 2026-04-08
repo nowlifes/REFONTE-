@@ -190,7 +190,20 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <span className="text-white text-2xl">🔥</span>
             <div className="flex flex-col leading-none">
               <span className="font-impact text-white uppercase text-xl tracking-tight">COMBO !</span>
-              <span className="font-impact text-white/70 uppercase text-[9px] tracking-widest">+1 joker gagné</span>
+              <span className="font-impact text-white/70 uppercase text-[9px] tracking-widest">{language === 'fr' ? '+1 joker gagné' : '+1 joker earned'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* +1 JOKER banner (spotlight bonus) */}
+      {s.bonusJokerActive && !s.comboActive && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2">
+            <span className="text-2xl">✨</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-impact text-black uppercase text-xl tracking-tight">+1 JOKER !</span>
+              <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">{language === 'fr' ? 'Défi spotlight validé' : 'Spotlight challenge cleared'}</span>
             </div>
           </div>
         </div>
@@ -334,12 +347,18 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       </main>
 
-      {/* Jokers */}
-      <div className="shrink-0 py-2 flex justify-center z-40">
-           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.jokers > 0 ? 'bg-black/60 border-[#00F5A0]/40 text-[#00F5A0]' : 'bg-black/80 border-white/5 text-white/10'}`}>
-              <Sparkles size={12} className={s.jokers > 0 ? 'animate-pulse' : ''} />
-              <span className="text-[9px] font-impact uppercase tracking-widest leading-none">{t('jokers')} : {s.jokers}</span>
-           </div>
+      {/* Jokers — two counters: swap + taunt */}
+      <div className="shrink-0 py-2 flex justify-center gap-3 z-40">
+        {/* Swap jokers */}
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.jokers > 0 ? 'bg-black/60 border-[#00F5A0]/40 text-[#00F5A0]' : 'bg-black/80 border-white/5 text-white/10'}`}>
+          <Sparkles size={11} className={s.jokers > 0 ? 'animate-pulse' : ''} />
+          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">{t('jokers')} : {s.jokers}</span>
+        </div>
+        {/* Taunt credits */}
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63]' : 'bg-black/80 border-white/5 text-white/10'}`}>
+          <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? '' : 'opacity-30'} />
+          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">TAUNTS : {s.tauntsLeft}</span>
+        </div>
       </div>
 
       {/* Footer Nav */}

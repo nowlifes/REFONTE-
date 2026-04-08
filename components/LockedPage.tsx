@@ -1,7 +1,6 @@
 
 import React, { useState, useRef } from 'react';
 import { RefreshCw, Lock } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
 import ShieldLogo from './ShieldLogo';
 
 interface LockedPageProps {
@@ -13,7 +12,6 @@ interface LockedPageProps {
 }
 
 const LockedPage: React.FC<LockedPageProps> = ({ onMasterAccess, onRefresh }) => {
-  const { t } = useLanguage();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Hidden master access — long press 3s on the lock icon
@@ -82,7 +80,7 @@ const LockedPage: React.FC<LockedPageProps> = ({ onMasterAccess, onRefresh }) =>
         )}
       </div>
 
-      {/* Centre — message principal */}
+      {/* Centre — main message */}
       <div className="flex flex-col items-center gap-8 text-center">
 
         {/* Logo */}
@@ -97,50 +95,50 @@ const LockedPage: React.FC<LockedPageProps> = ({ onMasterAccess, onRefresh }) =>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FFD700]" />
           </span>
           <span className="text-[10px] font-impact uppercase tracking-widest text-white/60">
-            En attente de la session
+            Waiting for session to start
           </span>
         </div>
 
-        {/* Titre */}
+        {/* Title */}
         <div className="space-y-3">
           <h1 className="text-5xl font-impact uppercase tracking-tighter text-white italic leading-none">
             Bingo<br />
             <span className="text-[#FFD700]">Crawl</span>
           </h1>
           <p className="text-white/40 text-sm font-impact uppercase tracking-widest">
-            La soirée n'a pas encore commencé
+            The night hasn't started yet
           </p>
         </div>
 
-        {/* Card info joueur */}
+        {/* Info card */}
         <div className="w-full max-w-xs bg-white border-[4px] border-black rounded-2xl p-5 shadow-[6px_6px_0px_black] text-left">
-          <p className="text-[9px] font-impact uppercase tracking-widest text-black/40 mb-2">Que faire ?</p>
+          <p className="text-[9px] font-impact uppercase tracking-widest text-black/40 mb-2">What to do?</p>
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 bg-[#FFD700] border-2 border-black rounded-lg flex items-center justify-center shrink-0 font-impact text-xs font-bold">1</span>
-              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">Attends que le Maître du Jeu ouvre la session</span>
+              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">Wait for the Game Master to open the session</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 bg-[#00FF9D] border-2 border-black rounded-lg flex items-center justify-center shrink-0 font-impact text-xs font-bold">2</span>
-              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">La page s'activera automatiquement</span>
+              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">This page will unlock automatically</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-6 h-6 bg-black border-2 border-black rounded-lg flex items-center justify-center shrink-0 font-impact text-xs font-bold text-white">3</span>
-              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">Crée ton profil et lance-toi !</span>
+              <span className="text-sm font-impact uppercase text-black leading-tight tracking-tight">Set up your profile and dive in!</span>
             </li>
           </ul>
         </div>
 
       </div>
 
-      {/* Bas — refresh discret */}
+      {/* Bottom — discreet refresh */}
       <button
         onClick={handleRefresh}
         disabled={isRefreshing}
         className="flex items-center gap-2 text-white/20 hover:text-white/40 transition-colors py-3 disabled:opacity-30"
       >
         <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-        <span className="text-[9px] font-impact uppercase tracking-widest">Actualiser</span>
+        <span className="text-[9px] font-impact uppercase tracking-widest">Refresh</span>
       </button>
 
     </div>
