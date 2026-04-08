@@ -51,7 +51,7 @@ const BlobOverlay: React.FC<BlobOverlayProps> = ({ secondsLeft, onCleaned }) => 
     ctx.font = `${canvas.width * 0.12}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const splats = ['🤢', '💦', '🫧', '🟢'];
+    const splats = ['💦', '💦', '🫧', '🟢'];
     splats.forEach((s, i) => {
       ctx.globalAlpha = 0.6;
       ctx.fillText(s, canvas.width * (0.25 + i * 0.18), canvas.height * (0.38 + (i % 2) * 0.18));
@@ -108,7 +108,7 @@ const BlobOverlay: React.FC<BlobOverlayProps> = ({ secondsLeft, onCleaned }) => 
     <div className="fixed inset-0 z-[150] bg-[#0A1629]/80 backdrop-blur-sm animate-in fade-in duration-200 flex flex-col">
       {/* Header */}
       <div className="pt-14 pb-2 text-center px-4 pointer-events-none">
-        <p className="text-4xl mb-1">🤢</p>
+        <p className="text-4xl mb-1">💦</p>
         <h2 className="text-3xl font-impact uppercase italic text-white tracking-tighter leading-none">
           {language === 'fr' ? 'NETTOIE ÇA !' : 'CLEAN IT UP!'}
         </h2>

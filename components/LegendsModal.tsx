@@ -76,7 +76,7 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
                   { emoji: '🥶', titleKey: 'taunt_freeze_title', descKey: 'taunt_freeze_desc', bg: 'bg-[#93C5FD]' },
                   { emoji: '🧊', titleKey: 'taunt_ice_title',    descKey: 'taunt_ice_desc',    bg: 'bg-[#BAE6FD]' },
                   { emoji: '🎯', titleKey: 'taunt_tiny_title',   descKey: 'taunt_tiny_desc',   bg: 'bg-[#FCA5A5]' },
-                  { emoji: '🤢', titleKey: 'taunt_blob_title',   descKey: 'taunt_blob_desc',   bg: 'bg-[#86EFAC]' },
+                  { emoji: '💦', titleKey: 'taunt_blob_title',   descKey: 'taunt_blob_desc',   bg: 'bg-[#86EFAC]' },
                 ] as const).map(({ emoji, titleKey, descKey, bg }) => (
                   <div key={titleKey} className={`${bg} border-[3px] border-black rounded-2xl p-3 shadow-[4px_4px_0px_black]`}>
                     <span className="text-2xl block mb-1">{emoji}</span>
