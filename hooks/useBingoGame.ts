@@ -90,6 +90,25 @@ export const useBingoGame = () => {
   useEffect(() => {
     const initApp = async () => {
       setIsLoading(true);
+
+      // Session freshness check: if the player arrives via a QR code (?s=UUID)
+      // and that UUID differs from the one they used last time, force a clean slate.
+      // This guarantees that scanning a new QR always starts a brand-new game.
+      const urlSessionId = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('s')
+        : null;
+      const storedToken = localStorage.getItem('bingo_session_token');
+
+      if (urlSessionId && storedToken !== urlSessionId) {
+        // New session detected via QR — wipe all local state
+        localStorage.removeItem('bingo_user_id');
+        localStorage.removeItem('bingo_last_session');
+        localStorage.setItem('bingo_session_token', urlSessionId);
+        setView(AppView.NICKNAME);
+        setIsLoading(false);
+        return;
+      }
+
       const savedUserId = localStorage.getItem('bingo_user_id');
       if (savedUserId) {
         try {
@@ -99,7 +118,7 @@ export const useBingoGame = () => {
             setNickname(foundUser.nickname);
             setAvatarId(foundUser.avatarId);
             setCountry(foundUser.country || 'FR');
-            
+
             // Resume Active Session
             const activeGame = await gameService.getActiveSession(savedUserId);
             if (activeGame) {
@@ -111,7 +130,10 @@ export const useBingoGame = () => {
                setView(AppView.NICKNAME);
             }
           } else {
+            // Player not found in DB (session was reset) — wipe local data
             localStorage.removeItem('bingo_user_id');
+            localStorage.removeItem('bingo_last_session');
+            localStorage.removeItem('bingo_session_token');
             setView(AppView.NICKNAME);
           }
         } catch (err) {
@@ -440,6 +462,7 @@ export const useBingoGame = () => {
       setView(AppView.NICKNAME);
       localStorage.removeItem('bingo_last_session');
       localStorage.removeItem('bingo_user_id');
+      localStorage.removeItem('bingo_session_token');
     }
   };
 

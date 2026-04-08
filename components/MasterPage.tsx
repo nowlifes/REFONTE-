@@ -9,6 +9,14 @@ import { gameService } from '../services/gameService';
 import { supabase } from '../lib/supabaseClient';
 import BackgroundParticles from './BackgroundParticles';
 
+// Derive a consistent accent color from the session UUID so the master can
+// visually confirm a new QR code was generated (color changes each session).
+const SESSION_COLORS = ['#FF2E63','#00F5A0','#FFD700','#93C5FD','#FF8C00','#A78BFA','#F472B6','#34D399'];
+function sessionColor(uuid: string): string {
+  const idx = parseInt(uuid.replace(/-/g, '').slice(0, 4), 16) % SESSION_COLORS.length;
+  return SESSION_COLORS[idx];
+}
+
 interface MasterPageProps {
   isSessionActive: boolean;
   setSessionActive: (active: boolean) => void;
@@ -287,18 +295,31 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
             </div>
 
             {/* Session QR code — points to ?s=UUID, invalidated on each new session */}
-            {secureSessionId ? (
+            {secureSessionId ? (() => {
+              const qrColor = sessionColor(secureSessionId);
+              return (
               <>
+                {/* Color badge — changes visually with each new session */}
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full border-[2px] border-black animate-pulse" style={{ backgroundColor: qrColor }} />
+                  <span className="font-impact text-[9px] uppercase tracking-[0.2em] text-black/40">
+                    Session active
+                  </span>
+                  <div className="w-3 h-3 rounded-full border-[2px] border-black animate-pulse" style={{ backgroundColor: qrColor }} />
+                </div>
+
                 {/* Preview + fullscreen button */}
                 <button
                   onClick={() => setShowQRFullscreen(true)}
                   className="relative mx-auto block group"
                 >
-                  <div className="bg-white p-3 rounded-xl mx-auto w-fit border-[3px] border-black shadow-[4px_4px_0px_#FFD700] transition-all group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-none">
+                  <div className="bg-white p-3 rounded-xl mx-auto w-fit border-[4px] transition-all group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-none"
+                    style={{ borderColor: qrColor, boxShadow: `4px 4px 0px black` }}>
                     <QRCodeSVG
                       value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
                       size={140}
                       level="H"
+                      fgColor="#000000"
                     />
                   </div>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 rounded-xl transition-all flex items-center justify-center">
@@ -312,7 +333,8 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                   Tap pour afficher en grand
                 </p>
               </>
-            ) : (
+              );
+            })() : (
               <div className="bg-black/5 border-[2px] border-dashed border-black/20 rounded-xl p-6 mx-auto text-center mb-2">
                 <p className="font-impact text-[10px] uppercase tracking-widest text-black/40">
                   Crée une nouvelle session<br />pour générer le QR code
@@ -444,8 +466,9 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
             {language === 'fr' ? 'Scanne pour rejoindre' : 'Scan to join'}
           </p>
 
-          {/* Giant QR */}
-          <div className="bg-white p-6 rounded-3xl border-[5px] border-[#FFD700] shadow-[10px_10px_0px_black] mb-8">
+          {/* Giant QR — bordered in session color so master sees it changed */}
+          <div className="bg-white p-6 rounded-3xl border-[6px] shadow-[10px_10px_0px_black] mb-8"
+            style={{ borderColor: sessionColor(secureSessionId) }}>
             <QRCodeSVG
               value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
               size={260}
