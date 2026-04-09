@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, X, HandMetal, Users, Crown, Gift, Wine, Grid3X3 } from 'lucide-react';
+import { ArrowRight, X, HandMetal, Users, Crown, Gift, Wine, Grid3X3, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface OnboardingCardsProps {
@@ -12,12 +12,42 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
   const { language } = useLanguage();
   const fr = language === 'fr';
 
+  // ── Mini taunt cards for the tutorial visual ──────────────────────────────
+  const TauntPreview: React.FC<{
+    emoji: string; label: string; desc: string; color: string; locked?: boolean; lockLabel?: string;
+  }> = ({ emoji, label, desc, color, locked, lockLabel }) => (
+    <div
+      className={`flex items-center gap-2.5 rounded-xl border-[2px] border-black px-3 py-2 ${locked ? 'opacity-45' : ''}`}
+      style={{ backgroundColor: locked ? '#0D1117' : color + '22', borderColor: locked ? '#1A2540' : 'black' }}
+    >
+      <div
+        className="w-8 h-8 rounded-lg border-[1.5px] border-black flex items-center justify-center text-base shrink-0"
+        style={{ backgroundColor: locked ? '#0A1629' : color + '44' }}
+      >
+        {locked ? '🔒' : emoji}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`font-impact text-[10px] uppercase italic tracking-tight leading-none truncate ${locked ? 'text-white/30' : 'text-white'}`}>
+          {label}
+        </p>
+        <p className={`font-impact text-[8px] uppercase tracking-widest mt-0.5 ${locked ? 'text-white/20' : 'text-white/40'}`}>
+          {locked ? lockLabel : desc}
+        </p>
+      </div>
+      {!locked && (
+        <div className="w-6 h-6 rounded-md border border-black flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>
+          <Zap className="w-3 h-3 text-black" fill="currentColor" strokeWidth={0} />
+        </div>
+      )}
+    </div>
+  );
+
   const CARDS = [
     {
       color: '#FFD700',
       textColor: 'text-black',
       icon: <Grid3X3 className="w-10 h-10 text-black" strokeWidth={2.5} />,
-      tag: '01 / 03',
+      tag: fr ? '01 / 04' : '01 / 04',
       title: fr ? '25 défis\nà relever' : '25 challenges\nto crush',
       body: fr
         ? "Ta grille contient 25 défis à compléter dans les bars de la soirée. Plus tu en coches, mieux c'est."
@@ -28,13 +58,13 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
             <div key={i} className={`h-5 rounded border-2 border-black ${i < 7 ? 'bg-black' : 'bg-white/60'}`} />
           ))}
         </div>
-      )
+      ),
     },
     {
       color: '#1A1A2E',
       textColor: 'text-white',
       icon: <HandMetal className="w-10 h-10 text-white" strokeWidth={2.5} />,
-      tag: '02 / 03',
+      tag: '02 / 04',
       title: fr ? '3 façons\nde valider' : '3 ways\nto validate',
       body: '',
       visual: (
@@ -69,13 +99,13 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
             </div>
           </div>
         </div>
-      )
+      ),
     },
     {
       color: '#0A1629',
       textColor: 'text-white',
       icon: <Gift className="w-10 h-10 text-[#FFD700]" strokeWidth={2.5} />,
-      tag: '03 / 03',
+      tag: '03 / 04',
       title: fr ? 'Fais des\nlignes. Gagne.' : 'Make lines.\nWin.',
       body: '',
       visual: (
@@ -114,27 +144,60 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
             </div>
           </div>
         </div>
-      )
-    }
+      ),
+    },
+    {
+      color: '#0A1629',
+      textColor: 'text-white',
+      icon: <Zap className="w-10 h-10 text-[#FF2D6A]" strokeWidth={2.5} fill="currentColor" />,
+      tag: '04 / 04',
+      title: fr ? 'Taunts\n⚡ L\'arsenal' : 'Taunts\n⚡ the arsenal',
+      body: fr
+        ? '3 armes dès le début. Toutes les 20 min, une nouvelle se débloque — unique pour toi.'
+        : '3 weapons from the start. Every 20 min, a new one unlocks — unique to you.',
+      visual: (
+        <div className="flex flex-col gap-2 w-full">
+          {/* 3 unlocked taunts */}
+          <TauntPreview emoji="🥶" label={fr ? 'Freeze' : 'Freeze'}           desc={fr ? 'Bloqué 35 sec' : 'Locked 35 sec'}        color="#93C5FD" />
+          <TauntPreview emoji="🧊" label={fr ? 'Ice Block' : 'Ice Block'}     desc={fr ? 'Grille sous la glace' : 'Grid under ice'} color="#7DD3FC" />
+          <TauntPreview emoji="🎯" label={fr ? 'Tiny Target' : 'Tiny Target'} desc={fr ? "Bouton qui s'échappe" : 'Button runs away'} color="#86EFAC" />
+
+          {/* Separator */}
+          <div className="flex items-center gap-2 my-1 px-1">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="font-impact text-white/20 text-[7px] uppercase tracking-widest">
+              {fr ? 'dans 20 min' : 'in 20 min'}
+            </span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          {/* 1 locked taunt */}
+          <TauntPreview
+            emoji="💦" label={fr ? 'Blob' : 'Blob'} desc="" color="#6EE7B7"
+            locked lockLabel={fr ? 'Disponible dans 20:00' : 'Available in 20:00'}
+          />
+        </div>
+      ),
+    },
   ];
 
-  const card = CARDS[current];
+  const card   = CARDS[current];
   const isLast = current === CARDS.length - 1;
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#0A1629] flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 overflow-hidden">
 
-      {/* Animated background blobs */}
+      {/* Background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[10%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#FFD700] opacity-20 blur-3xl animate-pulse" />
-        <div className="absolute bottom-[5%] right-[-25%] w-[70%] h-[70%] rounded-full bg-[#FF2E63] opacity-20 blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
-        <div className="absolute top-[40%] right-[10%] w-[40%] h-[40%] rounded-full bg-[#00FF9D] opacity-20 blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
+        <div className="absolute bottom-[5%] right-[-25%] w-[70%] h-[70%] rounded-full bg-[#FF2E63] opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-[40%] right-[10%] w-[40%] h-[40%] rounded-full bg-[#00FF9D] opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Skip */}
       <button
         onClick={onDone}
-        className="absolute top-6 right-6 flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border-2 border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all z-10"
+        className="absolute top-6 right-6 flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border-2 border-white/20 text-white/70 active:text-white active:border-white/40 transition-all z-10"
       >
         <X className="w-3.5 h-3.5" strokeWidth={3} />
         <span className="text-[10px] font-impact uppercase tracking-widest">
@@ -153,7 +216,9 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
           <span className={`text-[10px] font-impact uppercase tracking-widest font-[900] px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : 'bg-[#FFD700] text-black'}`}>
             {card.tag}
           </span>
-          <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${current === 0 ? 'bg-white' : current === 1 ? 'bg-[#00F5A0]' : 'bg-[#1A1A2E]'}`}>
+          <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${
+            current === 0 ? 'bg-white' : current === 1 ? 'bg-[#00F5A0]' : current === 2 ? 'bg-[#1A1A2E]' : 'bg-[#FF2D6A]/15'
+          }`}>
             {card.icon}
           </div>
         </div>
@@ -176,18 +241,18 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
         )}
       </div>
 
-      {/* Dots + Button */}
+      {/* Dots + button */}
       <div className="flex flex-col items-center gap-5 mt-6 w-full max-w-sm relative z-10">
         <div className="flex gap-2">
           {CARDS.map((_, i) => {
-            const dotColor = i === 0 ? '#FFD700' : i === 1 ? '#00F5A0' : '#FFD700';
+            const dotColors = ['#FFD700', '#00F5A0', '#FFD700', '#FF2D6A'];
             return (
               <div
                 key={i}
                 className={`rounded-full border-2 border-black transition-all duration-300 ${
-                  i === current ? 'w-8 h-3 shadow-[2px_2px_0px_black]' : i < current ? 'w-3 h-3' : 'w-3 h-3 bg-white/20'
-                }`}
-                style={i <= current ? { backgroundColor: dotColor } : undefined}
+                  i === current ? 'w-8 h-3 shadow-[2px_2px_0px_black]' : 'w-3 h-3'
+                } ${i > current ? 'bg-white/20' : ''}`}
+                style={i <= current ? { backgroundColor: dotColors[i] } : undefined}
               />
             );
           })}
