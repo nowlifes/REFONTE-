@@ -1027,8 +1027,11 @@ async resetSession(): Promise<void> {
 
     if (error || !targetGame) throw new Error('Target game not found');
 
-    // Protection: can't taunt someone already being taunted
-    if (targetGame.frozen_until && new Date(targetGame.frozen_until).getTime() > Date.now()) {
+    // Protection: can't taunt someone already being taunted (covers FREEZE/ICE_BLOCK/etc.)
+    // Also covers REVERSE (has 120s frozen_until) and TRAP (no frozen_until, checked via taunt_type)
+    const alreadyFrozen = targetGame.frozen_until && new Date(targetGame.frozen_until).getTime() > Date.now();
+    const alreadyTrapped = targetGame.taunt_type === TauntType.TRAP;
+    if (alreadyFrozen || alreadyTrapped) {
       throw new Error('ALREADY_TAUNTED');
     }
 

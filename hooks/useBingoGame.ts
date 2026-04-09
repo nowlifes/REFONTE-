@@ -163,7 +163,7 @@ export const useBingoGame = () => {
       if (incomingType) setTauntType(incomingType);
       if (data.taunt_data?.senderName !== undefined) setTauntSenderName(data.taunt_data.senderName || null);
 
-      if (data.frozen_until && incomingType !== TauntType.TRAP) {
+      if (data.frozen_until && incomingType !== TauntType.TRAP && incomingType !== TauntType.REVERSE) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
       }
 
