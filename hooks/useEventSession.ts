@@ -55,8 +55,6 @@ export const useEventSession = () => {
             },
             (payload: any) => {
               console.log("[Realtime] Session change detected:", payload.eventType, payload.new);
-
-              // Instant update from payload — zero extra DB calls, countdown starts immediately
               if (payload.new && typeof payload.new === 'object') {
                 const p = payload.new;
                 setIsSessionActive(!!p.is_active);
@@ -72,13 +70,29 @@ export const useEventSession = () => {
           )
           .subscribe((status) => {
             console.log("[Realtime] Subscription status:", status);
+            // Re-check on reconnect — catches events missed while offline
+            if (status === 'SUBSCRIBED') checkSession();
           });
+
+        // 3. Re-check when phone wakes up or tab regains focus
+        //    If the Master closed the session while this device was sleeping,
+        //    the realtime event was missed — this poll catches it.
+        const handleVisibility = () => {
+          if (document.visibilityState === 'visible') checkSession();
+        };
+
+        // 4. Re-check when network comes back online
+        const handleOnline = () => checkSession();
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('online', handleOnline);
 
         return () => {
           supabase.removeChannel(subscription);
+          document.removeEventListener('visibilitychange', handleVisibility);
+          window.removeEventListener('online', handleOnline);
         };
-    }
- else {
+    } else {
         setIsLoading(false);
     }
   }, [checkSession]);

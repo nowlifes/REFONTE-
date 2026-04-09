@@ -2,32 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 interface SessionGuardResult {
-  /** True once the session UUID from ?s= has been confirmed open */
   isValid: boolean;
-  /** True while the initial DB check is in flight */
   isLoading: boolean;
-  /** The UUID read from ?s= URL param, or null if absent */
   sessionId: string | null;
-  /**
-   * Layer 2 guard — call before creating a player in the DB.
-   * Returns true if the session is still open, false otherwise.
-   */
   guardedCheck: () => Promise<boolean>;
 }
 
-/**
- * Implements the three session-security layers:
- *
- * 1. Route guard on mount — validates ?s=UUID against the sessions table.
- *    Calls onKick() and clears the URL param if the session is not open.
- *
- * 2. guardedCheck() — async re-validation right before a player is
- *    inserted in the DB (Layer 2 lives in gameService.createUser, this
- *    hook just exposes the same check for convenience).
- *
- * 3. Realtime kick — subscribes to UPDATE events on the specific session
- *    row. Calls onKick() the instant status changes away from 'open'.
- */
 export const useSessionGuard = (onKick: () => void): SessionGuardResult => {
   const sessionId = useRef(
     typeof window !== 'undefined'
@@ -38,39 +18,41 @@ export const useSessionGuard = (onKick: () => void): SessionGuardResult => {
   const [isValid, setIsValid] = useState(false);
   const [isLoading, setIsLoading] = useState(!!sessionId);
 
-  // Stable validate helper — used by both the mount check and guardedCheck
   const validate = useCallback(async (uuid: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from('sessions')
-        .select('status')
+        .select('status, expires_at')
         .eq('id', uuid)
         .single();
       if (error || !data) return false;
-      return data.status === 'open';
+      if (data.status !== 'open') return false;
+      if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
+      return true;
     } catch {
       return false;
     }
   }, []);
 
-  // Stable kick reference so the useEffect doesn't re-subscribe on every render
   const onKickRef = useRef(onKick);
   onKickRef.current = onKick;
 
+  // Ref so visibilitychange / online handlers always see fresh isValid
+  const isValidRef = useRef(isValid);
+  isValidRef.current = isValid;
+
   useEffect(() => {
     if (!sessionId) {
-      // No ?s= param — existing event_session logic handles access control.
       setIsLoading(false);
       return;
     }
 
     let cancelled = false;
 
-    // --- Layer 1: Route guard on mount ---
+    // ─── Layer 1: Route guard on mount ────────────────────────────────────
     validate(sessionId).then(valid => {
       if (cancelled) return;
       if (!valid) {
-        // Remove stale ?s= param from the URL to block the browser back button
         window.history.replaceState(null, '', window.location.pathname);
         setIsValid(false);
         onKickRef.current();
@@ -80,7 +62,24 @@ export const useSessionGuard = (onKick: () => void): SessionGuardResult => {
       setIsLoading(false);
     });
 
-    // --- Layer 3: Realtime kick ---
+    // ─── Re-validate helper (used by all reconnection paths) ──────────────
+    const revalidate = async () => {
+      if (cancelled) return;
+      const valid = await validate(sessionId);
+      if (cancelled) return;
+      if (!valid && isValidRef.current) {
+        // Was valid, now isn't — kick immediately
+        window.history.replaceState(null, '', window.location.pathname);
+        setIsValid(false);
+        onKickRef.current();
+      } else if (valid && !isValidRef.current) {
+        // Edge case: session re-opened (shouldn't happen, but be safe)
+        setIsValid(true);
+      }
+    };
+
+    // ─── Layer 3: Realtime kick ───────────────────────────────────────────
+    // Also re-validates on reconnect so missed events are caught.
     const channel = supabase
       .channel(`session_guard_${sessionId}`)
       .on(
@@ -99,17 +98,37 @@ export const useSessionGuard = (onKick: () => void): SessionGuardResult => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // SUBSCRIBED fires both on initial connect AND on reconnect after a drop.
+        // Re-validate on every reconnect to catch events missed while offline.
+        if (status === 'SUBSCRIBED') {
+          revalidate();
+        }
+      });
+
+    // ─── Foreground restore: re-validate when app comes back into view ────
+    // Covers: phone woke up, tab regained focus, PWA resumed from background.
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') revalidate();
+    };
+
+    // ─── Network restore: re-validate when connectivity returns ──────────
+    const handleOnline = () => revalidate();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', handleOnline);
     };
   }, [sessionId, validate]);
 
-  // --- Layer 2: Convenience re-check before player creation ---
+  // ─── Layer 2: Guard before player creation ────────────────────────────
   const guardedCheck = useCallback(async (): Promise<boolean> => {
-    if (!sessionId) return true; // No QR param → existing lock logic is authoritative
+    if (!sessionId) return true;
     return validate(sessionId);
   }, [sessionId, validate]);
 
