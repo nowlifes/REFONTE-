@@ -994,7 +994,12 @@ async resetSession(): Promise<void> {
     await supabase.rpc('award_bonus_joker', { game_id: gameId });
   }
 
-  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE): Promise<void> {
+  async awardBonusTaunt(gameId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.rpc('award_bonus_taunt', { game_id: gameId });
+  }
+
+  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string): Promise<void> {
     if (!supabase) return;
 
     // Find target's active game
@@ -1007,12 +1012,12 @@ async resetSession(): Promise<void> {
 
     if (error || !targetGame) throw new Error('Target game not found');
 
-    const frozenUntil = new Date(Date.now() + 30000).toISOString();
+    const frozenUntil = new Date(Date.now() + 35000).toISOString();
 
     // Apply taunt — always set frozen_until + taunt_type so realtime fires once
     await supabase
       .from('games')
-      .update({ frozen_until: frozenUntil, taunt_type: tauntType })
+      .update({ frozen_until: frozenUntil, taunt_type: tauntType, taunt_data: senderName ? { senderName } : null })
       .eq('id', targetGame.id);
 
     // Increment sender's taunt count
@@ -1062,6 +1067,7 @@ async resetSession(): Promise<void> {
       score: data.score || 0,
       jokers: Math.max(0, 2 - (data.jokers_used || 0) + (data.jokers_bonus || 0)),
       tauntsSent: data.taunts_sent || 0,
+      tauntsBonus: data.taunts_bonus || 0,
       frozenUntil: data.frozen_until ? new Date(data.frozen_until).getTime() : undefined,
       tauntType: (data.taunt_type as TauntType) || TauntType.FREEZE,
       startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),

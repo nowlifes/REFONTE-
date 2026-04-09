@@ -34,6 +34,7 @@ export const useBingoGame = () => {
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
   const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
   const [tauntType, setTauntType] = useState<TauntType>(TauntType.FREEZE);
+  const [tauntSenderName, setTauntSenderName] = useState<string | null>(null);
 
   // --- SPOTLIGHT ---
   const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
@@ -45,8 +46,8 @@ export const useBingoGame = () => {
   const validationTimestamps = useRef<number[]>([]);
   const [comboActive, setComboActive] = useState(false);
 
-  // --- BONUS JOKER NOTIFICATION ---
-  const [bonusJokerActive, setBonusJokerActive] = useState(false);
+  // --- BONUS TAUNT NOTIFICATION ---
+  const [bonusTauntActive, setBonusTauntActive] = useState(false);
 
   // Badge System
   const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
@@ -156,16 +157,20 @@ export const useBingoGame = () => {
       if (data.frozen_until) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
         if (data.taunt_type) setTauntType(data.taunt_type as TauntType);
+        if (data.taunt_data?.senderName !== undefined) setTauntSenderName(data.taunt_data.senderName || null);
       }
       if (data.taunts_sent !== undefined) {
         setGameSession(prev => prev ? { ...prev, tauntsSent: data.taunts_sent } : prev);
+      }
+      if (data.taunts_bonus !== undefined) {
+        setGameSession(prev => prev ? { ...prev, tauntsBonus: data.taunts_bonus } : prev);
       }
     });
     return unsub;
   }, [gameSession?.id]);
 
-  // SPOTLIGHT SYSTEM — every 3 min, max 2 per bar, highlight a random empty cell for a bonus joker
-  const SPOTLIGHT_INTERVAL_MS = 3 * 60 * 1000;
+  // SPOTLIGHT SYSTEM — every 30 min, max 2 per bar, highlight a random empty cell for a bonus taunt
+  const SPOTLIGHT_INTERVAL_MS = 30 * 60 * 1000;
   const SPOTLIGHT_DURATION_MS = 3 * 60 * 1000;
   const SPOTLIGHT_MAX_PER_BAR = 2;
 
@@ -181,7 +186,7 @@ export const useBingoGame = () => {
       spotlightPicked.current = false;
       spotlightBarCount.current += 1;
     };
-    const first = setTimeout(pickSpotlight, 60 * 1000); // first spotlight after 1 min
+    const first = setTimeout(pickSpotlight, 15 * 60 * 1000); // first spotlight after 15 min
     const cycle = setInterval(pickSpotlight, SPOTLIGHT_INTERVAL_MS);
     return () => { clearTimeout(first); clearInterval(cycle); };
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -342,21 +347,20 @@ export const useBingoGame = () => {
           setLastWitnessTime(Date.now());
         }
 
-        // SPOTLIGHT BONUS: if this was the spotlight cell, +1 joker
+        // SPOTLIGHT BONUS: if this was the spotlight cell, +1 taunt
         const isSpotlightCell = selectedCell.id === spotlightCellId &&
           spotlightEndsAt !== null && Date.now() < spotlightEndsAt &&
           !spotlightPicked.current;
         if (isSpotlightCell) {
           spotlightPicked.current = true;
-          setJokers(prev => prev + 1);
           setSpotlightCellId(null);
           setSpotlightEndsAt(null);
           if (navigator.vibrate) navigator.vibrate([50, 50, 200]);
-          canvasConfetti({ particleCount: 80, spread: 120, origin: { y: 0.5 }, colors: ['#FFD700', '#FFFFFF', '#FF2D6A'] });
+          canvasConfetti({ particleCount: 80, spread: 120, origin: { y: 0.5 }, colors: ['#FF2D6A', '#FFFFFF', '#7C3AED'] });
           // Persist + notify
-          setBonusJokerActive(true);
-          setTimeout(() => setBonusJokerActive(false), 2500);
-          if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
+          setBonusTauntActive(true);
+          setTimeout(() => setBonusTauntActive(false), 2500);
+          if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {});
         }
 
         // COMBO SYSTEM: 3 validations in 15 min = +1 joker
@@ -370,8 +374,6 @@ export const useBingoGame = () => {
           setTimeout(() => setComboActive(false), 3500);
           if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
           // Persist + notify
-          setBonusJokerActive(true);
-          setTimeout(() => setBonusJokerActive(false), 2500);
           if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
         }
 
@@ -470,10 +472,10 @@ export const useBingoGame = () => {
     state: {
       view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
-      badges, newBadge, gameSession, frozenUntil, tauntType,
+      badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
-      tauntsLeft: Math.max(0, 2 - (gameSession?.tauntsSent ?? 0)),
-      spotlightCellId, spotlightEndsAt, comboActive, bonusJokerActive
+      tauntsLeft: Math.max(0, 2 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
+      spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive
     },
     actions
   };

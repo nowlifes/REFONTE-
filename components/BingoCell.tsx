@@ -24,7 +24,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     if (isLocked) return 'bg-[#0D1527] text-white/20 border-2 border-white/10 border-dashed mystery-halo';
     switch (type) {
       case ChallengeType.MASTER:  return 'bg-[#FFD93D] text-black';
-      case ChallengeType.WITNESS: return 'bg-[#FF2D6A] text-white';
+      case ChallengeType.WITNESS: return 'bg-[#7C3AED] text-white';
       default:                    return 'bg-[#00F5A0] text-black';
     }
   };

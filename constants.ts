@@ -6,9 +6,9 @@ export const APP_VERSION = "1.0.2-GRID-FIXED";
 // LISTE DES 25 DÉFIS AVEC SAUTS DE LIGNE MANUELS POUR LE LAYOUT 66x66
 export const CHALLENGES_FR: ChallengeDef[] = [
   { id: 1, text: "Publier un post Instagram en mentionnant @TheBingoCrawl", type: ChallengeType.MASTER },
-  { id: 2, text: "Poster une story en taguant le bar", type: ChallengeType.MASTER },
-  { id: 3, text: "Follow @TheBingoCrawl sur Instagram", type: ChallengeType.MASTER },
-  { id: 4, text: "Suivre le bar dans lequel tu te trouves sur Instagram", type: ChallengeType.MASTER },
+  { id: 2, text: "Poster une story en taguant le bar", type: ChallengeType.AUTO },
+  { id: 3, text: "Follow @TheBingoCrawl sur Instagram", type: ChallengeType.AUTO },
+  { id: 4, text: "Suivre le bar dans lequel tu te trouves sur Instagram", type: ChallengeType.AUTO },
   { id: 5, text: "Scanner le QR code caché", type: ChallengeType.AUTO },
   { id: 6, text: "Trouver quelqu'un né le même mois que toi et trinquer ensemble", type: ChallengeType.WITNESS },
   { id: 7, text: "Prendre un shot d'une boisson portugaise traditionnelle", type: ChallengeType.WITNESS },
@@ -37,14 +37,14 @@ export const CHALLENGES_FR: ChallengeDef[] = [
   { id: 32, text: "Rejouer une scène de film", type: ChallengeType.WITNESS },
   { id: 33, text: "Commander une boisson en portugais", type: ChallengeType.WITNESS },
   { id: 34, text: "Enseigner une expression de ta langue au Master", type: ChallengeType.MASTER },
-  { id: 35, text: "Inventer un faux mot portugais pour fête", type: ChallengeType.MASTER },
+  { id: 35, text: "Inventer un faux mot portugais pour fête", type: ChallengeType.WITNESS },
 ];
 
 export const CHALLENGES_EN: ChallengeDef[] = [
   { id: 1, text: "Make an Instagram post mentioning @TheBingoCrawl", type: ChallengeType.MASTER },
-  { id: 2, text: "Post a story tagging the bar", type: ChallengeType.MASTER },
-  { id: 3, text: "Follow @TheBingoCrawl", type: ChallengeType.MASTER },
-  { id: 4, text: "Follow the bar you are in on Instagram", type: ChallengeType.MASTER },
+  { id: 2, text: "Post a story tagging the bar", type: ChallengeType.AUTO },
+  { id: 3, text: "Follow @TheBingoCrawl", type: ChallengeType.AUTO },
+  { id: 4, text: "Follow the bar you are in on Instagram", type: ChallengeType.AUTO },
   { id: 5, text: "Scan the hidden QR code", type: ChallengeType.AUTO },
   { id: 6, text: "Find someone born in the same month as you and toast together", type: ChallengeType.WITNESS },
   { id: 7, text: "Take a shot of a traditional Portuguese drink", type: ChallengeType.WITNESS },
@@ -73,7 +73,7 @@ export const CHALLENGES_EN: ChallengeDef[] = [
   { id: 32, text: "Re-enact a movie scene", type: ChallengeType.WITNESS },
   { id: 33, text: "Order a drink in Portuguese", type: ChallengeType.WITNESS },
   { id: 34, text: "Teach an expression from your language to the Master", type: ChallengeType.MASTER },
-  { id: 35, text: "Invent a fake Portuguese word for party", type: ChallengeType.MASTER },
+  { id: 35, text: "Invent a fake Portuguese word for party", type: ChallengeType.WITNESS },
 ];
 export const INITIAL_CHALLENGES = CHALLENGES_FR;
 

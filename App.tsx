@@ -352,7 +352,7 @@ const App: React.FC = () => {
            currentGameId={s.gameSession?.id}
            tauntsLeft={s.tauntsLeft}
            onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
-             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType);
+             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
            } : undefined}
          />
       )}
@@ -372,7 +372,7 @@ const App: React.FC = () => {
       )}
 
       {/* BAR TRANSITION — Badge B (countdown visible on game screen) */}
-      {s.view === AppView.GAME && transitionEndsAt && transitionSecondsLeft > 0 && (
+      {s.view === AppView.GAME && isSessionActive && transitionEndsAt && transitionSecondsLeft > 0 && (
         <div className="fixed top-[72px] left-3 right-3 z-[140] pointer-events-none animate-in slide-in-from-top-2 duration-300">
           <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_black] transition-all duration-500 ${
             transitionSecondsLeft <= 60

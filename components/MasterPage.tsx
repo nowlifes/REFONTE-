@@ -231,7 +231,7 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                 </span>
               </div>
 
-              {transitionEndsAt && transitionSecondsLeft > 0 ? (
+              {transitionEndsAt ? (
                 /* Active transition — show countdown + cancel */
                 <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
                   <div className="flex flex-col leading-none">

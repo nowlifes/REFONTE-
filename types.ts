@@ -99,6 +99,7 @@ export interface GameSession {
   lastUpdated: number;
   jokers: number;
   tauntsSent: number;
+  tauntsBonus: number;
   frozenUntil?: number;
   tauntType?: TauntType;
 }

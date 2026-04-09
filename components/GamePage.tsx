@@ -196,36 +196,32 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* +1 JOKER banner (spotlight bonus) */}
-      {s.bonusJokerActive && !s.comboActive && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
-          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2">
-            <span className="text-2xl">✨</span>
+      {/* +1 TAUNT banner (spotlight bonus) */}
+      {s.bonusTauntActive && !s.comboActive && (
+        <div className="fixed top-[68px] left-4 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
+          <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl px-4 py-2.5 shadow-[6px_6px_0px_black] flex items-center gap-2">
+            <span className="text-xl">💥</span>
             <div className="flex flex-col leading-none">
-              <span className="font-impact text-black uppercase text-xl tracking-tight">+1 JOKER !</span>
-              <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">{language === 'fr' ? 'Défi spotlight validé' : 'Spotlight challenge cleared'}</span>
+              <span className="font-impact text-white uppercase text-lg tracking-tight">+1 TAUNT !</span>
+              <span className="font-impact text-white/60 uppercase text-[9px] tracking-widest">{language === 'fr' ? 'Défi spotlight validé' : 'Spotlight challenge cleared'}</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* SPOTLIGHT banner */}
+      {/* SPOTLIGHT banner — compact, near avatar top-left */}
       {s.spotlightCellId !== null && spotlightSecondsLeft > 0 && (
-        <div className="fixed top-20 left-4 right-4 z-[155] pointer-events-none">
-          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-4 py-2.5 shadow-[5px_5px_0px_black] flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">⚡</span>
-              <div className="flex flex-col leading-none">
-                <span className="font-impact text-black uppercase text-[13px] tracking-tight">
-                  {language === 'fr' ? 'SPOTLIGHT CHALLENGE' : 'DÉFI SPOTLIGHT'}
-                </span>
-                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
-                  {language === 'fr' ? 'Complete it to win a joker' : 'Valide-le pour gagner un joker'}
-                </span>
-              </div>
+        <div className="fixed top-[68px] left-4 z-[155] pointer-events-none">
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-left-2 duration-300">
+            <span className="text-base">⚡</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-impact text-black uppercase text-[11px] tracking-tight">SPOTLIGHT</span>
+              <span className="font-impact text-black/50 uppercase text-[8px] tracking-widest">
+                {language === 'fr' ? 'Valide → +1 taunt' : 'Clear → +1 taunt'}
+              </span>
             </div>
-            <div className="bg-black/10 border border-black/20 rounded-xl px-2.5 py-1">
-              <span className="font-impact text-black text-sm">
+            <div className="bg-black/15 rounded-lg px-2 py-0.5 ml-1">
+              <span className="font-impact text-black text-[11px]">
                 {Math.floor(spotlightSecondsLeft / 60)}:{String(spotlightSecondsLeft % 60).padStart(2, '0')}
               </span>
             </div>
@@ -251,7 +247,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                     {language === 'fr' ? 'TAUNTED!' : 'TAUNTÉ !'}
                   </h2>
                   <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
-                    {language === 'fr' ? 'A player froze you' : 'Un joueur t\'a figé'}
+                    {s.tauntSenderName
+                      ? (language === 'fr' ? `${s.tauntSenderName} t'a figé` : `${s.tauntSenderName} froze you`)
+                      : (language === 'fr' ? 'Un joueur t\'a figé' : 'A player froze you')}
                   </p>
                   <div className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-5xl font-impact text-white">{freezeSecondsLeft}</span>
