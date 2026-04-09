@@ -1017,15 +1017,20 @@ async resetSession(): Promise<void> {
   async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string, senderGameIdForReverse?: string): Promise<void> {
     if (!supabase) return;
 
-    // Find target's active game (with grid for TRAP)
+    // Find target's active game (with grid for TRAP + frozen_until for protection)
     const { data: targetGame, error } = await supabase
       .from('games')
-      .select('id, grid_challenges, validated_cells')
+      .select('id, grid_challenges, validated_cells, frozen_until, taunt_type')
       .eq('player_id', targetPlayerId)
       .eq('status', 'ACTIVE')
       .maybeSingle();
 
     if (error || !targetGame) throw new Error('Target game not found');
+
+    // Protection: can't taunt someone already being taunted
+    if (targetGame.frozen_until && new Date(targetGame.frozen_until).getTime() > Date.now()) {
+      throw new Error('ALREADY_TAUNTED');
+    }
 
     const durationMs = GameBackendService.TAUNT_DURATION_MS[tauntType];
     const frozenUntil = durationMs ? new Date(Date.now() + durationMs).toISOString() : null;

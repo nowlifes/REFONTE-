@@ -350,6 +350,7 @@ const App: React.FC = () => {
            onBack={() => a.setView(AppView.GAME)}
            currentUserId={localStorage.getItem('bingo_user_id') || undefined}
            currentGameId={s.gameSession?.id}
+           currentScore={s.score}
            tauntsLeft={s.tauntsLeft}
            onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
              await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined, s.gameSession!.id);
