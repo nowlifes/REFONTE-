@@ -512,7 +512,7 @@ export const useBingoGame = () => {
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       isReverse: reverseUntil !== null && Date.now() < reverseUntil,
       reverseUntil, trapCellId,
-      tauntsLeft: Math.max(0, 2 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
+      tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive
     },
     actions
