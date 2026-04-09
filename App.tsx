@@ -352,7 +352,7 @@ const App: React.FC = () => {
            currentGameId={s.gameSession?.id}
            tauntsLeft={s.tauntsLeft}
            onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
-             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
+             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined, s.gameSession!.id);
            } : undefined}
          />
       )}

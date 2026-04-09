@@ -1,9 +1,12 @@
 
 export enum TauntType {
-  FREEZE     = 'FREEZE',      // Figé 30s — ne peut pas valider
-  ICE_BLOCK  = 'ICE_BLOCK',   // Cases recouvertes de glace à tapoter
-  TINY_TARGET = 'TINY_TARGET',// Bouton minuscule qui fuit
-  BLOB       = 'BLOB',        // Splash à nettoyer avant de valider
+  FREEZE      = 'FREEZE',       // Figé 35s — ne peut pas valider
+  ICE_BLOCK   = 'ICE_BLOCK',    // Cases recouvertes de glace à tapoter
+  TINY_TARGET = 'TINY_TARGET',  // Bouton minuscule qui fuit
+  BLOB        = 'BLOB',         // Splash à nettoyer avant de valider
+  FLASHLIGHT  = 'FLASHLIGHT',   // Écran noir + spotlight radial 45s
+  REVERSE     = 'REVERSE',      // 2min : prochaine validation donne +1 à l'envoyeur
+  TRAP        = 'TRAP',         // Case piégée : valider = -1 point
 }
 
 export enum ChallengeType {

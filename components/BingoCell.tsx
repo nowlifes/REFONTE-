@@ -12,10 +12,11 @@ interface BingoCellProps {
   isLocked?: boolean;
   isUnlocking?: boolean;
   isSpotlight?: boolean;
+  isTrap?: boolean;
 }
 
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
-  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight
+  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, isTrap
 }) => {
   const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
@@ -24,7 +25,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     if (isLocked) return 'bg-[#0D1527] text-white/20 border-2 border-white/10 border-dashed mystery-halo';
     switch (type) {
       case ChallengeType.MASTER:  return 'bg-[#FFD93D] text-black';
-      case ChallengeType.WITNESS: return 'bg-[#7C3AED] text-white';
+      case ChallengeType.WITNESS: return 'bg-[#FF2D6A] text-white';
       default:                    return 'bg-[#00F5A0] text-black';
     }
   };
@@ -76,9 +77,15 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
           ) : (
             <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1 relative">
               {/* Partner badge — top-right corner */}
-              {isPartner && (
+              {isPartner && !isTrap && (
                 <div className="absolute -top-[3px] -right-[3px] w-4 h-4 bg-[#FFD700] border border-black rounded-bl-md rounded-tr-[6px] flex items-center justify-center">
                   <Star className="w-2.5 h-2.5 text-black" fill="currentColor" strokeWidth={0} />
+                </div>
+              )}
+              {/* Trap indicator — top-right corner */}
+              {isTrap && (
+                <div className="absolute -top-[3px] -right-[3px] w-5 h-5 bg-[#FF8C00] border-[2px] border-black rounded-bl-lg rounded-tr-[6px] flex items-center justify-center animate-pulse">
+                  <span className="text-[10px] leading-none">🪤</span>
                 </div>
               )}
               {isSpotlight && (

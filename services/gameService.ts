@@ -420,14 +420,18 @@ class GameBackendService {
   async startGame(userId: string, challenges: any[]): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
-    // Partner challenges always appear at the 4 corners (indices 0, 4, 20, 24)
+    // Partner challenges (ids 1-4) always appear at the 4 corners (indices 0, 4, 20, 24)
     const CORNER_INDICES = [0, 4, 20, 24];
-    const partnerChallenges = shuffleArray(challenges.filter((c: any) => c.is_partner));
+    const partnerPool = shuffleArray(challenges.filter((c: any) => c.is_partner));
+    // Guarantee exactly 4 corner challenges without duplication
+    const cornerChallenges = partnerPool.length >= 4
+      ? partnerPool.slice(0, 4)
+      : [...partnerPool, ...shuffleArray(challenges.filter((c: any) => !c.is_partner)).slice(0, 4 - partnerPool.length)];
     const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner)).slice(0, 21);
 
-    // Build the 25-cell grid: corners = partners, rest = regular challenges
+    // Build the 25-cell grid: corners = partner/corner challenges, rest = regular challenges
     const grid: any[] = new Array(25).fill(null);
-    CORNER_INDICES.forEach((pos, i) => { grid[pos] = partnerChallenges[i] ?? partnerChallenges[0]; });
+    CORNER_INDICES.forEach((pos, i) => { grid[pos] = cornerChallenges[i]; });
     let regularIdx = 0;
     for (let i = 0; i < 25; i++) {
       if (grid[i] === null) grid[i] = regularChallenges[regularIdx++];
@@ -461,7 +465,7 @@ class GameBackendService {
         started_at: new Date().toISOString(),
         jokers_used: 0
       })
-      .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
+      .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
       .single();
 
     if (error) throw error;
@@ -479,7 +483,7 @@ class GameBackendService {
     try {
         const { data, error } = await supabase
         .from('games')
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
         .eq('player_id', userId)
         .eq('status', 'ACTIVE')
         .order('started_at', { ascending: false }) 
@@ -590,7 +594,7 @@ class GameBackendService {
             score: newScore
         })
         .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
         .single();
 
         if (updateError) throw updateError;
@@ -676,7 +680,7 @@ class GameBackendService {
             jokers_used: jokersUsed + 1
         })
         .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus')
+        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
         .single();
 
         if (updateError) throw updateError;
@@ -999,29 +1003,73 @@ async resetSession(): Promise<void> {
     await supabase.rpc('award_bonus_taunt', { game_id: gameId });
   }
 
-  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string): Promise<void> {
+  // Duration (ms) each taunt keeps the victim affected
+  static readonly TAUNT_DURATION_MS: Partial<Record<TauntType, number>> = {
+    [TauntType.FREEZE]:      35_000,
+    [TauntType.ICE_BLOCK]:   35_000,
+    [TauntType.TINY_TARGET]: 35_000,
+    [TauntType.BLOB]:        35_000,
+    [TauntType.FLASHLIGHT]:  45_000,
+    [TauntType.REVERSE]:    120_000,
+    // TRAP: no frozen_until — persists until the trapped cell is validated
+  };
+
+  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string, senderGameIdForReverse?: string): Promise<void> {
     if (!supabase) return;
 
-    // Find target's active game
+    // Find target's active game (with grid for TRAP)
     const { data: targetGame, error } = await supabase
       .from('games')
-      .select('id')
+      .select('id, grid_challenges, validated_cells')
       .eq('player_id', targetPlayerId)
       .eq('status', 'ACTIVE')
       .maybeSingle();
 
     if (error || !targetGame) throw new Error('Target game not found');
 
-    const frozenUntil = new Date(Date.now() + 35000).toISOString();
+    const durationMs = GameBackendService.TAUNT_DURATION_MS[tauntType];
+    const frozenUntil = durationMs ? new Date(Date.now() + durationMs).toISOString() : null;
 
-    // Apply taunt — always set frozen_until + taunt_type so realtime fires once
+    // Build taunt_data based on type
+    let tauntData: Record<string, any> = {};
+    if (senderName) tauntData.senderName = senderName;
+
+    if (tauntType === TauntType.REVERSE && senderGameIdForReverse) {
+      tauntData.senderGameId = senderGameIdForReverse;
+    }
+
+    if (tauntType === TauntType.TRAP) {
+      // Pick a random NON-validated cell from victim's grid
+      const validatedIds = new Set((targetGame.validated_cells || []).map((v: any) => v.id));
+      const availableCells = (targetGame.grid_challenges || [])
+        .map((_: any, i: number) => i)
+        .filter((i: number) => !validatedIds.has(i));
+      if (availableCells.length === 0) throw new Error('No available cells to trap');
+      tauntData.trapCellId = availableCells[Math.floor(Math.random() * availableCells.length)];
+    }
+
+    // Apply taunt — update target's game row (realtime fires on any UPDATE)
     await supabase
       .from('games')
-      .update({ frozen_until: frozenUntil, taunt_type: tauntType, taunt_data: senderName ? { senderName } : null })
+      .update({
+        ...(frozenUntil ? { frozen_until: frozenUntil } : {}),
+        taunt_type: tauntType,
+        taunt_data: Object.keys(tauntData).length > 0 ? tauntData : null,
+      })
       .eq('id', targetGame.id);
 
     // Increment sender's taunt count
     await supabase.rpc('increment_taunts_sent', { game_id: senderGameId });
+  }
+
+  async reverseBonus(senderGameId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.rpc('reverse_bonus', { sender_game_id: senderGameId });
+  }
+
+  async trapPenalty(victimGameId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.rpc('trap_penalty', { victim_game_id: victimGameId });
   }
 
   subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {

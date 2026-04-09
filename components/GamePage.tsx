@@ -17,6 +17,8 @@ import ChallengeRevealSheet from './ChallengeRevealSheet';
 import IceBlockOverlay from './IceBlockOverlay';
 import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
+import FlashlightOverlay from './FlashlightOverlay';
+import ReverseOverlay from './ReverseOverlay';
 
 interface GamePageProps {
   state: any;
@@ -31,6 +33,7 @@ interface GamePageProps {
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
+  const [reverseSecondsLeft, setReverseSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
 
@@ -74,6 +77,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     const interval = setInterval(update, 500);
     return () => clearInterval(interval);
   }, [s.frozenUntil]);
+
+  useEffect(() => {
+    if (!s.reverseUntil) return;
+    const update = () => setReverseSecondsLeft(Math.max(0, Math.ceil((s.reverseUntil! - Date.now()) / 1000)));
+    update();
+    const id = setInterval(update, 500);
+    return () => clearInterval(id);
+  }, [s.reverseUntil]);
   // Spotlight countdown
   useEffect(() => {
     if (!s.spotlightEndsAt) return;
@@ -229,6 +240,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
+      {/* REVERSE banner — non-bloquant, affiché pendant toute la durée */}
+      {s.isReverse && reverseSecondsLeft > 0 && (
+        <ReverseOverlay secondsLeft={reverseSecondsLeft} senderName={s.tauntSenderName} />
+      )}
+
       {/* TAUNT OVERLAYS — router selon tauntType */}
       {s.isFrozen && freezeSecondsLeft > 0 && (() => {
         switch (s.tauntType) {
@@ -238,6 +254,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             return <TinyTargetOverlay secondsLeft={freezeSecondsLeft} onCaught={a.clearFreezeLocally} />;
           case TauntType.BLOB:
             return <BlobOverlay secondsLeft={freezeSecondsLeft} onCleaned={a.clearFreezeLocally} />;
+          case TauntType.FLASHLIGHT:
+            return <FlashlightOverlay secondsLeft={freezeSecondsLeft} senderName={s.tauntSenderName} />;
           default: // FREEZE
             return (
               <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -339,6 +357,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   isLocked={cell.id === 12 && isMysteryCellLocked}
                   isUnlocking={cell.id === 12 && mysteryUnlocking}
                   isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
+                  isTrap={s.trapCellId !== null && cell.id === s.trapCellId}
                 />
               ))}
           </div>
