@@ -28,6 +28,7 @@ import MasterPage from './components/MasterPage';
 import GamePage from './components/GamePage';
 import GameRoom from './components/GameRoom';
 import GameOverPage from './components/GameOverPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const RotateDeviceOverlay = () => {
     const { t } = useLanguage();
@@ -53,6 +54,12 @@ const App: React.FC = () => {
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
   const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId } = useEventSession();
   const { language } = useLanguage();
+
+  // Keep Supabase alive (free tier pauses after 7 days without activity)
+  useEffect(() => {
+    const id = setInterval(() => { gameService.checkConnection().catch(() => {}); }, 4 * 60 * 1000); // every 4 min
+    return () => clearInterval(id);
+  }, []);
 
   // Countdown timer + trigger overlay at T=0
   useEffect(() => {
@@ -362,14 +369,16 @@ const App: React.FC = () => {
 
       {/* 6. GAME PAGE (Main View) */}
       {s.view === AppView.GAME && (
-         <GamePage
-            state={s}
-            actions={a}
-            ui={ui}
-            uiActions={uia}
-            onCrownClick={() => setShowHiddenLogin(true)}
-            onPhotoProof={(cellId, url) => setPhotoProofs(prev => ({ ...prev, [cellId]: url }))}
-         />
+        <ErrorBoundary>
+           <GamePage
+              state={s}
+              actions={a}
+              ui={ui}
+              uiActions={uia}
+              onCrownClick={() => setShowHiddenLogin(true)}
+              onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
+           />
+        </ErrorBoundary>
       )}
 
       {/* BAR TRANSITION — Badge B (countdown visible on game screen) */}

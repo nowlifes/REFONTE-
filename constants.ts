@@ -187,13 +187,13 @@ export const BADGE_CONFIG: Record<BadgeType, {
 
 export const EVENT_ENTRY_CODE = "EVENT_START_2025";
 export const MASTER_VALID_CODE = "KING";
-export const HIDDEN_MASTER_PASSWORD = "KING";
+export const HIDDEN_MASTER_PASSWORD = "BCmaster_9x#2025";
 export const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1]; 
 export const INITIAL_JOKERS = 2;
 
 export const SOUNDS = {
-  CLICK: 'https://cdn.freesound.org/previews/256/256116_4486188-lq.mp3',
-  VALIDATE: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3',
-  WIN: 'https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3',
-  JOKER: 'https://cdn.freesound.org/previews/368/368739_4948831-lq.mp3',
+  CLICK:    '/sounds/click.mp3',
+  VALIDATE: '/sounds/validate.mp3',
+  WIN:      '/sounds/win.mp3',
+  JOKER:    '/sounds/joker.mp3',
 };

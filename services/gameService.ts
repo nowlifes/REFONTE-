@@ -1,7 +1,7 @@
 
 import { supabase } from '../lib/supabaseClient';
 import { UserProfile, GameSession, BingoCellData, CellStatus, LeaderboardEntry, TauntType } from '../types';
-import { ADULT_EMOJI_MAP } from '../constants';
+import { ADULT_EMOJI_MAP, CHALLENGES_FR, CHALLENGES_EN } from '../constants';
 
 // Helper to shuffle array (Fisher-Yates)
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -159,7 +159,7 @@ class GameBackendService {
       const { data, error } = await supabase
         .from('event_session')
         .select('is_active')
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) { console.error("[GameService] Error fetching session status:", error); return false; }
@@ -176,7 +176,7 @@ class GameBackendService {
       const { data } = await supabase
         .from('event_session')
         .select('transition_ends_at, next_bar_name')
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       return {
@@ -225,7 +225,7 @@ class GameBackendService {
       const { data: latest } = await supabase
         .from('event_session')
         .select('id')
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -249,28 +249,51 @@ class GameBackendService {
 
   // --- CHALLENGES ---
 
+  /** Build fallback challenges from local constants when DB is unreachable */
+  private buildFallbackChallenges(): any[] {
+    const byId = new Map(CHALLENGES_EN.map(c => [c.id, c]));
+    return CHALLENGES_FR.map(fr => {
+      const en = byId.get(fr.id);
+      return {
+        id: fr.id,
+        text: fr.text,
+        text_fr: fr.text,
+        text_en: en?.text ?? fr.text,
+        type: fr.type,
+        is_partner: fr.id >= 1 && fr.id <= 4,
+        partner_handle: undefined,
+      };
+    });
+  }
+
   async getChallenges(): Promise<any[]> {
-    if (!supabase) return [];
+    if (!supabase) {
+      console.warn("[GameService] No Supabase — using local fallback challenges");
+      return this.buildFallbackChallenges();
+    }
     console.log("[GameService] Fetching challenges from public.challenges...");
     try {
       const { data, error } = await supabase
         .from('challenges')
         .select('*');
-      
+
       if (error) {
         console.error("[GameService] Error fetching challenges:", error);
-        return [];
+        console.warn("[GameService] Falling back to local challenges");
+        return this.buildFallbackChallenges();
       }
-      
-      // Map text_en/text_fr to a generic text field based on language if needed, 
-      // or just return the raw data and let the hook handle it.
-      // The current app expects { text, type }.
-      // We will return the raw data and handle mapping in useBingoGame.
-      console.log("[GameService] Challenges fetched successfully:", data?.length);
-      return data || [];
+
+      if (!data || data.length === 0) {
+        console.warn("[GameService] DB returned 0 challenges — using local fallback");
+        return this.buildFallbackChallenges();
+      }
+
+      console.log("[GameService] Challenges fetched successfully:", data.length);
+      return data;
     } catch (e) {
       console.error("[GameService] Exception in getChallenges:", e);
-      return [];
+      console.warn("[GameService] Falling back to local challenges");
+      return this.buildFallbackChallenges();
     }
   }
 
