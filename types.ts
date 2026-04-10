@@ -6,7 +6,6 @@ export enum TauntType {
   BLOB        = 'BLOB',         // Splash à nettoyer avant de valider
   FLASHLIGHT  = 'FLASHLIGHT',   // Écran noir + spotlight radial 45s
   REVERSE     = 'REVERSE',      // 2min : prochaine validation donne +1 à l'envoyeur
-  TRAP        = 'TRAP',         // Case piégée : valider = -1 point
 }
 
 export enum ChallengeType {

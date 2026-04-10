@@ -357,7 +357,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   isLocked={cell.id === 12 && isMysteryCellLocked}
                   isUnlocking={cell.id === 12 && mysteryUnlocking}
                   isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
-                  isTrap={s.trapCellId !== null && cell.id === s.trapCellId}
                 />
               ))}
           </div>
@@ -378,8 +377,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         >
           <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? '' : 'opacity-30'} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
-            TAUNTS : {s.tauntsLeft}
-            {s.tauntsLeft > 0 && <span className="ml-1 opacity-60">→</span>}
+            {s.tauntsLeft > 0
+              ? `ATTAQUE → CLASSEMENT`
+              : `TAUNTS : 0`}
           </span>
         </button>
       </div>

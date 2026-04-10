@@ -38,9 +38,6 @@ export const useBingoGame = () => {
   // REVERSE state
   const [reverseUntil, setReverseUntil] = useState<number | null>(null);
   const [reverseSenderGameId, setReverseSenderGameId] = useState<string | null>(null);
-  // TRAP state
-  const [trapCellId, setTrapCellId] = useState<number | null>(null);
-
   // --- SPOTLIGHT ---
   const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
   const [spotlightEndsAt, setSpotlightEndsAt] = useState<number | null>(null);
@@ -163,7 +160,7 @@ export const useBingoGame = () => {
       if (incomingType) setTauntType(incomingType);
       if (data.taunt_data?.senderName !== undefined) setTauntSenderName(data.taunt_data.senderName || null);
 
-      if (data.frozen_until && incomingType !== TauntType.TRAP && incomingType !== TauntType.REVERSE) {
+      if (data.frozen_until && incomingType !== TauntType.REVERSE) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
       }
 
@@ -172,9 +169,7 @@ export const useBingoGame = () => {
         setReverseSenderGameId(data.taunt_data?.senderGameId || null);
       }
 
-      if (incomingType === TauntType.TRAP && data.taunt_data?.trapCellId !== undefined) {
-        setTrapCellId(data.taunt_data.trapCellId);
-      }
+
       if (data.taunts_sent !== undefined) {
         setGameSession(prev => prev ? { ...prev, tauntsSent: data.taunts_sent } : prev);
       }
@@ -430,12 +425,7 @@ export const useBingoGame = () => {
             setReverseSenderGameId(null);
           }
 
-          // TRAP: if this cell was the trap, apply penalty + clear trap
-          if (trapCellId !== null && selectedCell.id === trapCellId) {
-            setTrapCellId(null);
-            if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
-            gameService.trapPenalty(gameSession.id).catch(() => {});
-          }
+
         } catch (e: any) {
           if (!navigator.onLine) return; // Keep optimistic if offline
           setCells(oldCells);
@@ -511,7 +501,7 @@ export const useBingoGame = () => {
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       isReverse: reverseUntil !== null && Date.now() < reverseUntil,
-      reverseUntil, trapCellId,
+      reverseUntil,
       tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive
     },

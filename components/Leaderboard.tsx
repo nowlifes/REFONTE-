@@ -18,13 +18,12 @@ const TAUNT_OPTIONS: {
   { type: TauntType.TINY_TARGET, emoji: '🎯', labelFr: 'Tiny Target',  labelEn: 'Tiny Target',  descFr: 'Bouton qui s\'échappe',       descEn: 'Button runs away',           color: '#86EFAC' },
   { type: TauntType.BLOB,        emoji: '💦', labelFr: 'Blob',         labelEn: 'Blob',         descFr: 'Écran à nettoyer',            descEn: 'Screen to wipe',             color: '#6EE7B7' },
   { type: TauntType.FLASHLIGHT,  emoji: '🔦', labelFr: 'Lampe Torche', labelEn: 'Flashlight',   descFr: 'Noir total 45 sec',           descEn: 'Lights out 45 sec',          color: '#FDE68A' },
-  { type: TauntType.TRAP,        emoji: '🪤', labelFr: 'Piège',        labelEn: 'Trap',         descFr: 'Case piégée = −1 pt',        descEn: 'Trapped cell = −1 pt',       color: '#FCA5A5' },
   { type: TauntType.REVERSE,     emoji: '🔁', labelFr: 'Reverse',      labelEn: 'Reverse',      descFr: 'Son prochain défi = ton +1', descEn: 'Their next clear = your +1', color: '#C4B5FD' },
 ];
 
 // ─── Unlock system (time-based) ─────────────────────────────────────────────
 const INITIAL_UNLOCKS    = 3;           // 3 taunts dès le départ
-const UNLOCK_INTERVAL_MS = 20 * 60_000; // +1 toutes les 20 minutes
+const UNLOCK_INTERVAL_MS = 30 * 60_000; // +1 toutes les 30 minutes
 
 function getOrSetUnlockStart(gameId: string): number {
   if (!gameId) return Date.now();

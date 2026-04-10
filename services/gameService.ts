@@ -1036,27 +1036,24 @@ async resetSession(): Promise<void> {
     [TauntType.BLOB]:        35_000,
     [TauntType.FLASHLIGHT]:  45_000,
     [TauntType.REVERSE]:    120_000,
-    // TRAP: no frozen_until — persists until the trapped cell is validated
   };
 
   async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string, senderGameIdForReverse?: string): Promise<void> {
     if (!supabase) return;
 
-    // Find target's active game (with grid for TRAP + frozen_until for protection)
+    // Find target's active game
     const { data: targetGame, error } = await supabase
       .from('games')
-      .select('id, grid_challenges, validated_cells, frozen_until, taunt_type')
+      .select('id, frozen_until, taunt_type')
       .eq('player_id', targetPlayerId)
       .eq('status', 'ACTIVE')
       .maybeSingle();
 
     if (error || !targetGame) throw new Error('Target game not found');
 
-    // Protection: can't taunt someone already being taunted (covers FREEZE/ICE_BLOCK/etc.)
-    // Also covers REVERSE (has 120s frozen_until) and TRAP (no frozen_until, checked via taunt_type)
+    // Protection: can't taunt someone already being taunted
     const alreadyFrozen = targetGame.frozen_until && new Date(targetGame.frozen_until).getTime() > Date.now();
-    const alreadyTrapped = targetGame.taunt_type === TauntType.TRAP;
-    if (alreadyFrozen || alreadyTrapped) {
+    if (alreadyFrozen) {
       throw new Error('ALREADY_TAUNTED');
     }
 
@@ -1069,16 +1066,6 @@ async resetSession(): Promise<void> {
 
     if (tauntType === TauntType.REVERSE && senderGameIdForReverse) {
       tauntData.senderGameId = senderGameIdForReverse;
-    }
-
-    if (tauntType === TauntType.TRAP) {
-      // Pick a random NON-validated cell from victim's grid
-      const validatedIds = new Set((targetGame.validated_cells || []).map((v: any) => v.id));
-      const availableCells = (targetGame.grid_challenges || [])
-        .map((_: any, i: number) => i)
-        .filter((i: number) => !validatedIds.has(i));
-      if (availableCells.length === 0) throw new Error('No available cells to trap');
-      tauntData.trapCellId = availableCells[Math.floor(Math.random() * availableCells.length)];
     }
 
     // Apply taunt — update target's game row (realtime fires on any UPDATE)
