@@ -1035,10 +1035,9 @@ async resetSession(): Promise<void> {
     [TauntType.TINY_TARGET]: 35_000,
     [TauntType.BLOB]:        35_000,
     [TauntType.FLASHLIGHT]:  45_000,
-    [TauntType.REVERSE]:    120_000,
   };
 
-  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string, senderGameIdForReverse?: string): Promise<void> {
+  async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string): Promise<void> {
     if (!supabase) return;
 
     // Find target's active game
@@ -1064,10 +1063,6 @@ async resetSession(): Promise<void> {
     let tauntData: Record<string, any> = {};
     if (senderName) tauntData.senderName = senderName;
 
-    if (tauntType === TauntType.REVERSE && senderGameIdForReverse) {
-      tauntData.senderGameId = senderGameIdForReverse;
-    }
-
     // Apply taunt — update target's game row (realtime fires on any UPDATE)
     await supabase
       .from('games')
@@ -1083,12 +1078,6 @@ async resetSession(): Promise<void> {
     Promise.resolve(rpcPromise)
       .then(({ error }: any) => { if (error) console.warn('[Taunt] increment_taunts_sent failed:', error.message); })
       .catch((e: any) => console.warn('[Taunt] increment_taunts_sent exception:', e));
-  }
-
-  async reverseBonus(senderGameId: string): Promise<void> {
-    if (!supabase) return;
-    const { error } = await supabase.rpc('reverse_bonus', { sender_game_id: senderGameId });
-    if (error) console.warn('[Taunt] reverse_bonus failed:', error.message);
   }
 
   async trapPenalty(victimGameId: string): Promise<void> {

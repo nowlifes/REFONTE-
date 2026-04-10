@@ -18,7 +18,6 @@ import IceBlockOverlay from './IceBlockOverlay';
 import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
-import ReverseOverlay from './ReverseOverlay';
 
 interface GamePageProps {
   state: any;
@@ -33,7 +32,6 @@ interface GamePageProps {
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
-  const [reverseSecondsLeft, setReverseSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
 
@@ -78,13 +76,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     return () => clearInterval(interval);
   }, [s.frozenUntil]);
 
-  useEffect(() => {
-    if (!s.reverseUntil) return;
-    const update = () => setReverseSecondsLeft(Math.max(0, Math.ceil((s.reverseUntil! - Date.now()) / 1000)));
-    update();
-    const id = setInterval(update, 500);
-    return () => clearInterval(id);
-  }, [s.reverseUntil]);
   // Spotlight countdown
   useEffect(() => {
     if (!s.spotlightEndsAt) return;
@@ -240,11 +231,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* REVERSE banner — non-bloquant, affiché pendant toute la durée */}
-      {s.isReverse && reverseSecondsLeft > 0 && (
-        <ReverseOverlay secondsLeft={reverseSecondsLeft} senderName={s.tauntSenderName} />
-      )}
-
       {/* TAUNT OVERLAYS — router selon tauntType */}
       {s.isFrozen && freezeSecondsLeft > 0 && (() => {
         switch (s.tauntType) {
@@ -373,13 +359,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         {/* Taunt credits — tap to go to leaderboard */}
         <button
           onClick={() => a.setView(AppView.LEADERBOARD)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all active:scale-95 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63] animate-pulse' : 'bg-black/80 border-white/5 text-white/10'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all active:scale-95 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63]' : 'bg-black/80 border-white/5 text-white/10'}`}
         >
-          <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? '' : 'opacity-30'} />
+          <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? 'animate-pulse' : 'opacity-30'} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
-            {s.tauntsLeft > 0
-              ? `ATTAQUE → CLASSEMENT`
-              : `TAUNTS : 0`}
+            {language === 'fr' ? 'TAUNTS' : 'TAUNTS'} : {s.tauntsLeft}
           </span>
         </button>
       </div>

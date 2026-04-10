@@ -18,7 +18,6 @@ const TAUNT_OPTIONS: {
   { type: TauntType.TINY_TARGET, emoji: '🎯', labelFr: 'Tiny Target',  labelEn: 'Tiny Target',  descFr: 'Bouton qui s\'échappe',       descEn: 'Button runs away',           color: '#86EFAC' },
   { type: TauntType.BLOB,        emoji: '💦', labelFr: 'Blob',         labelEn: 'Blob',         descFr: 'Écran à nettoyer',            descEn: 'Screen to wipe',             color: '#6EE7B7' },
   { type: TauntType.FLASHLIGHT,  emoji: '🔦', labelFr: 'Lampe Torche', labelEn: 'Flashlight',   descFr: 'Noir total 45 sec',           descEn: 'Lights out 45 sec',          color: '#FDE68A' },
-  { type: TauntType.REVERSE,     emoji: '🔁', labelFr: 'Reverse',      labelEn: 'Reverse',      descFr: 'Son prochain défi = ton +1', descEn: 'Their next clear = your +1', color: '#C4B5FD' },
 ];
 
 // ─── Unlock system (time-based) ─────────────────────────────────────────────
@@ -455,9 +454,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           </h1>
           <div className="flex items-center gap-2">
             {onTaunt && (
-              <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border-2 border-black text-[10px] font-impact font-[900] uppercase ${tauntsLeft > 0 ? 'bg-[#FF2E63] text-white' : 'bg-black/20 text-black/40'}`}>
-                <Zap className="w-3 h-3" fill="currentColor" />
-                {tauntsLeft}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-black ${tauntsLeft > 0 ? 'bg-[#FF2E63] text-white' : 'bg-black/20 text-black/40'}`}>
+                <Zap className="w-3.5 h-3.5" fill="currentColor" />
+                <div className="flex flex-col leading-none">
+                  <span className="font-impact font-[900] text-[11px] uppercase">{tauntsLeft}</span>
+                  <span className={`font-impact text-[7px] uppercase tracking-wider leading-none ${tauntsLeft > 0 ? 'text-white/70' : 'text-black/30'}`}>
+                    {language === 'fr' ? 'ATTAQUER' : 'ATTACK'}
+                  </span>
+                </div>
               </div>
             )}
             <button onClick={fetchData} className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center active:scale-90 transition-transform">

@@ -360,7 +360,7 @@ const App: React.FC = () => {
            currentScore={s.score}
            tauntsLeft={s.tauntsLeft}
            onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
-             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined, s.gameSession!.id);
+             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
            } : undefined}
          />
       )}

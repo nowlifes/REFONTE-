@@ -35,9 +35,6 @@ export const useBingoGame = () => {
   const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
   const [tauntType, setTauntType] = useState<TauntType>(TauntType.FREEZE);
   const [tauntSenderName, setTauntSenderName] = useState<string | null>(null);
-  // REVERSE state
-  const [reverseUntil, setReverseUntil] = useState<number | null>(null);
-  const [reverseSenderGameId, setReverseSenderGameId] = useState<string | null>(null);
   // --- SPOTLIGHT ---
   const [spotlightCellId, setSpotlightCellId] = useState<number | null>(null);
   const [spotlightEndsAt, setSpotlightEndsAt] = useState<number | null>(null);
@@ -160,13 +157,8 @@ export const useBingoGame = () => {
       if (incomingType) setTauntType(incomingType);
       if (data.taunt_data?.senderName !== undefined) setTauntSenderName(data.taunt_data.senderName || null);
 
-      if (data.frozen_until && incomingType !== TauntType.REVERSE) {
+      if (data.frozen_until) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
-      }
-
-      if (incomingType === TauntType.REVERSE && data.frozen_until) {
-        setReverseUntil(new Date(data.frozen_until).getTime());
-        setReverseSenderGameId(data.taunt_data?.senderGameId || null);
       }
 
 
@@ -417,15 +409,6 @@ export const useBingoGame = () => {
           const updatedGame = await gameService.validateCell(gameSession.id, selectedCell.id, proofData);
           setGameSession(updatedGame);
 
-          // REVERSE: one-shot — first validation grants sender +1, then clears
-          const reverseIsActive = reverseUntil !== null && Date.now() < reverseUntil;
-          if (reverseIsActive && reverseSenderGameId) {
-            gameService.reverseBonus(reverseSenderGameId).catch(() => {});
-            setReverseUntil(null);
-            setReverseSenderGameId(null);
-          }
-
-
         } catch (e: any) {
           if (!navigator.onLine) return; // Keep optimistic if offline
           setCells(oldCells);
@@ -471,10 +454,6 @@ export const useBingoGame = () => {
       setFrozenUntil(undefined);
     },
 
-    clearReverseLocally: () => {
-      setReverseUntil(null);
-      setReverseSenderGameId(null);
-    },
 
        resetGame: () => {
       setGameSession(null);
@@ -500,8 +479,6 @@ export const useBingoGame = () => {
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
-      isReverse: reverseUntil !== null && Date.now() < reverseUntil,
-      reverseUntil,
       tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive
     },
