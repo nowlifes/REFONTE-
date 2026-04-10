@@ -153,8 +153,8 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
       tag: '04 / 04',
       title: fr ? 'Taunts\n⚡ L\'arsenal' : 'Taunts\n⚡ the arsenal',
       body: fr
-        ? '3 armes dès le début. Toutes les 20 min, une nouvelle se débloque — unique pour toi.'
-        : '3 weapons from the start. Every 20 min, a new one unlocks — unique to you.',
+        ? '3 armes dès le début. Toutes les 30 min, une nouvelle se débloque — unique pour toi.'
+        : '3 weapons from the start. Every 30 min, a new one unlocks — unique to you.',
       visual: (
         <div className="flex flex-col gap-2 w-full">
           {/* 3 unlocked taunts */}
@@ -166,7 +166,7 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
           <div className="flex items-center gap-2 my-1 px-1">
             <div className="h-px flex-1 bg-white/10" />
             <span className="font-impact text-white/20 text-[7px] uppercase tracking-widest">
-              {fr ? 'dans 20 min' : 'in 20 min'}
+              {fr ? 'dans 30 min' : 'in 30 min'}
             </span>
             <div className="h-px flex-1 bg-white/10" />
           </div>
@@ -174,7 +174,7 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
           {/* 1 locked taunt */}
           <TauntPreview
             emoji="💦" label={fr ? 'Blob' : 'Blob'} desc="" color="#6EE7B7"
-            locked lockLabel={fr ? 'Disponible dans 20:00' : 'Available in 20:00'}
+            locked lockLabel={fr ? 'Disponible dans 30:00' : 'Available in 30:00'}
           />
         </div>
       ),

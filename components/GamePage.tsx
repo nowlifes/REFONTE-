@@ -363,7 +363,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         >
           <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? 'animate-pulse' : 'opacity-30'} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
-            {language === 'fr' ? 'TAUNTS' : 'TAUNTS'} : {s.tauntsLeft}
+            TAUNTS : {s.tauntsLeft}
           </span>
         </button>
       </div>

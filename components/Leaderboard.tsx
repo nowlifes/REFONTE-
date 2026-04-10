@@ -359,7 +359,9 @@ interface PlayerRowProps {
   onTauntPress: () => void;
 }
 
-const PlayerRow: React.FC<PlayerRowProps> = ({ entry, canTaunt, onTauntPress }) => (
+const PlayerRow: React.FC<PlayerRowProps> = ({ entry, canTaunt, onTauntPress }) => {
+  const { language } = useLanguage();
+  return (
   <div className={`flex items-center gap-3 px-3 py-3 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_black] ${entry.isCurrentUser ? 'bg-[#00FF9D] text-black' : 'bg-white text-black'}`}>
     <div className="w-9 h-9 shrink-0 bg-black text-white rounded-lg flex items-center justify-center font-impact text-lg italic">
       {entry.rank}
@@ -368,7 +370,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ entry, canTaunt, onTauntPress }) 
     <div className="flex-1 min-w-0">
       <div className="font-impact uppercase text-sm tracking-tighter truncate leading-none">
         {entry.pseudo}
-        {entry.isCurrentUser && <span className="ml-1 text-[8px] bg-black text-white px-1 py-0.5 rounded uppercase">toi</span>}
+        {entry.isCurrentUser && <span className="ml-1 text-[8px] bg-black text-white px-1 py-0.5 rounded uppercase">{language === 'fr' ? 'toi' : 'you'}</span>}
       </div>
       <div className="text-[8px] font-impact uppercase tracking-widest text-black/40 mt-0.5">
         {FLAG[entry.country || 'FR'] || '🌍'} {entry.country || 'FR'}
@@ -384,7 +386,8 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ entry, canTaunt, onTauntPress }) 
       </button>
     )}
   </div>
-);
+  );
+};
 
 // ─── Leaderboard ─────────────────────────────────────────────────────────────
 const Leaderboard: React.FC<LeaderboardProps> = ({
