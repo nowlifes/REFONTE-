@@ -159,7 +159,7 @@ class GameBackendService {
       const { data, error } = await supabase
         .from('event_session')
         .select('is_active')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) { console.error("[GameService] Error fetching session status:", error); return false; }
@@ -176,7 +176,7 @@ class GameBackendService {
       const { data } = await supabase
         .from('event_session')
         .select('transition_ends_at, next_bar_name')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1)
         .maybeSingle();
       return {
@@ -225,7 +225,7 @@ class GameBackendService {
       const { data: latest } = await supabase
         .from('event_session')
         .select('id')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -1018,12 +1018,14 @@ async resetSession(): Promise<void> {
 
   async awardBonusJoker(gameId: string): Promise<void> {
     if (!supabase) return;
-    await supabase.rpc('award_bonus_joker', { game_id: gameId });
+    const { error } = await supabase.rpc('award_bonus_joker', { game_id: gameId });
+    if (error) console.warn('[Bonus] award_bonus_joker failed:', error.message);
   }
 
   async awardBonusTaunt(gameId: string): Promise<void> {
     if (!supabase) return;
-    await supabase.rpc('award_bonus_taunt', { game_id: gameId });
+    const { error } = await supabase.rpc('award_bonus_taunt', { game_id: gameId });
+    if (error) console.warn('[Bonus] award_bonus_taunt failed:', error.message);
   }
 
   // Duration (ms) each taunt keeps the victim affected
@@ -1089,18 +1091,23 @@ async resetSession(): Promise<void> {
       })
       .eq('id', targetGame.id);
 
-    // Increment sender's taunt count
-    await supabase.rpc('increment_taunts_sent', { game_id: senderGameId });
+    // Increment sender's taunt count (non-blocking — taunts work even if RPC missing)
+    const rpcPromise = supabase.rpc('increment_taunts_sent', { game_id: senderGameId });
+    Promise.resolve(rpcPromise)
+      .then(({ error }: any) => { if (error) console.warn('[Taunt] increment_taunts_sent failed:', error.message); })
+      .catch((e: any) => console.warn('[Taunt] increment_taunts_sent exception:', e));
   }
 
   async reverseBonus(senderGameId: string): Promise<void> {
     if (!supabase) return;
-    await supabase.rpc('reverse_bonus', { sender_game_id: senderGameId });
+    const { error } = await supabase.rpc('reverse_bonus', { sender_game_id: senderGameId });
+    if (error) console.warn('[Taunt] reverse_bonus failed:', error.message);
   }
 
   async trapPenalty(victimGameId: string): Promise<void> {
     if (!supabase) return;
-    await supabase.rpc('trap_penalty', { victim_game_id: victimGameId });
+    const { error } = await supabase.rpc('trap_penalty', { victim_game_id: victimGameId });
+    if (error) console.warn('[Taunt] trap_penalty failed:', error.message);
   }
 
   subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {
