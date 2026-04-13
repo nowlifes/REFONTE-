@@ -61,7 +61,7 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-[80] bg-black/70 animate-in fade-in duration-200"
         onClick={onClose}
       />
 
