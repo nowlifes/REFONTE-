@@ -452,7 +452,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
              </button>
 
              <div 
-                className={`bg-[#FFD93D] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
+                className={`bg-[#FFD700] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
                 onMouseDown={startResetPress}
                 onMouseUp={endResetPress}
                 onMouseLeave={endResetPress}
@@ -575,7 +575,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
       {/* Footer Nav */}
       <footer className="shrink-0 w-full p-4 pb-10 flex justify-center z-40">
-        <div className="flex items-center gap-10 bg-[#FFD93D] border-[3px] border-black rounded-[2rem] px-10 py-3.5 shadow-[8px_8px_0px_black] relative">
+        <div className="flex items-center gap-10 bg-[#FFD700] border-[3px] border-black rounded-[2rem] px-10 py-3.5 shadow-[8px_8px_0px_black] relative">
            <button onClick={() => a.setView(AppView.LEADERBOARD)} className="flex flex-col items-center active:scale-90 transition-transform">
               <Trophy size={26} className="text-black" />
               <span className="text-[8px] font-impact uppercase tracking-widest mt-0.5 text-black font-black">TOP</span>
