@@ -1457,6 +1457,8 @@ async resetSession(): Promise<void> {
       .update({ status: 'ABANDONED' })
       .eq('player_id', playerId)
       .eq('status', 'ACTIVE');
+    // Also clear device lock so player can reconnect from any device
+    await supabase.from('players').update({ device_id: null }).eq('id', playerId);
   }
 
   // ─── DOUBLE CONNECTIONS ───────────────────────────────────────────────────
@@ -1559,6 +1561,49 @@ async resetSession(): Promise<void> {
         () => this.getHotTakes(sessionId).then(callback))
       .subscribe();
     return () => supabase.removeChannel(ch);
+  }
+
+  // ── 7.1 Double connection — device ownership ─────────────────────
+
+  /** Get device_id for a player (used for conflict detection on init). */
+  async getPlayerDeviceId(playerId: string): Promise<string | null> {
+    if (!supabase) return null;
+    const { data } = await supabase
+      .from('players')
+      .select('device_id')
+      .eq('id', playerId)
+      .maybeSingle();
+    return data?.device_id ?? null;
+  }
+
+  /** Claim this device — sets device_id to the given UUID.
+   *  Call after the user confirms "Oui, utiliser ce téléphone". */
+  async claimDevice(playerId: string, deviceId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('players').update({ device_id: deviceId }).eq('id', playerId);
+  }
+
+  /** Master action: clear a player's device lock so they can reconnect from any device. */
+  async clearDeviceLock(playerId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('players').update({ device_id: null }).eq('id', playerId);
+  }
+
+  /** Subscribe to a player row — fires when device_id changes.
+   *  Used to evict old device when master or new device claims the session. */
+  subscribePlayerDeviceChange(playerId: string, onDeviceChanged: (newDeviceId: string | null) => void): () => void {
+    if (!supabase) return () => {};
+    const ch = supabase
+      .channel(`player_device_${playerId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players', filter: `id=eq.${playerId}` },
+        (payload: any) => { onDeviceChanged(payload.new?.device_id ?? null); })
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }
+
+  /** Number of actions pending in the offline queue (for UI display). */
+  getPendingQueueLength(): number {
+    return this.getQueue().length;
   }
 
   // ── 4.3 Account Recovery ──────────────────────────────────────────

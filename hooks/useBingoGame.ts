@@ -13,7 +13,15 @@ export const useBingoGame = () => {
   // DEFAULT VIEW IS NOW NICKNAME
   const [view, setView] = useState<AppView>(AppView.NICKNAME);
   const [isLoading, setIsLoading] = useState(true);
-  
+
+  // 7.1 Double connection — persistent device UUID
+  const getMyDeviceId = (): string => {
+    let id = localStorage.getItem('bingo_device_id');
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem('bingo_device_id', id); }
+    return id;
+  };
+  const [deviceConflict, setDeviceConflict] = useState<{ playerId: string; onClaim: () => void; onDecline: () => void } | null>(null);
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
 
@@ -138,12 +146,56 @@ export const useBingoGame = () => {
       const savedUserId = localStorage.getItem('bingo_user_id');
       if (savedUserId) {
         try {
-          const foundUser = await gameService.getUser(savedUserId);
+          const myDeviceId = getMyDeviceId();
+          const [foundUser, dbDeviceId] = await Promise.all([
+            gameService.getUser(savedUserId),
+            gameService.getPlayerDeviceId(savedUserId),
+          ]);
+
           if (foundUser) {
+            // 7.1 — Device conflict: another device owns this session
+            if (dbDeviceId && dbDeviceId !== myDeviceId) {
+              setIsLoading(false);
+              await new Promise<void>(resolve => {
+                setDeviceConflict({
+                  playerId: savedUserId,
+                  onClaim: async () => {
+                    setDeviceConflict(null);
+                    setIsLoading(true);
+                    await gameService.claimDevice(savedUserId, myDeviceId);
+                    resolve();
+                  },
+                  onDecline: () => {
+                    setDeviceConflict(null);
+                    localStorage.removeItem('bingo_user_id');
+                    localStorage.removeItem('bingo_last_session');
+                    setView(AppView.NICKNAME);
+                    setIsLoading(false);
+                    resolve();
+                  },
+                });
+              });
+              if (!localStorage.getItem('bingo_user_id')) { return; } // declined
+              setIsLoading(true);
+            } else {
+              // First time on this device OR same device — claim it
+              await gameService.claimDevice(savedUserId, myDeviceId);
+            }
+
             setUser(foundUser);
             setNickname(foundUser.nickname);
             setAvatarId(foundUser.avatarId);
             setCountry(foundUser.country || 'FR');
+
+            // Eviction subscription: if device_id changes away from us → auto-logout
+            const unsubEvict = gameService.subscribePlayerDeviceChange(savedUserId, (newDeviceId) => {
+              if (newDeviceId && newDeviceId !== myDeviceId) {
+                localStorage.removeItem('bingo_user_id');
+                localStorage.removeItem('bingo_last_session');
+                setView(AppView.NICKNAME);
+                unsubEvict();
+              }
+            });
 
             // Resume Active Session
             const activeGame = await gameService.getActiveSession(savedUserId);
@@ -381,6 +433,8 @@ export const useBingoGame = () => {
            setUser(newUser);
            currentUserId = newUser.id;
            localStorage.setItem('bingo_user_id', newUser.id);
+           // Claim device on first creation
+           await gameService.claimDevice(newUser.id, getMyDeviceId());
         }
         
         // Fetch challenges from Supabase first, fallback to hardcoded
@@ -569,7 +623,7 @@ export const useBingoGame = () => {
 
   return {
     state: {
-      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user,
+      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user, deviceConflict,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,

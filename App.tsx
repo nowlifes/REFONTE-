@@ -521,9 +521,36 @@ const App: React.FC = () => {
 
       </GameRoom>{/* end GameRoom session guard */}
 
+      {/* DEVICE CONFLICT MODAL */}
+      {s.deviceConflict && (
+        <div className="fixed inset-0 z-[400] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-[#111C35] border-[3px] border-[#FFD700] rounded-3xl p-6 max-w-xs w-full shadow-[8px_8px_0px_black]">
+            <div className="text-4xl mb-3 text-center">📱</div>
+            <h3 className="font-impact uppercase text-[#FFD700] text-xl tracking-wide text-center">Session active</h3>
+            <p className="text-white/60 text-[12px] font-impact uppercase tracking-wider mt-2 text-center leading-relaxed">
+              Ta session est déjà ouverte sur un autre appareil. Tu veux l'utiliser ici ?
+            </p>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={s.deviceConflict.onDecline}
+                className="flex-1 py-3 bg-white/8 border-[2px] border-white/20 rounded-2xl font-impact uppercase text-white/60 text-[12px] tracking-widest active:scale-95 transition-transform"
+              >
+                Non
+              </button>
+              <button
+                onClick={s.deviceConflict.onClaim}
+                className="flex-[2] py-3 bg-[#FFD700] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] font-impact uppercase text-black text-[12px] tracking-widest active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                Oui, ce téléphone
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3-2-1 LAUNCH COUNTDOWN OVERLAY */}
       {launchCountdown !== null && (
-        <div className="fixed inset-0 z-[350] bg-[#0A1629]/95 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[350] bg-[#0A1629]/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
           <p className="font-impact text-white/40 uppercase text-[13px] tracking-[0.4em] mb-4">
             {launchCountdown.isGo ? 'PARTEZ !' : 'Prépare-toi...'}
           </p>

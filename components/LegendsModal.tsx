@@ -1,101 +1,121 @@
 
-import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
-import { X, Users, Crown, HandMetal } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface LegendsModalProps {
   onClose: () => void;
 }
 
+const RULES_FR = [
+  { emoji: '🎯', title: 'Accomplis des défis', desc: 'Tape sur une case pour voir ton défi. Valide-le une fois accompli.' },
+  { emoji: '👥', title: 'Solo, Témoin ou Master', desc: 'SOLO = tu te débrouilles. TÉMOIN = un joueur signe. MASTER = le maestro valide en direct.' },
+  { emoji: '🏆', title: 'Fais des lignes', desc: 'Complète une ligne (horizontal, vertical ou diagonal) pour gagner un joker.' },
+  { emoji: '⚡', title: 'Lance des taunts', desc: 'Utilise tes jokers pour envoyer des effets à tes adversaires et les ralentir.' },
+  { emoji: '👑', title: 'Obéis au Master', desc: 'Le Master mène la soirée. Certains défis nécessitent son accord direct.' },
+];
+
+const RULES_EN = [
+  { emoji: '🎯', title: 'Complete challenges', desc: 'Tap a cell to reveal your challenge. Validate it once done.' },
+  { emoji: '👥', title: 'Solo, Witness or Master', desc: 'SOLO = do it yourself. WITNESS = get a player to sign. MASTER = the host validates live.' },
+  { emoji: '🏆', title: 'Make lines', desc: 'Complete a line (horizontal, vertical or diagonal) to earn a joker.' },
+  { emoji: '⚡', title: 'Send taunts', desc: 'Use your jokers to send effects to rivals and slow them down.' },
+  { emoji: '👑', title: 'Obey the Master', desc: 'The Master runs the night. Some challenges need their live approval.' },
+];
+
+const EXTRA_FR = [
+  { emoji: '🥶', title: 'Freeze', desc: 'Bloque un joueur pendant 35 secondes.' },
+  { emoji: '🧊', title: 'Bloc de glace', desc: 'Recouvre la grille d\'un bloc de glace.' },
+  { emoji: '🎯', title: 'Micro-cible', desc: 'Rétrécit les cases de l\'adversaire.' },
+  { emoji: '💦', title: 'Blob', desc: 'Fait trembler la grille de l\'adversaire.' },
+  { emoji: '🔦', title: 'Lampe torche', desc: 'Éteint l\'écran sauf sous le doigt.' },
+];
+
+const EXTRA_EN = [
+  { emoji: '🥶', title: 'Freeze', desc: 'Freezes a player for 35 seconds.' },
+  { emoji: '🧊', title: 'Ice block', desc: 'Covers the rival\'s grid with an ice block.' },
+  { emoji: '🎯', title: 'Tiny target', desc: 'Shrinks the rival\'s cells.' },
+  { emoji: '💦', title: 'Blob', desc: 'Makes the rival\'s grid shake.' },
+  { emoji: '🔦', title: 'Flashlight', desc: 'Turns off the screen except where you touch.' },
+];
+
 const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
-  const { t } = useLanguage();
-  const appUrl = window.location.href;
+  const { language } = useLanguage();
+  const [showExtra, setShowExtra] = useState(false);
+  const rules = language === 'fr' ? RULES_FR : RULES_EN;
+  const extra = language === 'fr' ? EXTRA_FR : EXTRA_EN;
+  const isFr = language === 'fr';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-white border-[5px] border-black rounded-[2.5rem] shadow-[15px_15px_0px_black] overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
-        
-        {/* MASSIVE CLOSE CROSS */}
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 p-2 bg-black text-white rounded-full z-50 hover:scale-110 active:scale-90 transition-all border-2 border-white/20 shadow-xl"
-        >
-          <X className="w-7 h-7" strokeWidth={5} />
-        </button>
+    <div className="fixed inset-0 z-[100] bg-black/85 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-[#0A1629] border-[3px] border-white/15 rounded-t-[2rem] sm:rounded-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250" style={{ maxHeight: '90vh' }}>
 
-        <div className="bg-[#FFD700] p-8 text-center border-b-[5px] border-black">
-          <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic leading-none">
-            {t('rules_title')} <span className="bg-black text-white px-3 py-1 ml-1 rounded-lg inline-block rotate-2">BINGO</span>
-          </h2>
+        {/* Header */}
+        <div className="shrink-0 bg-[#FFD700] border-b-[3px] border-black px-6 py-5 flex items-center justify-between">
+          <div>
+            <h2 className="font-impact text-black uppercase text-[22px] italic tracking-tight leading-none">
+              {isFr ? 'Les règles' : 'The rules'}
+            </h2>
+            <p className="font-impact text-black/50 uppercase text-[10px] tracking-widest mt-0.5">
+              {isFr ? '5 règles, 30 secondes' : '5 rules, 30 seconds'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 bg-black border-[2px] border-black rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-[2px_2px_0px_rgba(0,0,0,0.3)]"
+          >
+            <X size={20} strokeWidth={3} className="text-white" />
+          </button>
         </div>
 
-        <div className="p-6 space-y-5 bg-white overflow-y-auto no-scrollbar max-h-[55vh]">
-            {/* Challenge modes */}
-            <div className="bg-[#00FF9D] border-[4px] border-black rounded-3xl p-5 flex items-center gap-5 shadow-[6px_6px_0px_black] transition-all">
-                <div className="bg-white p-3 rounded-2xl border-2 border-black">
-                  <HandMetal className="w-8 h-8 text-black shrink-0" strokeWidth={3} />
-                </div>
-                <div>
-                    <h3 className="font-impact text-black text-base uppercase italic">{t('mode_solo_title')}</h3>
-                    <p className="text-black/60 text-[10px] font-impact uppercase leading-tight tracking-tight mt-1">{t('mode_solo_desc')}</p>
-                </div>
-            </div>
-
-            <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-5 flex items-center gap-5 shadow-[6px_6px_0px_black] transition-all">
-                <div className="bg-white p-3 rounded-2xl border-2 border-black">
-                  <Users className="w-8 h-8 text-[#FF2E63] shrink-0" strokeWidth={3} />
-                </div>
-                <div className="text-white">
-                    <h3 className="font-impact text-base uppercase italic">{t('mode_social_title')}</h3>
-                    <p className="text-white/80 text-[10px] font-impact uppercase leading-tight tracking-tight mt-1">{t('mode_social_desc')}</p>
-                </div>
-            </div>
-
-            <div className="bg-[#FFD700] border-[4px] border-black rounded-3xl p-5 flex items-center gap-5 shadow-[6px_6px_0px_black] transition-all">
-                <div className="bg-white p-3 rounded-2xl border-2 border-black">
-                  <Crown className="w-8 h-8 text-[#EAB308] shrink-0" strokeWidth={3} />
-                </div>
-                <div>
-                    <h3 className="font-impact text-base uppercase italic">{t('mode_master_title')}</h3>
-                    <p className="text-black/60 text-[10px] font-impact uppercase leading-tight tracking-tight mt-1">{t('mode_master_desc')}</p>
-                </div>
-            </div>
-
-            {/* Taunts section */}
-            <div className="pt-2">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex-1 h-[2px] bg-black/10 rounded-full" />
-                <span className="font-impact text-[11px] uppercase tracking-widest text-black/30">{t('taunts_section_title')}</span>
-                <div className="flex-1 h-[2px] bg-black/10 rounded-full" />
-              </div>
-              <p className="text-center text-black/40 font-impact uppercase text-[9px] tracking-widest mb-3">{t('taunts_section_desc')}</p>
-
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { emoji: '🥶', titleKey: 'taunt_freeze_title', descKey: 'taunt_freeze_desc', bg: 'bg-[#93C5FD]' },
-                  { emoji: '🧊', titleKey: 'taunt_ice_title',    descKey: 'taunt_ice_desc',    bg: 'bg-[#BAE6FD]' },
-                  { emoji: '🎯', titleKey: 'taunt_tiny_title',   descKey: 'taunt_tiny_desc',   bg: 'bg-[#FCA5A5]' },
-                  { emoji: '💦', titleKey: 'taunt_blob_title',   descKey: 'taunt_blob_desc',   bg: 'bg-[#86EFAC]' },
-                ] as const).map(({ emoji, titleKey, descKey, bg }) => (
-                  <div key={titleKey} className={`${bg} border-[3px] border-black rounded-2xl p-3 shadow-[4px_4px_0px_black]`}>
-                    <span className="text-2xl block mb-1">{emoji}</span>
-                    <h4 className="font-impact text-black text-sm uppercase italic leading-none">{t(titleKey)}</h4>
-                    <p className="text-black/60 text-[9px] font-impact uppercase leading-tight tracking-tight mt-1">{t(descKey)}</p>
-                  </div>
-                ))}
+        {/* Rules list */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3 no-scrollbar">
+          {rules.map((rule, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-4 bg-white/5 border border-white/8 rounded-2xl px-4 py-3.5 animate-in slide-in-from-bottom-2 duration-200"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <span className="text-2xl shrink-0 leading-none mt-0.5">{rule.emoji}</span>
+              <div className="min-w-0">
+                <div className="font-impact uppercase text-white text-[13px] tracking-wide">{rule.title}</div>
+                <div className="font-impact text-white/45 uppercase text-[9px] tracking-widest leading-relaxed mt-0.5">{rule.desc}</div>
               </div>
             </div>
+          ))}
+
+          {/* En savoir plus — taunts */}
+          <button
+            onClick={() => setShowExtra(x => !x)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white/3 border border-white/8 rounded-2xl text-white/40 hover:text-white/60 transition-all active:bg-white/8"
+          >
+            <span className="font-impact uppercase text-[10px] tracking-widest">
+              {isFr ? '⚡ Détails des taunts' : '⚡ Taunt details'}
+            </span>
+            {showExtra ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} strokeWidth={2.5} />}
+          </button>
+
+          {showExtra && (
+            <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
+              {extra.map((t, i) => (
+                <div key={i} className="bg-white/5 border border-white/8 rounded-2xl p-3">
+                  <span className="text-xl block mb-1.5">{t.emoji}</span>
+                  <div className="font-impact text-white uppercase text-[11px] italic leading-none">{t.title}</div>
+                  <div className="font-impact text-white/40 uppercase text-[8px] tracking-widest leading-relaxed mt-1">{t.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="p-6 bg-black flex items-center justify-between gap-6">
-            <div className="flex-1 text-white">
-                <h4 className="font-impact text-sm italic uppercase mb-1 tracking-tighter">{t('share')}</h4>
-                <p className="text-white/40 text-[9px] font-impact uppercase tracking-[0.2em] leading-none">{t('invite_friends')}</p>
-            </div>
-            <div className="bg-white p-3 rounded-2xl border-2 border-white shadow-[6px_6px_0px_#FFD700] rotate-3">
-                 <QRCodeSVG value={appUrl} size={80} level="M" fgColor="#000000" />
-            </div>
+        {/* Footer */}
+        <div className="shrink-0 px-5 pb-6 pt-3 border-t border-white/8">
+          <button
+            onClick={onClose}
+            className="w-full py-3.5 bg-[#FFD700] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] font-impact uppercase text-black text-[14px] tracking-widest active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+          >
+            {isFr ? "C'est parti ! 🚀" : "Let's go! 🚀"}
+          </button>
         </div>
       </div>
     </div>

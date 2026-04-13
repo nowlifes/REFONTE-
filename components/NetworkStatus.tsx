@@ -9,6 +9,7 @@ const NetworkStatus: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(gameService.isSyncing);
   const [showNotification, setShowNotification] = useState(false);
+  const [pendingCount, setPendingCount] = useState(gameService.getPendingQueueLength());
 
   useEffect(() => {
     // Online/Offline Listeners
@@ -28,6 +29,7 @@ const NetworkStatus: React.FC = () => {
     // Sync Status Listener
     const unsubscribe = gameService.subscribeToSyncStatus((status) => {
        setIsSyncing(status);
+       setPendingCount(gameService.getPendingQueueLength());
     });
 
     return () => {
@@ -56,7 +58,9 @@ const NetworkStatus: React.FC = () => {
            <WifiOff className="w-4 h-4 text-white animate-pulse" />
            <div className="flex flex-col">
               <span className="text-[10px] font-impact uppercase tracking-widest text-white">{t('offline_mode')}</span>
-              <span className="text-[8px] text-white/70 font-impact uppercase">{t('data_saved')}</span>
+              <span className="text-[8px] text-white/70 font-impact uppercase">
+                {pendingCount > 0 ? `${pendingCount} action${pendingCount > 1 ? 's' : ''} en attente` : t('data_saved')}
+              </span>
            </div>
         </div>
       );
