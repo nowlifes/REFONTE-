@@ -446,7 +446,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 className="bg-black/40 border border-white/20 rounded-lg px-2 py-1 flex items-center gap-1.5 active:scale-95 transition-all"
              >
                 <span className="text-sm leading-none">{language === 'en' ? '🇬🇧' : '🇫🇷'}</span>
-                <span className="text-[9px] font-impact font-[900] text-white/70">
+                <span className="text-[9px] font-impact text-white/70">
                    {language === 'en' ? 'EN' : 'FR'}
                 </span>
              </button>

@@ -14,7 +14,7 @@ const StyleSelection: React.FC<StyleSelectionProps> = ({ onSelect }) => {
     <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
       
       <div className="text-center mb-8">
-        <h2 className="text-4xl font-impact font-[900] text-white uppercase tracking-tighter italic leading-none mb-1">
+        <h2 className="text-4xl font-impact text-white uppercase tracking-tighter italic leading-none mb-1">
           {t('your_identity')}
         </h2>
         <p className="text-[10px] text-white/40 font-impact uppercase tracking-widest">
@@ -30,7 +30,7 @@ const StyleSelection: React.FC<StyleSelectionProps> = ({ onSelect }) => {
                 <HandMetal className="w-6 h-6 text-black" strokeWidth={3} />
             </div>
             <div className="flex-1">
-                <h3 className="text-black font-impact font-[900] text-lg uppercase leading-none mb-1 italic">
+                <h3 className="text-black font-impact text-lg uppercase leading-none mb-1 italic">
                     {t('mode_solo_title')}
                 </h3>
                 <p className="text-black/60 text-[8.5px] font-impact uppercase leading-tight tracking-tight">
@@ -45,7 +45,7 @@ const StyleSelection: React.FC<StyleSelectionProps> = ({ onSelect }) => {
                 <Users className="w-6 h-6 text-black" strokeWidth={3} />
             </div>
             <div className="flex-1 text-white">
-                <h3 className="font-impact font-[900] text-lg uppercase leading-none mb-1 italic">
+                <h3 className="font-impact text-lg uppercase leading-none mb-1 italic">
                     {t('mode_social_title')}
                 </h3>
                 <p className="text-white/70 text-[8.5px] font-impact uppercase leading-tight tracking-tight">
@@ -60,7 +60,7 @@ const StyleSelection: React.FC<StyleSelectionProps> = ({ onSelect }) => {
                 <Crown className="w-7 h-7 text-black" strokeWidth={3} />
             </div>
             <div className="flex-1 text-black">
-                <h3 className="font-impact font-[900] text-lg uppercase leading-none mb-1 italic">
+                <h3 className="font-impact text-lg uppercase leading-none mb-1 italic">
                     {t('mode_master_title')}
                 </h3>
                 <p className="text-black/60 text-[8.5px] font-impact uppercase leading-tight tracking-tight">

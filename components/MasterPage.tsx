@@ -1004,7 +1004,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* RESET CONFIRMATION */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-[#111C35] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#FF2E63] animate-in zoom-in duration-300">
             <button onClick={() => setShowResetConfirm(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 transition-colors">
               <X size={22} strokeWidth={2.5} />
@@ -1041,7 +1041,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* NEW SESSION CONFIRMATION */}
       {showNewSessionConfirm && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-[#111C35] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#00FF9D] animate-in zoom-in duration-300">
             <button onClick={() => setShowNewSessionConfirm(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 transition-colors">
               <X size={22} strokeWidth={2.5} />
@@ -1078,7 +1078,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* CHALLENGES LIST MODAL */}
       {showChallenges && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-[#111C35] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[80vh]">
             <button onClick={() => setShowChallenges(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 z-10 transition-colors">
               <X size={22} strokeWidth={2.5} />
@@ -1105,7 +1105,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* PLAYER LIST MODAL */}
       {showPlayers && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-lg bg-[#111C35] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[85vh]">
             <button onClick={() => setShowPlayers(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 z-10 transition-colors">
               <X size={22} strokeWidth={2.5} />
@@ -1265,7 +1265,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* RECOVERY QR MODAL (4.3) */}
       {recoveryQR && (
-        <div className="fixed inset-0 z-[210] bg-black/85 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[210] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="bg-[#111C35] border-[3px] border-white/15 rounded-3xl p-6 w-full max-w-xs shadow-[8px_8px_0px_black] flex flex-col items-center gap-5 relative">
             <button
               onClick={() => setRecoveryQR(null)}

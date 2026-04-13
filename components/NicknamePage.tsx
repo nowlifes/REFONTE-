@@ -73,7 +73,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
                 className="bg-[#FFD700] border-[3px] border-black rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-[3px_3px_0px_black] active:translate-x-[1.5px] active:translate-y-[1.5px] active:shadow-none transition-all relative z-20"
               >
                 <span className="text-lg">{language === 'en' ? '🇬🇧' : '🇫🇷'}</span>
-                <span className="text-[10px] font-impact font-[900] text-black">
+                <span className="text-[10px] font-impact text-black">
                    {language === 'en' ? 'EN' : 'FR'}
                 </span>
               </button>
@@ -206,7 +206,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
                   </div>
                 )}
              </div>
-             <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic leading-none">{t('your_card')}</h2>
+             <h2 className="text-3xl font-impact text-black uppercase tracking-tighter italic leading-none">{t('your_card')}</h2>
            </div>
            
            <div className="space-y-1 mb-6">
@@ -224,7 +224,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
            <button
                 onClick={() => setShowOnboarding(true)}
                 disabled={!s.nickname.trim()}
-                className="w-full bg-[#00FF9D] text-black py-5 rounded-xl text-xl font-impact font-[900] uppercase tracking-widest shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-30 flex items-center justify-center gap-3"
+                className="w-full bg-[#00FF9D] text-black py-5 rounded-xl text-xl font-impact uppercase tracking-widest shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-30 flex items-center justify-center gap-3"
             >
              {t('lets_go_btn')} <ArrowRight className="w-6 h-6" strokeWidth={5} />
            </button>
@@ -238,16 +238,16 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
 
          {/* Master Login Modal */}
          {ui.showMasterLogin && (
-           <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+           <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
               <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
                  <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black"><X className="w-6 h-6" strokeWidth={5} /></button>
                  <div className="text-center mb-6">
                    <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
-                   <h3 className="text-2xl font-impact font-[900] text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
+                   <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
                  </div>
                  <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
                     <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="••••" className={`w-full bg-white border-[3px] border-black rounded-xl p-4 text-center text-black text-2xl font-impact tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-black'}`} autoFocus disabled={ui.isVerifyingMaster} />
-                    <button type="submit" disabled={ui.isVerifyingMaster} className="w-full bg-black text-[#FFD700] font-impact font-[900] py-4 rounded-xl uppercase tracking-wider text-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <button type="submit" disabled={ui.isVerifyingMaster} className="w-full bg-black text-[#FFD700] font-impact py-4 rounded-xl uppercase tracking-wider text-lg transition-all active:scale-95 flex items-center justify-center gap-2">
                        {ui.isVerifyingMaster ? <Loader2 className="w-6 h-6 animate-spin" /> : t('unlock')}
                     </button>
                  </form>

@@ -29,7 +29,7 @@ const ActivityFeed: React.FC = () => {
         <div 
           key={activity.id} 
           className={`
-            flex items-center gap-3 bg-black/80 backdrop-blur-md border border-gold-500/30 p-2 rounded-xl shadow-lg
+            flex items-center gap-3 bg-black/85 border border-white/15 p-2 rounded-xl shadow-lg
             animate-in fade-in slide-in-from-top-2 duration-500
             ${index === 0 ? 'scale-100 opacity-100' : index === 1 ? 'scale-95 opacity-60' : 'scale-90 opacity-30'}
           `}

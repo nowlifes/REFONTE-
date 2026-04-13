@@ -97,7 +97,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
   const accentBorder = isWitness ? 'border-[#FF2E63]' : 'border-[#00FF9D]';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-end sm:items-center justify-center">
       <div className="w-full max-w-sm sm:max-w-sm bg-[#0A1629] border-[3px] border-white/10 rounded-t-[2rem] sm:rounded-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.6)] sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250"
         style={{ maxHeight: '88vh' }}>
 
@@ -130,7 +130,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                   </div>
                 )}
               </div>
-              <p className={`font-impact font-[900] text-[22px] ${accentText} uppercase leading-tight italic tracking-tight`}>
+              <p className={`font-impact text-[22px] ${accentText} uppercase leading-tight italic tracking-tight`}>
                 "{cell.text}"
               </p>
             </div>
@@ -264,7 +264,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                 <ScanLine size={10} strokeWidth={3} />
                 <span className="text-[8px] font-impact uppercase tracking-widest">DÉFI MASTER</span>
               </div>
-              <p className="font-impact font-[900] text-black text-xl uppercase leading-tight italic tracking-tight">
+              <p className="font-impact text-black text-xl uppercase leading-tight italic tracking-tight">
                 "{cell.text}"
               </p>
             </div>
@@ -333,7 +333,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
               </div>
             </div>
 
-            <h2 className="font-impact font-[900] text-3xl text-black uppercase tracking-tighter italic leading-none mb-3">
+            <h2 className="font-impact text-3xl text-black uppercase tracking-tighter italic leading-none mb-3">
               Demande envoyée!
             </h2>
             <p className="font-impact text-black/55 uppercase text-[10px] tracking-widest mb-10 leading-loose max-w-[220px]">
@@ -366,7 +366,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
             <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center shadow-[8px_8px_0px_rgba(0,0,0,0.25)] animate-in zoom-in-75 duration-300">
               <Check size={48} className="text-[#00FF9D]" strokeWidth={5} />
             </div>
-            <h2 className="font-impact font-[900] text-4xl text-black uppercase mt-8 tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300 delay-100">
+            <h2 className="font-impact text-4xl text-black uppercase mt-8 tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300 delay-100">
               {t('validated')}
             </h2>
           </div>

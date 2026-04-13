@@ -41,7 +41,7 @@ const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[250] bg-black/85 flex items-end justify-center animate-in fade-in duration-200">
       <div
         className="w-full max-w-sm bg-[#0A1629] border-[3px] border-white/10 rounded-t-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-250"
         style={{ maxHeight: '88vh' }}

@@ -16,7 +16,7 @@ const NFTBadgeModal: React.FC<NFTBadgeModalProps> = ({ nickname, score, badges, 
   const { t } = useLanguage();
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A1629]/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
       <div className="w-full max-w-sm bg-white border-[4px] border-black rounded-2xl shadow-[8px_8px_0px_black] overflow-hidden flex flex-col relative">
         <button onClick={onClose} className="absolute top-2 right-2 p-3 z-30 text-black active:scale-90 transition-transform">
           <X className="w-7 h-7" strokeWidth={5} />
@@ -26,7 +26,7 @@ const NFTBadgeModal: React.FC<NFTBadgeModalProps> = ({ nickname, score, badges, 
           <div className="w-16 h-16 mx-auto bg-white border-[3px] border-black rounded-xl flex items-center justify-center mb-3 shadow-[4px_4px_0px_black]">
              <Shield className="w-8 h-8 text-black" strokeWidth={3} />
           </div>
-          <h2 className="text-3xl font-impact font-[900] text-black uppercase tracking-tighter italic leading-none">{nickname}</h2>
+          <h2 className="text-3xl font-impact text-black uppercase tracking-tighter italic leading-none">{nickname}</h2>
           <span className="text-[9px] font-impact text-black/50 uppercase tracking-widest mt-2 block">{t('certified_adventurer')}</span>
         </div>
 

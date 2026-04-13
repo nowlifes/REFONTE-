@@ -116,7 +116,7 @@ const TutorialLayer: React.FC<TutorialLayerProps> = ({ step, onNext }) => {
 
       <div className="absolute flex flex-col items-center justify-center px-4" style={tooltipStyle}>
          <div className="bg-[#FFD700] text-black p-6 rounded-[2rem] border-[4px] border-black shadow-[10px_10px_0px_black] w-full max-w-xs animate-in zoom-in-95 duration-200">
-            <p className="text-center font-impact font-[900] uppercase text-base leading-snug mb-5 tracking-tight italic">
+            <p className="text-center font-impact uppercase text-base leading-snug mb-5 tracking-tight italic">
                 {t(config.textKey as any)}
             </p>
             <button

@@ -27,7 +27,7 @@ const SessionEndOverlay: React.FC<SessionEndOverlayProps> = ({ onViewReport, nic
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-navy-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[1000] bg-[#0A1629] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
       <div className="relative mb-6">
         <div className="absolute -inset-8 bg-red-500/20 blur-3xl rounded-full animate-pulse"></div>
         <div className="w-20 h-20 bg-navy-900 border-2 border-red-500 rounded-2xl flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(239,68,68,0.3)]">

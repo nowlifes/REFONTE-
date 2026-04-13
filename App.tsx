@@ -325,7 +325,7 @@ const App: React.FC = () => {
             onCrownClick={() => setShowHiddenLogin(true)}
          />
          {ui.showMasterLogin && (
-           <div className="fixed inset-0 z-[100] bg-navy-950/95 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+           <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
               <div className="w-full max-w-sm bg-navy-900 border-2 border-gold-500 rounded-xl p-8 relative shadow-gold-lg">
                  <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X className="w-6 h-6" /></button>
                  <div className="text-center mb-6">
@@ -580,7 +580,7 @@ const App: React.FC = () => {
 
       {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
       {showHiddenLogin && (
-        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-300">
            <div className="w-full max-w-sm bg-navy-950 border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
               <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-slate-600 hover:text-white"><X className="w-6 h-6" /></button>
               <div className="text-center mb-8">

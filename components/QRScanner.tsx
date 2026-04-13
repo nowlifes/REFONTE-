@@ -110,7 +110,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ mode, onScanSuccess, onClose }) =
         <button onClick={onClose} className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center active:scale-90 transition-transform">
           <X size={20} strokeWidth={3} />
         </button>
-        <h2 className="font-impact text-xl font-[900] text-black uppercase tracking-tighter italic">
+        <h2 className="font-impact text-xl text-black uppercase tracking-tighter italic">
           {getTitle()}
         </h2>
         <div className="w-10" />

@@ -190,7 +190,7 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
       {/* Skip */}
       <button
         onClick={onDone}
-        className="absolute top-6 right-6 flex items-center gap-1 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full border-2 border-white/20 text-white/70 active:text-white active:border-white/40 transition-all z-10"
+        className="absolute top-6 right-6 flex items-center gap-1 bg-black/50 px-3 py-1.5 rounded-full border-2 border-white/20 text-white/70 active:text-white active:border-white/40 transition-all z-10"
       >
         <X className="w-3.5 h-3.5" strokeWidth={3} />
         <span className="text-[10px] font-impact uppercase tracking-widest">
@@ -206,7 +206,7 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
       >
         {/* Tag + icon */}
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-impact uppercase tracking-widest font-[900] px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : 'bg-[#FFD700] text-black'}`}>
+          <span className={`text-[10px] font-impact uppercase tracking-widest px-2 py-1 rounded-md ${current === 0 ? 'bg-black text-[#FFD700]' : 'bg-[#FFD700] text-black'}`}>
             {card.tag}
           </span>
           <div className={`w-16 h-16 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] ${

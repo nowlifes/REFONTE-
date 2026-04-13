@@ -8,7 +8,7 @@ const SessionStartOverlay: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-[#0A1629]/95 backdrop-blur-md"></div>
+      <div className="absolute inset-0 bg-[#0A1629]/95"></div>
       
       <div className="relative w-full max-w-sm text-center animate-in zoom-in-95 duration-500">
          <div className="mb-8 relative inline-block">
@@ -19,12 +19,12 @@ const SessionStartOverlay: React.FC = () => {
              <Zap className="absolute -bottom-4 -left-4 text-[#FF2E63] w-10 h-10 fill-[#FF2E63] animate-pulse delay-100" />
          </div>
 
-         <h1 className="text-4xl font-impact font-[900] text-white uppercase tracking-tighter leading-none italic mb-4">
+         <h1 className="text-4xl font-impact text-white uppercase tracking-tighter leading-none italic mb-4">
             {t('session_start_title')}
          </h1>
          
          <div className="bg-[#00FF9D] border-[3px] border-black rounded-xl p-4 shadow-[5px_5px_0px_black]">
-             <p className="text-black font-impact font-[900] text-sm uppercase italic tracking-tighter">
+             <p className="text-black font-impact text-sm uppercase italic tracking-tighter">
                 {t('session_start_subtitle')}
              </p>
          </div>

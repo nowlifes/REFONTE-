@@ -11,7 +11,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A1629]/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 bg-[#0A1629]/95 flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="w-full max-w-sm relative flex flex-col max-h-[85vh]">
         
         {/* Scrollable area for content */}
@@ -19,7 +19,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
             
             {/* Header (Scrollable with the rest) */}
             <div className="text-center mt-2 mb-6 shrink-0">
-                <h2 className="text-4xl font-impact font-[900] text-white uppercase tracking-tighter leading-none italic mb-1">
+                <h2 className="text-4xl font-impact text-white uppercase tracking-tighter leading-none italic mb-1">
                     {t('rewards_title')}
                 </h2>
                 <p className="text-[10px] text-white/50 font-impact uppercase tracking-[0.2em]">
@@ -36,7 +36,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
                         <Wine className="w-7 h-7 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-black font-impact font-[900] text-2xl uppercase leading-none italic">
+                        <h3 className="text-black font-impact text-2xl uppercase leading-none italic">
                             {t('reward_row_1')}
                         </h3>
                         <p className="text-black/50 text-sm font-impact uppercase tracking-wide mt-1">
@@ -51,7 +51,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
                         <Gift className="w-7 h-7 text-black" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-black font-impact font-[900] text-2xl uppercase leading-none italic">
+                        <h3 className="text-black font-impact text-2xl uppercase leading-none italic">
                             {t('reward_row_2')}
                         </h3>
                         <p className="text-black/50 text-sm font-impact uppercase tracking-wide mt-1">
@@ -66,7 +66,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
                         <Crown className="w-8 h-8 text-black" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-black font-impact font-[900] text-2xl uppercase leading-none italic">
+                        <h3 className="text-black font-impact text-2xl uppercase leading-none italic">
                             {t('reward_full_grid')}
                         </h3>
                         <p className="text-black/50 text-sm font-impact uppercase tracking-wide mt-1">
@@ -81,7 +81,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onClose }) => {
         <div className="mt-2 shrink-0 pt-2 bg-gradient-to-t from-[#0A1629] via-[#0A1629] to-transparent">
             <button
                 onClick={onClose}
-                className="w-full bg-[#FFD700] text-black font-impact font-[900] text-3xl uppercase tracking-widest py-5 rounded-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
+                className="w-full bg-[#FFD700] text-black font-impact text-3xl uppercase tracking-widest py-5 rounded-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
             >
                 {t('cheers_btn')} <ArrowRight className="w-7 h-7" strokeWidth={5} />
             </button>

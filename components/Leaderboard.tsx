@@ -273,7 +273,7 @@ const TauntSheet: React.FC<TauntSheetProps> = ({ entry, tauntsLeft, language, ga
       </div>
 
       {/* Backdrop */}
-      <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[200] bg-black/80" onClick={onClose} />
 
       {/* Sheet */}
       <div className="fixed bottom-0 left-0 right-0 z-[210] animate-in slide-in-from-bottom-4 duration-300">
@@ -452,7 +452,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           <button onClick={onBack} className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center active:scale-90 transition-transform">
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
-          <h1 className="font-impact text-2xl font-[900] text-black uppercase tracking-tighter italic">
+          <h1 className="font-impact text-2xl text-black uppercase tracking-tighter italic">
             {tab === 'PLAYERS' ? '🏆 TOP PLAYERS' : '🌍 NATION WARS'}
           </h1>
           <div className="flex items-center gap-2">
@@ -460,7 +460,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
               <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border-2 border-black ${tauntsLeft > 0 ? 'bg-[#FF2E63] text-white' : 'bg-black/20 text-black/40'}`}>
                 <Zap className="w-3.5 h-3.5" fill="currentColor" />
                 <div className="flex flex-col leading-none">
-                  <span className="font-impact font-[900] text-[11px] uppercase">{tauntsLeft}</span>
+                  <span className="font-impact text-[11px] uppercase">{tauntsLeft}</span>
                   <span className={`font-impact text-[7px] uppercase tracking-wider leading-none ${tauntsLeft > 0 ? 'text-white/70' : 'text-black/30'}`}>
                     {language === 'fr' ? 'ATTAQUER' : 'ATTACK'}
                   </span>

@@ -32,7 +32,7 @@ const BadgeNotification: React.FC<BadgeNotificationProps> = ({ badge, onClose })
 
   return (
     <div className={`fixed inset-0 z-[200] flex items-center justify-center p-6 transition-all duration-500 ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-black/85" onClick={onClose}></div>
       
       <div className={`relative w-full max-w-sm bg-[#FFD700] border-[5px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] transform transition-all duration-500 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-20'}`}>
         
@@ -46,14 +46,14 @@ const BadgeNotification: React.FC<BadgeNotificationProps> = ({ badge, onClose })
 
         <div className="text-center space-y-4">
             <span className="text-black font-impact font-black text-xs uppercase tracking-[0.2em]">{t('new_achievement')}</span>
-            <h2 className="text-4xl font-impact font-[900] text-black uppercase tracking-tighter leading-none italic drop-shadow-sm">
+            <h2 className="text-4xl font-impact text-black uppercase tracking-tighter leading-none italic drop-shadow-sm">
               {t(titleKey)}
             </h2>
         </div>
 
         <button 
           onClick={onClose}
-          className="w-full mt-10 bg-black text-white font-impact font-[900] text-xl uppercase tracking-widest py-5 rounded-2xl shadow-[5px_5px_0px_rgba(0,0,0,0.3)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+          className="w-full mt-10 bg-black text-white font-impact text-xl uppercase tracking-widest py-5 rounded-2xl shadow-[5px_5px_0px_rgba(0,0,0,0.3)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
         >
           {t('sensational_btn')}
         </button>
