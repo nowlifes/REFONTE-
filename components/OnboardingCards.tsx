@@ -187,13 +187,6 @@ const OnboardingCards: React.FC<OnboardingCardsProps> = ({ onDone }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-[#0A1629] flex flex-col items-center justify-center p-6 animate-in fade-in duration-200 overflow-hidden">
 
-      {/* Background blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[10%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#FFD700] opacity-20 blur-3xl animate-pulse" />
-        <div className="absolute bottom-[5%] right-[-25%] w-[70%] h-[70%] rounded-full bg-[#FF2E63] opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-[40%] right-[10%] w-[40%] h-[40%] rounded-full bg-[#00FF9D] opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
-
       {/* Skip */}
       <button
         onClick={onDone}
