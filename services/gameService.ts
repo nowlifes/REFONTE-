@@ -1393,7 +1393,10 @@ async resetSession(): Promise<void> {
 
   async renamePlayer(playerId: string, newPseudo: string): Promise<void> {
     if (!supabase) return;
-    await supabase.from('players').update({ pseudo: newPseudo }).eq('id', playerId);
+    // Preserve the [XX] country prefix stored in pseudo, only replace the display name
+    const { data: player } = await supabase.from('players').select('pseudo').eq('id', playerId).maybeSingle();
+    const prefix = player?.pseudo?.match(/^\[[A-Z]{2}\]\s*/)?.[0] ?? '';
+    await supabase.from('players').update({ pseudo: prefix + newPseudo }).eq('id', playerId);
   }
 
   // ─── WITNESS MODE ─────────────────────────────────────────────────────────

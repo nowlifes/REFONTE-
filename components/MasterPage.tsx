@@ -194,6 +194,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
     return unsub;
   }, [secureSessionId, isSessionActive]);
 
+  // ── Auto-load players list so witness picker is always populated
+  useEffect(() => {
+    if (!secureSessionId || !isSessionActive) { setPlayersList([]); return; }
+    refreshPlayers();
+  }, [secureSessionId, isSessionActive]);
+
   const handleApproveValidation = async (v: any) => {
     setApprovingId(v.id);
     try { await gameService.approveMasterValidation(v); }
