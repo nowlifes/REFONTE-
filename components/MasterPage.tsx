@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle, Expand } from 'lucide-react';
+import { Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X, Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle, Expand, Play, ChevronRight, StopCircle, UserX, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
@@ -31,9 +31,28 @@ interface MasterPageProps {
   secureSessionId: string | null;
   state: any;
   actions: any;
+  // Pre-game controls
+  pregamePhase?: string | null;
+  pregameSubjectId?: string | null;
+  setPregamePhase?: (phase: string | null, subjectId?: string | null) => Promise<void>;
+  triggerCountdown?: (seconds: number) => Promise<void>;
+  clearCountdown?: () => Promise<void>;
+  // Spotlight control
+  spotlightDisabled?: boolean;
+  setSpotlightDisabled?: (disabled: boolean) => Promise<void>;
+  // Cadence control
+  challengeCooldownSecs?: number;
+  setChallengeCooldown?: (secs: number) => Promise<void>;
 }
 
-const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, secureSessionId, state: s, actions: a }) => {
+const PREGAME_LABELS: Record<string, string> = {
+  TRUTH_LIE_SUBMIT: '🎭 2V/1M — Soumission',
+  TRUTH_LIE_VOTE:   '🎭 2V/1M — Vote',
+  HOT_TAKE_SUBMIT:  '🔥 Hot Take — Soumission',
+  HOT_TAKE_VOTE:    '🔥 Hot Take — Vote',
+};
+
+const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped, triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName, secureSessionId, state: s, actions: a, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown }) => {
   const { t, language } = useLanguage();
   const [showQRFullscreen, setShowQRFullscreen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -44,6 +63,16 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
   const [isSimulating, setIsSimulating] = useState(false);
   const [dbChallenges, setDbChallenges] = useState<any[]>([]);
   const [showChallenges, setShowChallenges] = useState(false);
+
+  // Player management
+  const [showPlayers, setShowPlayers] = useState(false);
+  const [playersList, setPlayersList] = useState<Array<{id: string; pseudo: string; emoji: string; score: number; status: string}>>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+  const [kickingPlayerId, setKickingPlayerId] = useState<string | null>(null);
+
+  // Master validations (pending approval queue)
+  const [pendingValidations, setPendingValidations] = useState<any[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   // Fix 3: realtime player count for the current secure session
   const [playerCount, setPlayerCount] = useState(0);
@@ -65,6 +94,59 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [secureSessionId]);
+
+  // Pre-game state
+  const [tlSubmissions, setTlSubmissions] = useState<Array<{player_id: string; nickname: string}>>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [isLaunchingPhase, setIsLaunchingPhase] = useState(false);
+
+  useEffect(() => {
+    if (!secureSessionId || !isSessionActive) { setTlSubmissions([]); return; }
+    gameService.getTruthLieSubmissions(secureSessionId).then((subs: any[]) => {
+      const mapped = subs.map((s: any) => ({ player_id: s.player_id, nickname: s.nickname }));
+      setTlSubmissions(mapped);
+      if (mapped.length > 0 && !selectedSubjectId) setSelectedSubjectId(mapped[0].player_id);
+    }).catch(() => {});
+  }, [secureSessionId, isSessionActive, pregamePhase]);
+
+  const handleSetPhase = async (phase: string | null, subjectId?: string | null) => {
+    if (!setPregamePhase) return;
+    setIsLaunchingPhase(true);
+    try { await setPregamePhase(phase, subjectId); }
+    finally { setIsLaunchingPhase(false); }
+  };
+
+  const handleLaunchGame = async () => {
+    if (!triggerCountdown) return;
+    setIsLaunchingPhase(true);
+    try {
+      await triggerCountdown(3);
+      // Clear pregame phase after countdown ends (3.5s)
+      setTimeout(() => { setPregamePhase?.(null); }, 3500);
+    } finally {
+      setIsLaunchingPhase(false);
+    }
+  };
+
+  // Subscribe to master validations
+  useEffect(() => {
+    if (!secureSessionId || !isSessionActive) { setPendingValidations([]); return; }
+    const unsub = gameService.subscribeMasterValidations(secureSessionId, setPendingValidations);
+    return unsub;
+  }, [secureSessionId, isSessionActive]);
+
+  const handleApproveValidation = async (v: any) => {
+    setApprovingId(v.id);
+    try {
+      await gameService.approveMasterValidation(v);
+      // Removed from list automatically via subscription
+    } catch (e) { console.error(e); alert('Erreur lors de l\'approbation'); }
+    finally { setApprovingId(null); }
+  };
+
+  const handleRejectValidation = async (validationId: string) => {
+    await gameService.rejectMasterValidation(validationId);
+  };
 
   // Bar transition state
   const [selectedDuration, setSelectedDuration] = useState<number>(5);
@@ -96,6 +178,34 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
     };
     fetchChallenges();
   }, []);
+
+  const refreshPlayers = async () => {
+    if (!secureSessionId) return;
+    setIsLoadingPlayers(true);
+    try {
+      const list = await gameService.getPlayersWithScores(secureSessionId);
+      setPlayersList(list.sort((a, b) => b.score - a.score));
+    } catch (e) { console.error(e); }
+    finally { setIsLoadingPlayers(false); }
+  };
+
+  useEffect(() => {
+    if (!showPlayers || !secureSessionId) return;
+    refreshPlayers();
+    const iv = setInterval(refreshPlayers, 5000);
+    return () => clearInterval(iv);
+  }, [showPlayers, secureSessionId]);
+
+  const handleKickPlayer = async (playerId: string) => {
+    if (!confirm('Kick ce joueur ? Il sera renvoyé à l\'écran de départ.')) return;
+    setKickingPlayerId(playerId);
+    try {
+      await gameService.kickPlayer(playerId);
+      setPlayersList(prev => prev.filter(p => p.id !== playerId));
+      setPlayerCount(prev => Math.max(0, prev - 1));
+    } catch (e) { console.error(e); }
+    finally { setKickingPlayerId(null); }
+  };
 
   const handleReset = async () => {
     setIsResetting(true);
@@ -213,14 +323,262 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                     <Sparkles className="w-4 h-4" /> {t('create_new_session')}
                  </button>
 
-                 <button 
-                    onClick={() => setShowChallenges(true)} 
-                    className="w-full py-3 bg-blue-500 text-white rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[4px_4px_0px_black] border-[3px] border-black"
-                  >
-                     <List className="w-4 h-4" /> {dbChallenges.length} CHALLENGES LOADED
-                  </button>
+                 <div className="grid grid-cols-2 gap-2">
+                   <button
+                      onClick={() => setShowChallenges(true)}
+                      className="py-3 bg-blue-500 text-white rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-[3px_3px_0px_black] border-[2px] border-black"
+                    >
+                       <List className="w-3.5 h-3.5" /> {dbChallenges.length} CHALLENGES
+                    </button>
+                   <button
+                      onClick={() => setShowPlayers(true)}
+                      className="py-3 bg-[#6366F1] text-white rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-[3px_3px_0px_black] border-[2px] border-black"
+                    >
+                       <Users className="w-3.5 h-3.5" /> {playerCount} JOUEURS
+                    </button>
+                 </div>
                </div>
             </div>
+
+            {/* MASTER VALIDATIONS — shown when there are pending requests */}
+            {isSessionActive && pendingValidations.length > 0 && (
+              <div className="mb-4 pb-4 border-b-2 border-black/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-[#FF2D6A] border-[2px] border-black rounded-full flex items-center justify-center">
+                    <span className="font-impact text-white text-[9px]">{pendingValidations.length}</span>
+                  </div>
+                  <span className="font-impact text-[11px] uppercase tracking-widest text-black">
+                    Validations en attente
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto no-scrollbar">
+                  {pendingValidations.map((v: any) => (
+                    <div key={v.id} className="bg-[#FF2D6A]/10 border-[2px] border-[#FF2D6A]/40 rounded-xl p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg leading-none">{v.player_emoji}</span>
+                        <span className="font-impact text-black text-[11px] uppercase tracking-tight">{v.player_nickname}</span>
+                      </div>
+                      <p className="text-[10px] text-black/60 font-medium mb-2 leading-tight line-clamp-2">{v.challenge_text}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApproveValidation(v)}
+                          disabled={approvingId === v.id}
+                          className="flex-1 py-2 bg-[#00FF9D] text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+                        >
+                          {approvingId === v.id ? '...' : '✓ Approuver'}
+                        </button>
+                        <button
+                          onClick={() => handleRejectValidation(v.id)}
+                          disabled={approvingId === v.id}
+                          className="flex-1 py-2 bg-white text-red-500 rounded-lg font-impact uppercase text-[10px] border-[2px] border-red-300 active:translate-x-[1px] active:translate-y-[1px] transition-all disabled:opacity-50"
+                        >
+                          ✗ Rejeter
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SPOTLIGHT CONTROL */}
+            {isSessionActive && setSpotlightDisabled && (
+              <div className="mb-4 pb-4 border-b-2 border-black/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base leading-none">⚡</span>
+                    <span className="font-impact text-[11px] uppercase tracking-widest text-black">Spotlight</span>
+                  </div>
+                  <button
+                    onClick={() => setSpotlightDisabled(!spotlightDisabled)}
+                    className={`relative w-12 h-6 rounded-full border-[2px] border-black transition-all shadow-[2px_2px_0px_black] ${spotlightDisabled ? 'bg-black/20' : 'bg-[#FFD700]'}`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white border-[2px] border-black rounded-full transition-all shadow-[1px_1px_0px_black] ${spotlightDisabled ? 'left-0.5' : 'left-[22px]'}`} />
+                  </button>
+                </div>
+                <p className="font-impact text-[9px] uppercase tracking-widest text-black/40 mt-1">
+                  {spotlightDisabled ? 'Désactivé sur tous les appareils' : 'Actif — cellule bonus toutes les 30 min'}
+                </p>
+              </div>
+            )}
+
+            {/* CADENCE CONTROL */}
+            {isSessionActive && setChallengeCooldown && (
+              <div className="mb-4 pb-4 border-b-2 border-black/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-[#6366F1]" strokeWidth={3} />
+                  <span className="font-impact text-[11px] uppercase tracking-widest text-black">Cadence</span>
+                  {(challengeCooldownSecs ?? 0) > 0 && (
+                    <div className="ml-auto bg-[#6366F1] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[1px_1px_0px_black]">
+                      <span className="font-impact text-[8px] text-white uppercase tracking-wide">
+                        {challengeCooldownSecs}s entre défis
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-1.5">
+                  {[0, 30, 60, 120, 300].map(secs => (
+                    <button
+                      key={secs}
+                      onClick={() => setChallengeCooldown(secs)}
+                      className={`flex-1 py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
+                        (challengeCooldownSecs ?? 0) === secs
+                          ? 'bg-[#6366F1] text-white shadow-none translate-x-[1px] translate-y-[1px]'
+                          : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                      }`}
+                    >
+                      {secs === 0 ? 'OFF' : secs < 60 ? `${secs}s` : `${secs / 60}m`}
+                    </button>
+                  ))}
+                </div>
+                <p className="font-impact text-[9px] uppercase tracking-widest text-black/30 mt-1.5 text-center">
+                  Délai minimum entre deux validations
+                </p>
+              </div>
+            )}
+
+            {/* PRE-GAME SECTION */}
+            {isSessionActive && (
+              <div className="mb-6 pb-6 border-b-2 border-black/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-[#9B59B6]" strokeWidth={3} />
+                  <span className="font-impact text-[11px] uppercase tracking-widest text-black">Pré-Game</span>
+                  {pregamePhase && (
+                    <div className="ml-auto bg-[#9B59B6] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[1px_1px_0px_black]">
+                      <span className="font-impact text-[8px] text-white uppercase tracking-wide">
+                        {PREGAME_LABELS[pregamePhase] ?? pregamePhase}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {!pregamePhase ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSetPhase('TRUTH_LIE_SUBMIT')}
+                      disabled={isLaunchingPhase || !setPregamePhase}
+                      className="flex-1 py-3 bg-[#9B59B6] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
+                    >
+                      <span className="text-base leading-none">🎭</span>
+                      <span>Vérité/Mensonge</span>
+                    </button>
+                    <button
+                      onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
+                      disabled={isLaunchingPhase || !setPregamePhase}
+                      className="flex-1 py-3 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
+                    >
+                      <span className="text-base leading-none">🔥</span>
+                      <span>Hot Takes</span>
+                    </button>
+                  </div>
+                ) : pregamePhase === 'TRUTH_LIE_SUBMIT' ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-black/5 rounded-xl px-3 py-2 text-center">
+                      <span className="font-impact text-[10px] text-black/50 uppercase tracking-widest">
+                        {tlSubmissions.length} soumission{tlSubmissions.length !== 1 ? 's' : ''} reçue{tlSubmissions.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {tlSubmissions.length > 0 && (
+                      <>
+                        <select
+                          value={selectedSubjectId}
+                          onChange={e => setSelectedSubjectId(e.target.value)}
+                          className="w-full border-[2px] border-black rounded-xl px-3 py-2 font-impact text-[11px] uppercase bg-white focus:outline-none"
+                        >
+                          {tlSubmissions.map(sub => (
+                            <option key={sub.player_id} value={sub.player_id}>{sub.nickname}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleSetPhase('TRUTH_LIE_VOTE', selectedSubjectId)}
+                          disabled={isLaunchingPhase || !selectedSubjectId}
+                          className="w-full py-2.5 bg-[#9B59B6] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
+                          Passer au Vote
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
+                      disabled={isLaunchingPhase}
+                      className="w-full py-2 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
+                    >
+                      🔥 Passer Hot Takes
+                    </button>
+                    <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 hover:bg-red-100 transition-all">
+                      <StopCircle className="w-3 h-3" /> Arrêter pré-game
+                    </button>
+                  </div>
+                ) : pregamePhase === 'TRUTH_LIE_VOTE' ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-[#9B59B6]/10 border-[2px] border-[#9B59B6]/30 rounded-xl px-3 py-2 text-center">
+                      <span className="font-impact text-[9px] text-[#9B59B6] uppercase tracking-widest">
+                        Sujet actuel: {tlSubmissions.find(s => s.player_id === pregameSubjectId)?.nickname ?? '—'}
+                      </span>
+                    </div>
+                    <select
+                      value={selectedSubjectId}
+                      onChange={e => setSelectedSubjectId(e.target.value)}
+                      className="w-full border-[2px] border-black rounded-xl px-3 py-2 font-impact text-[11px] uppercase bg-white focus:outline-none"
+                    >
+                      {tlSubmissions.map(sub => (
+                        <option key={sub.player_id} value={sub.player_id}>{sub.nickname}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleSetPhase('TRUTH_LIE_VOTE', selectedSubjectId)}
+                      disabled={isLaunchingPhase || !selectedSubjectId}
+                      className="w-full py-2.5 bg-[#9B59B6] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
+                    >
+                      Sujet suivant →
+                    </button>
+                    <button
+                      onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
+                      disabled={isLaunchingPhase}
+                      className="w-full py-2 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
+                    >
+                      🔥 Passer Hot Takes
+                    </button>
+                    <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 hover:bg-red-100 transition-all">
+                      <StopCircle className="w-3 h-3" /> Arrêter pré-game
+                    </button>
+                  </div>
+                ) : pregamePhase === 'HOT_TAKE_SUBMIT' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => handleSetPhase('HOT_TAKE_VOTE')}
+                      disabled={isLaunchingPhase}
+                      className="w-full py-2.5 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" strokeWidth={3} />
+                      Lancer le Vote
+                    </button>
+                    <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 hover:bg-red-100 transition-all">
+                      <StopCircle className="w-3 h-3" /> Arrêter pré-game
+                    </button>
+                  </div>
+                ) : pregamePhase === 'HOT_TAKE_VOTE' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleLaunchGame}
+                      disabled={isLaunchingPhase || !triggerCountdown}
+                      className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-5 h-5" strokeWidth={3} fill="currentColor" />
+                      {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu!'}
+                    </button>
+                    <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 hover:bg-red-100 transition-all">
+                      <StopCircle className="w-3 h-3" /> Arrêter pré-game
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-red-50 text-red-600 border-2 border-red-200 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 hover:bg-red-100 transition-all">
+                    <StopCircle className="w-3 h-3" /> Réinitialiser pré-game
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* BAR TRANSITION SECTION */}
             <div className="mb-6 pb-6 border-b-2 border-black/10">
@@ -445,6 +803,75 @@ const MasterPage: React.FC<MasterPageProps> = ({ isSessionActive, setSessionActi
                     </div>
                  </div>
                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PLAYER LIST MODAL */}
+      {showPlayers && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white border-[4px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_#6366F1] flex flex-col max-h-[80vh]">
+            <button onClick={() => setShowPlayers(false)} className="absolute top-4 right-4 text-black/20 hover:text-black z-10"><X className="w-6 h-6" /></button>
+
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-impact font-bold text-black uppercase tracking-tighter italic">
+                JOUEURS ({playersList.length})
+              </h3>
+              <button
+                onClick={refreshPlayers}
+                disabled={isLoadingPlayers}
+                className="w-8 h-8 bg-black/5 border border-black/10 rounded-lg flex items-center justify-center hover:bg-black/10 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 text-black/50 ${isLoadingPlayers ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1 space-y-2 no-scrollbar">
+              {isLoadingPlayers && playersList.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-black/20 border-t-black/60 rounded-full animate-spin mx-auto" />
+                </div>
+              ) : playersList.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="font-impact text-[11px] uppercase tracking-widest text-black/30">Aucun joueur</p>
+                </div>
+              ) : (
+                playersList.map((player, i) => (
+                  <div key={player.id} className="p-3 bg-slate-50 border-2 border-black/10 rounded-xl flex items-center gap-3">
+                    {/* Rank */}
+                    <span className="w-7 h-7 bg-black text-white rounded-lg flex items-center justify-center font-impact text-xs italic shrink-0">
+                      {i + 1}
+                    </span>
+                    {/* Emoji avatar */}
+                    <span className="text-2xl leading-none shrink-0">{player.emoji}</span>
+                    {/* Name + status */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-impact text-black text-[13px] uppercase tracking-tight truncate">{player.pseudo}</div>
+                      <div className={`text-[9px] font-impact uppercase tracking-widest ${player.status === 'ACTIVE' ? 'text-[#00C896]' : 'text-black/30'}`}>
+                        {player.status === 'ACTIVE' ? '● EN JEU' : '○ EN ATTENTE'}
+                      </div>
+                    </div>
+                    {/* Score */}
+                    {player.status === 'ACTIVE' && (
+                      <div className="bg-[#FFD700] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_black] shrink-0">
+                        <span className="font-impact text-black text-[13px]">{player.score}/25</span>
+                      </div>
+                    )}
+                    {/* Kick */}
+                    <button
+                      onClick={() => handleKickPlayer(player.id)}
+                      disabled={kickingPlayerId === player.id}
+                      className="w-8 h-8 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center hover:bg-red-100 transition-all disabled:opacity-40 shrink-0"
+                      title="Kick player"
+                    >
+                      {kickingPlayerId === player.id
+                        ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" />
+                        : <UserX className="w-3.5 h-3.5 text-red-500" />}
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

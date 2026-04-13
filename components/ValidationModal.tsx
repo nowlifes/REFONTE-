@@ -14,11 +14,12 @@ interface ValidationModalProps {
   onSubmitProof: (file: any) => void;
   onUseJoker: () => void;
   onScanRequest?: () => void;
+  onRequestMasterValidation?: () => Promise<void>;
 }
 
-type ModalStep = 'INFO' | 'WITNESS_MODE' | 'MASTER_PAD' | 'SUCCESS';
+type ModalStep = 'INFO' | 'WITNESS_MODE' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS';
 
-const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest }) => {
+const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest, onRequestMasterValidation }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<ModalStep>(cell.type === ChallengeType.MASTER ? 'MASTER_PAD' : 'INFO');
   
@@ -212,6 +213,19 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                     <ScanLine size={20} strokeWidth={3} /> Scanner le QR du Master
                  </button>
 
+                    {/* Remote request — send to master's dashboard */}
+                 {onRequestMasterValidation && (
+                   <button
+                     onClick={async () => {
+                       await onRequestMasterValidation();
+                       setStep('MASTER_SENT');
+                     }}
+                     className="w-full py-4 bg-[#FFD700] text-black rounded-2xl font-impact uppercase text-base flex items-center justify-center gap-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                   >
+                     📱 Demander au Master
+                   </button>
+                 )}
+
                  {/* Divider */}
                  <div className="flex items-center gap-3">
                    <div className="flex-1 h-px bg-black/20" />
@@ -225,6 +239,27 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                  </div>
               </div>
            </div>
+        )}
+
+        {step === 'MASTER_SENT' && (
+          <div className="flex-1 flex flex-col items-center justify-center bg-[#FFD700] p-10 text-center">
+            <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center shadow-2xl mb-6">
+              <span className="text-5xl animate-pulse">📱</span>
+            </div>
+            <h2 className="font-impact font-[900] text-3xl text-black uppercase tracking-tighter italic leading-none mb-3">
+              Demande envoyée!
+            </h2>
+            <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-8 leading-relaxed">
+              Le Master verra ta demande sur son tableau de bord.{'\n'}
+              Ta case se validera automatiquement!
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full py-4 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+            >
+              Fermer
+            </button>
+          </div>
         )}
 
         {step === 'SUCCESS' && (

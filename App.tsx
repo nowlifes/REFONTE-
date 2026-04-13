@@ -28,6 +28,7 @@ import MasterPage from './components/MasterPage';
 import GamePage from './components/GamePage';
 import GameRoom from './components/GameRoom';
 import GameOverPage from './components/GameOverPage';
+import PreGamePage from './components/PreGamePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const RotateDeviceOverlay = () => {
@@ -48,11 +49,13 @@ const App: React.FC = () => {
   const { state: s, actions: a } = useBingoGame();
   const aRef = React.useRef(a);
   aRef.current = a;
+  const sRef = React.useRef(s);
+  sRef.current = s;
   const { state: ui, actions: uia } = useAppUI(a.setView);
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId } = useEventSession();
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown } = useEventSession();
   const { language } = useLanguage();
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
@@ -73,6 +76,42 @@ const App: React.FC = () => {
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
   }, [transitionEndsAt, s.view]);
+
+  // Spotlight disable: when master disables spotlight from dashboard, clear it locally
+  useEffect(() => {
+    if (spotlightDisabled) {
+      // Clear spotlight state — useBingoGame will stop showing it
+      // resetSpotlightCount resets the quota so it won't auto-trigger
+      a.resetSpotlightCount();
+    }
+  }, [spotlightDisabled]);
+
+  // 3-2-1 game launch countdown (driven by countdownEndsAt from event_session)
+  const [launchCountdown, setLaunchCountdown] = useState<{ value: number; isGo: boolean } | null>(null);
+  useEffect(() => {
+    if (!countdownEndsAt || s.view === AppView.MASTER_DASHBOARD) { setLaunchCountdown(null); return; }
+    let fired = false;
+    const update = () => {
+      const msLeft = countdownEndsAt - Date.now();
+      const secLeft = Math.ceil(msLeft / 1000);
+      if (secLeft > 0) {
+        setLaunchCountdown({ value: secLeft, isGo: false });
+      } else if (!fired) {
+        fired = true;
+        setLaunchCountdown({ value: 0, isGo: true });
+        setTimeout(() => {
+          setLaunchCountdown(null);
+          const cur = sRef.current;
+          if (cur.nickname && !cur.gameSession) {
+            aRef.current.startGame(cur.nickname);
+          }
+        }, 800);
+      }
+    };
+    update();
+    const iv = setInterval(update, 100);
+    return () => { clearInterval(iv); };
+  }, [countdownEndsAt, s.view]);
 
     const resetSession = async () => {
     await baseResetSession();
@@ -328,8 +367,20 @@ const App: React.FC = () => {
           When no ?s= param is present it is a transparent no-op wrapper. */}
       <GameRoom setView={a.setView}>
 
-      {/* 1. NICKNAME PAGE */}
-      {s.view === AppView.NICKNAME && (
+      {/* PRE-GAME — overrides player views when active (master is unaffected) */}
+      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.nickname && (
+        <PreGamePage
+          phase={pregamePhase}
+          subjectId={pregameSubjectId}
+          secureSessionId={secureSessionId}
+          playerId={localStorage.getItem('bingo_user_id') || ''}
+          nickname={s.nickname}
+          avatarId={s.avatarId || ''}
+        />
+      )}
+
+      {/* 1. NICKNAME PAGE — shown when no pregame or player has no nickname yet */}
+      {s.view === AppView.NICKNAME && !(isSessionActive && pregamePhase && s.nickname) && (
          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
       )}
 
@@ -348,6 +399,15 @@ const App: React.FC = () => {
            secureSessionId={secureSessionId}
            state={s}
            actions={a}
+           pregamePhase={pregamePhase}
+           pregameSubjectId={pregameSubjectId}
+           setPregamePhase={setPregamePhase}
+           triggerCountdown={triggerCountdown}
+           clearCountdown={clearCountdown}
+           spotlightDisabled={spotlightDisabled}
+           setSpotlightDisabled={setSpotlightDisabled}
+           challengeCooldownSecs={challengeCooldownSecs}
+           setChallengeCooldown={setChallengeCooldown}
          />
       )}
 
@@ -377,6 +437,8 @@ const App: React.FC = () => {
               uiActions={uia}
               onCrownClick={() => setShowHiddenLogin(true)}
               onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
+              secureSessionId={secureSessionId}
+              challengeCooldownSecs={challengeCooldownSecs}
            />
         </ErrorBoundary>
       )}
@@ -444,6 +506,36 @@ const App: React.FC = () => {
       )}
 
       </GameRoom>{/* end GameRoom session guard */}
+
+      {/* 3-2-1 LAUNCH COUNTDOWN OVERLAY */}
+      {launchCountdown !== null && (
+        <div className="fixed inset-0 z-[350] bg-[#0A1629]/95 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <p className="font-impact text-white/40 uppercase text-[13px] tracking-[0.4em] mb-4">
+            {launchCountdown.isGo ? 'PARTEZ !' : 'Prépare-toi...'}
+          </p>
+          <div
+            key={launchCountdown.isGo ? 'go' : launchCountdown.value}
+            className="font-impact leading-none italic animate-in zoom-in-75 duration-200"
+            style={{
+              fontSize: '200px',
+              color: launchCountdown.isGo ? '#00FF9D' : '#FFD700',
+              textShadow: '6px 6px 0px black',
+            }}
+          >
+            {launchCountdown.isGo ? 'GO!' : launchCountdown.value}
+          </div>
+          {!launchCountdown.isGo && (
+            <div className="flex gap-2 mt-8">
+              {[3, 2, 1].map(n => (
+                <div
+                  key={n}
+                  className={`w-3 h-3 rounded-full border-[2px] border-black transition-all ${n >= launchCountdown.value ? 'bg-[#FFD700]' : 'bg-white/20'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
       {showHiddenLogin && (

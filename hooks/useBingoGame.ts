@@ -25,7 +25,9 @@ export const useBingoGame = () => {
   const [jokers, setJokers] = useState(INITIAL_JOKERS);
   
   const [winningIds, setWinningIds] = useState<number[]>([]);
-  const [feverCells, setFeverCells] = useState<number[]>([]); 
+  const [feverCells, setFeverCells] = useState<number[]>([]);
+  const [completedLineCount, setCompletedLineCount] = useState(0);
+  const [lineCompleteEvent, setLineCompleteEvent] = useState<{ totalLines: number; isFullGrid: boolean } | null>(null);
   
   const [activeScannerMode, setActiveScannerMode] = useState<'ENTRY' | 'MASTER' | null>(null);
   const [selectedCell, setSelectedCell] = useState<BingoCellData | null>(null);
@@ -40,6 +42,11 @@ export const useBingoGame = () => {
   const [spotlightEndsAt, setSpotlightEndsAt] = useState<number | null>(null);
   const spotlightPicked = useRef(false);
   const spotlightBarCount = useRef(0); // resets on each bar transition
+  // Ref so pickSpotlight always reads current cells (avoids stale closure bug).
+  const cellsRef = useRef(cells);
+
+  // Keep cellsRef current so spotlight timer always picks from non-validated cells.
+  useEffect(() => { cellsRef.current = cells; }, [cells]);
 
   // --- COMBO ---
   const validationTimestamps = useRef<number[]>([]);
@@ -138,6 +145,22 @@ export const useBingoGame = () => {
           }
         } catch (err) {
           console.error("Init error", err);
+          // Network error during init — try the offline cache before dropping to NicknamePage.
+          // Without this, a brief Supabase timeout on load wipes the player's session and
+          // forces them to create a new character (duplicate session bug).
+          const cached = localStorage.getItem('bingo_last_session');
+          if (cached && !navigator.onLine) {
+            try {
+              const session = JSON.parse(cached);
+              if (session.userId === savedUserId && Date.now() - session.startedAt <= EXPIRATION_TIME) {
+                setCells(session.grid);
+                setJokers(session.jokers ?? INITIAL_JOKERS);
+                setView(AppView.GAME);
+                setIsLoading(false);
+                return;
+              }
+            } catch { /* bad cache, fall through */ }
+          }
           setView(AppView.NICKNAME);
         }
       } else {
@@ -148,11 +171,15 @@ export const useBingoGame = () => {
     initApp();
   }, []);
 
-  // FREEZE SUBSCRIPTION
+  // Keep user/id ref so subscription callbacks can access current userId without stale closure
+  const userIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => { userIdRef.current = user?.id; }, [user?.id]);
+
+  // FREEZE SUBSCRIPTION + remote cell validation (master approvals)
   useEffect(() => {
     if (!gameSession?.id) return;
     if (gameSession.frozenUntil) setFrozenUntil(gameSession.frozenUntil);
-    const unsub = gameService.subscribeToGameUpdates(gameSession.id, (data) => {
+    const unsub = gameService.subscribeToGameUpdates(gameSession.id, async (data) => {
       const incomingType = data.taunt_type as TauntType | undefined;
       if (incomingType) setTauntType(incomingType);
       if (data.taunt_data?.senderName !== undefined) setTauntSenderName(data.taunt_data.senderName || null);
@@ -161,12 +188,22 @@ export const useBingoGame = () => {
         setFrozenUntil(new Date(data.frozen_until).getTime());
       }
 
-
       if (data.taunts_sent !== undefined) {
         setGameSession(prev => prev ? { ...prev, tauntsSent: data.taunts_sent } : prev);
       }
       if (data.taunts_bonus !== undefined) {
         setGameSession(prev => prev ? { ...prev, tauntsBonus: data.taunts_bonus } : prev);
+      }
+
+      // Remote cell update (master validated a MASTER challenge for us) — reload grid
+      if (Array.isArray(data.validated_cells) && userIdRef.current) {
+        try {
+          const updatedGame = await gameService.getActiveSession(userIdRef.current);
+          if (updatedGame) {
+            setCells(updatedGame.grid);
+            setGameSession(updatedGame);
+          }
+        } catch (e) { console.warn('[BingoGame] Failed to reload after remote validation', e); }
       }
     });
     return unsub;
@@ -181,7 +218,8 @@ export const useBingoGame = () => {
     if (view !== AppView.GAME || cells.length === 0) return;
     const pickSpotlight = () => {
       if (spotlightBarCount.current >= SPOTLIGHT_MAX_PER_BAR) return;
-      const empty = cells.filter(c => c.status === CellStatus.EMPTY);
+      // Use cellsRef (not stale closure) so we pick from currently empty cells.
+      const empty = cellsRef.current.filter(c => c.status === CellStatus.EMPTY);
       if (empty.length === 0) return;
       const pick = empty[Math.floor(Math.random() * empty.length)];
       setSpotlightCellId(pick.id);
@@ -197,50 +235,71 @@ export const useBingoGame = () => {
   // WIN CONDITION CHECKER
   useEffect(() => {
     if (view !== AppView.GAME || cells.length === 0) return;
-    
+
     const getRow = (r: number) => Array.from({length: 5}, (_, k) => r * 5 + k);
     const getCol = (c: number) => Array.from({length: 5}, (_, k) => k * 5 + c);
     const d1 = [0, 6, 12, 18, 24];
     const d2 = [4, 8, 12, 16, 20];
-    const lines = [...Array.from({length: 5}, (_, i) => getRow(i)), ...Array.from({length: 5}, (_, i) => getCol(i)), d1, d2];
+    const lines = [
+      ...Array.from({length: 5}, (_, i) => getRow(i)),
+      ...Array.from({length: 5}, (_, i) => getCol(i)),
+      d1, d2,
+    ];
 
     let allWinningIndices: number[] = [];
     let potentialFeverIndices: number[] = [];
+    let currentLineCount = 0;
 
     lines.forEach(indices => {
-      const validatedCount = indices.filter(i => cells[i].status === CellStatus.VALIDATED).length;
-      if (validatedCount === 5) allWinningIndices.push(...indices);
-      if (validatedCount === 4) {
-        const missing = indices.find(i => cells[i].status !== CellStatus.VALIDATED);
+      const validatedCount = indices.filter(i => cells[i]?.status === CellStatus.VALIDATED).length;
+      if (validatedCount === 5) {
+        allWinningIndices.push(...indices);
+        currentLineCount++;
+      } else if (validatedCount === 4) {
+        const missing = indices.find(i => cells[i]?.status !== CellStatus.VALIDATED);
         if (missing !== undefined) potentialFeverIndices.push(missing);
       }
     });
 
     const uniqueWinningIds = [...new Set(allWinningIndices)];
-    
-    // New Line Detected
-    if (uniqueWinningIds.length > winningIds.length) {
+
+    // New line(s) completed — celebrate + award bonus joker
+    if (currentLineCount > completedLineCount) {
+      const newLines = currentLineCount - completedLineCount;
+      setCompletedLineCount(currentLineCount);
       setWinningIds(uniqueWinningIds);
+
       playSound('WIN');
       triggerHaptic('success');
-      canvasConfetti({ particleCount: 80, spread: 100, origin: { y: 0.5 }, colors: ['#FFFFFF', '#FDE047'] });
-      
-      // Post Activity
+
+      const isFullGrid = uniqueWinningIds.length === 25;
+      canvasConfetti({
+        particleCount: isFullGrid ? 200 : 100,
+        spread: 120,
+        origin: { y: 0.45 },
+        colors: ['#FFFFFF', '#FDE047', '#00FF9D', '#FF2D6A'],
+      });
+
+      // +1 joker per new line (optimistic)
+      setJokers(prev => prev + newLines);
+      if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
+
+      // Trigger celebration banner in GamePage
+      setLineCompleteEvent({ totalLines: currentLineCount, isFullGrid });
+
       if (user) {
-        const isGridComplete = uniqueWinningIds.length === 25;
-        gameService.postActivity(
-          user.id, 
-          user.nickname, 
-          user.avatarId, 
-          isGridComplete ? 'GRID_COMPLETED' : 'LINE_COMPLETED'
-        );
+        gameService.postActivity(user.id, user.nickname, user.avatarId,
+          isFullGrid ? 'GRID_COMPLETED' : 'LINE_COMPLETED');
       }
+    } else if (uniqueWinningIds.length !== winningIds.length) {
+      // Sync IDs without re-triggering celebration (re-render from other state)
+      setWinningIds(uniqueWinningIds);
     }
 
     const uniqueFeverIds = [...new Set(potentialFeverIndices)].filter(id => !uniqueWinningIds.includes(id));
     setFeverCells(uniqueFeverIds);
 
-  }, [cells, view, winningIds.length, playSound]);
+  }, [cells, view, completedLineCount, winningIds.length, playSound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // BADGE CHECKER
   const checkBadges = useCallback((updatedCells: BingoCellData[]) => {
@@ -271,6 +330,7 @@ export const useBingoGame = () => {
     setSelectedCell,
     resetSpotlightCount: () => { spotlightBarCount.current = 0; },
     clearNewBadge,
+    clearLineCompleteEvent: () => setLineCompleteEvent(null),
     completeOnboarding: () => {},
     
     resetData: () => {
@@ -461,6 +521,8 @@ export const useBingoGame = () => {
       setCells([]);
       setWinningIds([]);
       setFeverCells([]);
+      setCompletedLineCount(0);
+      setLineCompleteEvent(null);
       resetBadges();
       setJokers(INITIAL_JOKERS);
       setNickname('');
@@ -480,7 +542,8 @@ export const useBingoGame = () => {
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
-      spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive
+      spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive,
+      lineCompleteEvent, completedLineCount
     },
     actions
   };

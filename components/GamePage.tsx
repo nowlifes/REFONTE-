@@ -28,9 +28,11 @@ interface GamePageProps {
   onTutorialNext?: () => void;
   onCrownClick?: () => void;
   onPhotoProof?: (cellId: number, url: string) => void;
+  secureSessionId?: string | null;
+  challengeCooldownSecs?: number;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0 }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
@@ -51,11 +53,27 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     requestAnimationFrame(step);
   }, [s.score]);
 
-  // Mystery cell unlock detection (#2)
+  // Progressive unlock detection
+  // Stage 1 — corners (ids 0,4,20,24) unlock at score 3
+  // Stage 2 — center (id 12) unlocks at score 5
+  const CORNER_IDS = [0, 4, 20, 24];
+  const CORNER_UNLOCK_SCORE = 3;
+  const CENTER_UNLOCK_SCORE = 5;
+
   const prevScoreRef = useRef(s.score);
+  const [cornersUnlocking, setCornersUnlocking] = useState(false);
   const [mysteryUnlocking, setMysteryUnlocking] = useState(false);
+
   useEffect(() => {
-    if (prevScoreRef.current < 5 && s.score >= 5) {
+    const prev = prevScoreRef.current;
+    // Corners just unlocked
+    if (prev < CORNER_UNLOCK_SCORE && s.score >= CORNER_UNLOCK_SCORE) {
+      setCornersUnlocking(true);
+      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+      setTimeout(() => setCornersUnlocking(false), 800);
+    }
+    // Center just unlocked
+    if (prev < CENTER_UNLOCK_SCORE && s.score >= CENTER_UNLOCK_SCORE) {
       setMysteryUnlocking(true);
       if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
       setTimeout(() => setMysteryUnlocking(false), 800);
@@ -63,7 +81,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     prevScoreRef.current = s.score;
   }, [s.score]);
 
-  const isMysteryCellLocked = s.score < 5;
+  const isCornersLocked = s.score < CORNER_UNLOCK_SCORE;
+  const isMysteryCellLocked = s.score < CENTER_UNLOCK_SCORE;
 
   useEffect(() => {
     if (!s.frozenUntil) return;
@@ -87,6 +106,40 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
+
+  // Cadence cooldown — track last validation time and remaining cooldown
+  const [cooldownSecondsLeft, setCooldownSecondsLeft] = useState(0);
+  const lastValidationTimeRef = useRef(0);
+  useEffect(() => {
+    if (!challengeCooldownSecs || challengeCooldownSecs <= 0) { setCooldownSecondsLeft(0); return; }
+    const update = () => {
+      const elapsed = (Date.now() - lastValidationTimeRef.current) / 1000;
+      const left = Math.max(0, Math.ceil(challengeCooldownSecs - elapsed));
+      setCooldownSecondsLeft(left);
+    };
+    const iv = setInterval(update, 500);
+    update();
+    return () => clearInterval(iv);
+  }, [challengeCooldownSecs, s.score]); // re-run on score change to reset cooldown timer
+
+  const handleValidateCell = (data?: any) => {
+    if (challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) return; // blocked by cooldown
+    lastValidationTimeRef.current = Date.now();
+    if (data?.proofImage && s.selectedCell) onPhotoProof?.(s.selectedCell.id, data.proofImage);
+    a.validateCell(data);
+  };
+
+  // Line completion celebration — auto-dismiss after 3s
+  const lineEventTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!s.lineCompleteEvent) return;
+    if (lineEventTimerRef.current) clearTimeout(lineEventTimerRef.current);
+    lineEventTimerRef.current = setTimeout(() => { a.clearLineCompleteEvent(); }, 3000);
+    return () => { if (lineEventTimerRef.current) clearTimeout(lineEventTimerRef.current); };
+  }, [s.lineCompleteEvent]);
+
+  const LINE_ORDINALS_FR = ['1ÈRE', '2ÈME', '3ÈME', '4ÈME', '5ÈME', '6ÈME', '7ÈME', '8ÈME', '9ÈME', '10ÈME', '11ÈME', '12ÈME'];
+  const LINE_ORDINALS_EN = ['1ST', '2ND', '3RD', '4TH', '5TH', '6TH', '7TH', '8TH', '9TH', '10TH', '11TH', '12TH'];
   
   const crownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const crownIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -264,6 +317,51 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         }
       })()}
 
+      {/* LINE COMPLETION CELEBRATION */}
+      {s.lineCompleteEvent && (
+        <div className="fixed inset-0 z-[170] flex flex-col items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-[#0A1629]/75" />
+          <div
+            key={s.lineCompleteEvent.totalLines}
+            className="relative flex flex-col items-center gap-4 px-8 animate-in zoom-in-75 fade-in duration-300"
+          >
+            {/* Badge — line number */}
+            <div className={`border-[4px] border-black rounded-2xl px-5 py-2 shadow-[6px_6px_0px_black] ${s.lineCompleteEvent.isFullGrid ? 'bg-[#FF2D6A]' : 'bg-[#FFD700]'}`}>
+              <span className="font-impact text-black uppercase text-[13px] tracking-widest">
+                {s.lineCompleteEvent.isFullGrid
+                  ? '🏆 GRILLE COMPLÈTE'
+                  : `🎯 ${(language === 'fr' ? LINE_ORDINALS_FR : LINE_ORDINALS_EN)[s.lineCompleteEvent.totalLines - 1] ?? s.lineCompleteEvent.totalLines + 'E'} LIGNE`}
+              </span>
+            </div>
+
+            {/* Big title */}
+            <div
+              className="font-impact uppercase italic leading-none text-center"
+              style={{
+                fontSize: '52px',
+                color: s.lineCompleteEvent.isFullGrid ? '#FF2D6A' : '#FFD700',
+                textShadow: '5px 5px 0px black',
+              }}
+            >
+              {s.lineCompleteEvent.isFullGrid
+                ? (language === 'fr' ? 'BINGO CRAWL!' : 'BINGO CRAWL!')
+                : (language === 'fr' ? 'LIGNE TERMINÉE!' : 'LINE CLEARED!')}
+            </div>
+
+            {/* Bonus pill */}
+            <div className="flex items-center gap-2 bg-[#00FF9D] border-[3px] border-black rounded-2xl px-5 py-2.5 shadow-[4px_4px_0px_black]">
+              <span className="text-xl">🎁</span>
+              <div className="flex flex-col leading-none">
+                <span className="font-impact text-black uppercase text-[14px] tracking-widest">+1 JOKER GAGNÉ!</span>
+                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
+                  {language === 'fr' ? 'Continue comme ça !' : 'Keep going!'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header compact */}
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
         <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10 active:scale-95 transition-transform">
@@ -328,26 +426,76 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             className="grid grid-cols-5 gap-[4px] p-[4px] bg-[#1A1A2E] rounded-[12px] shadow-inner"
             style={{ width: '350px', height: '350px' }}
           >
-              {s.cells.map((cell: BingoCellData) => (
-                <BingoCell
-                  key={cell.id}
-                  data={cell}
-                  onClick={(id) => {
-                    if (s.isFrozen) return;
-                    const clicked = s.cells.find((c: BingoCellData) => c.id === id);
-                    if (clicked) setRevealedCell(clicked);
-                  }}
-                  isWinning={s.winningIds.includes(cell.id)}
-                  winningIndex={s.winningIds.indexOf(cell.id)}
-                  isFeverTarget={s.feverCells.includes(cell.id)}
-                  isLocked={cell.id === 12 && isMysteryCellLocked}
-                  isUnlocking={cell.id === 12 && mysteryUnlocking}
-                  isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
-                />
-              ))}
+              {s.cells.map((cell: BingoCellData) => {
+                const isCorner = CORNER_IDS.includes(cell.id);
+                const isCenter = cell.id === 12;
+                const isLocked = (isCorner && isCornersLocked) || (isCenter && isMysteryCellLocked);
+                const isUnlocking = (isCorner && cornersUnlocking) || (isCenter && mysteryUnlocking);
+                return (
+                  <BingoCell
+                    key={cell.id}
+                    data={cell}
+                    onClick={(id) => {
+                      if (s.isFrozen) return;
+                      const clicked = s.cells.find((c: BingoCellData) => c.id === id);
+                      if (clicked) setRevealedCell(clicked);
+                    }}
+                    isWinning={s.winningIds.includes(cell.id)}
+                    winningIndex={s.winningIds.indexOf(cell.id)}
+                    isFeverTarget={s.feverCells.includes(cell.id)}
+                    isLocked={isLocked}
+                    isUnlocking={isUnlocking}
+                    isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
+                  />
+                );
+              })}
           </div>
         </div>
+
+        {/* Progressive unlock progress hint */}
+        {(isCornersLocked || isMysteryCellLocked) && (
+          <div className="mt-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
+            {isCornersLocked ? (
+              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
+                <span className="text-xs">🔒</span>
+                <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
+                  Coins à {CORNER_UNLOCK_SCORE}/25
+                </span>
+                <div className="flex gap-0.5">
+                  {Array.from({length: CORNER_UNLOCK_SCORE}).map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
+                  ))}
+                </div>
+              </div>
+            ) : isMysteryCellLocked ? (
+              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
+                <span className="text-xs">🔒</span>
+                <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
+                  Mystère à {CENTER_UNLOCK_SCORE}/25
+                </span>
+                <div className="flex gap-0.5">
+                  {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
+                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
       </main>
+
+      {/* CADENCE COOLDOWN badge */}
+      {challengeCooldownSecs > 0 && cooldownSecondsLeft > 0 && (
+        <div className="shrink-0 flex justify-center z-40 -mb-1">
+          <div className="flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200">
+            <span className="text-sm">⏳</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-impact text-black uppercase text-[11px] tracking-widest">PROCHAIN DÉFI</span>
+              <span className="font-impact text-black/60 uppercase text-[9px] tracking-widest">dans {cooldownSecondsLeft}s</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Jokers — two counters: swap + taunt */}
       <div className="shrink-0 py-2 flex justify-center gap-3 z-40">
@@ -425,20 +573,30 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
       {s.selectedCell && s.activeScannerMode !== 'MASTER' && (
         <div id="tutorial-validation-actions">
-          <ValidationModal 
-              cell={s.selectedCell} 
-              jokerCount={s.jokers} 
-              lastWitnessTime={s.lastWitnessTime} 
-              onClose={() => a.setSelectedCell(null)} 
-              onConfirm={(data) => {
-                if (data?.proofImage && s.selectedCell) {
-                  onPhotoProof?.(s.selectedCell.id, data.proofImage);
-                }
-                a.validateCell(data);
-              }}
-              onUseJoker={a.useJoker} 
-              onScanRequest={() => a.setActiveScannerMode('MASTER')} 
+          <ValidationModal
+              cell={s.selectedCell}
+              jokerCount={s.jokers}
+              lastWitnessTime={s.lastWitnessTime}
+              onClose={() => a.setSelectedCell(null)}
+              onConfirm={handleValidateCell}
+              onUseJoker={a.useJoker}
+              onScanRequest={() => a.setActiveScannerMode('MASTER')}
               onSubmitProof={() => {}}
+              onRequestMasterValidation={
+                s.selectedCell && s.gameSession && secureSessionId
+                  ? async () => {
+                      const { gameService: gs } = await import('../services/gameService');
+                      await gs.requestMasterValidation(
+                        s.gameSession!.id,
+                        s.selectedCell!.id,
+                        s.selectedCell!.text,
+                        s.nickname || 'Joueur',
+                        s.avatarId || '🎲',
+                        secureSessionId!
+                      );
+                    }
+                  : undefined
+              }
           />
         </div>
       )}

@@ -1136,6 +1136,273 @@ async resetSession(): Promise<void> {
       lastUpdated: Date.now()
     };
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // PRE-GAME — PHASE CONTROL (Master)
+  // ═══════════════════════════════════════════════════════════
+
+  async setPregamePhase(phase: string | null, subjectId?: string | null): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({
+      pregame_phase: phase,
+      pregame_subject_id: subjectId ?? null,
+    }).eq('id', latest.id);
+  }
+
+  async triggerCountdown(seconds: number): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    const endsAt = new Date(Date.now() + seconds * 1000).toISOString();
+    await supabase.from('event_session').update({ countdown_ends_at: endsAt }).eq('id', latest.id);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PRE-GAME — TRUTH / LIE
+  // ═══════════════════════════════════════════════════════════
+
+  async submitTruthLie(
+    playerId: string, nickname: string, avatarId: string,
+    s1: string, s2: string, s3: string, lieIndex: number,
+    sessionId: string
+  ): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.from('pregame_tl_submissions').upsert({
+      player_id: playerId,
+      nickname,
+      avatar_id: avatarId,
+      statement_1: s1,
+      statement_2: s2,
+      statement_3: s3,
+      lie_index: lieIndex,
+      session_id: sessionId,
+    }, { onConflict: 'player_id,session_id' });
+    if (error) throw error;
+  }
+
+  async getTruthLieSubmissions(sessionId: string): Promise<any[]> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('pregame_tl_submissions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+    return data ?? [];
+  }
+
+  async voteTruthLie(
+    voterPlayerId: string, subjectPlayerId: string, votedIndex: number, sessionId: string
+  ): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.from('pregame_tl_votes').upsert({
+      voter_player_id: voterPlayerId,
+      subject_player_id: subjectPlayerId,
+      voted_index: votedIndex,
+      session_id: sessionId,
+    }, { onConflict: 'voter_player_id,subject_player_id,session_id' });
+    if (error) throw error;
+  }
+
+  async getTruthLieVotes(subjectPlayerId: string, sessionId: string): Promise<any[]> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('pregame_tl_votes')
+      .select('*')
+      .eq('subject_player_id', subjectPlayerId)
+      .eq('session_id', sessionId);
+    return data ?? [];
+  }
+
+  subscribeTruthLieSubmissions(sessionId: string, callback: (submissions: any[]) => void) {
+    if (!supabase) return () => {};
+    // Initial fetch
+    this.getTruthLieSubmissions(sessionId).then(callback);
+    const ch = supabase
+      .channel(`tl_subs_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregame_tl_submissions',
+        filter: `session_id=eq.${sessionId}` },
+        () => this.getTruthLieSubmissions(sessionId).then(callback))
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }
+
+  subscribeTruthLieVotes(subjectPlayerId: string, sessionId: string, callback: (votes: any[]) => void) {
+    if (!supabase) return () => {};
+    this.getTruthLieVotes(subjectPlayerId, sessionId).then(callback);
+    const ch = supabase
+      .channel(`tl_votes_${subjectPlayerId}_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregame_tl_votes',
+        filter: `subject_player_id=eq.${subjectPlayerId}` },
+        () => this.getTruthLieVotes(subjectPlayerId, sessionId).then(callback))
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PRE-GAME — HOT TAKE
+  // ═══════════════════════════════════════════════════════════
+
+  async submitHotTake(
+    playerId: string, nickname: string, avatarId: string, text: string, sessionId: string
+  ): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.from('pregame_hot_takes').upsert({
+      player_id: playerId,
+      nickname,
+      avatar_id: avatarId,
+      text,
+      session_id: sessionId,
+    }, { onConflict: 'player_id,session_id' });
+    if (error) throw error;
+  }
+
+  async getHotTakes(sessionId: string): Promise<any[]> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('pregame_hot_takes')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+    return data ?? [];
+  }
+
+  async voteHotTake(voterPlayerId: string, hotTakeId: string, vote: 'UP' | 'DOWN', sessionId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.from('pregame_ht_votes').upsert({
+      voter_player_id: voterPlayerId,
+      hot_take_id: hotTakeId,
+      vote,
+      session_id: sessionId,
+    }, { onConflict: 'voter_player_id,hot_take_id' });
+    if (error) throw error;
+  }
+
+  // ─── PLAYER MANAGEMENT ───────────────────────────────────────────────────────
+
+  async getPlayersWithScores(sessionId: string): Promise<Array<{
+    id: string; pseudo: string; emoji: string; score: number; status: string; joinedAt: string;
+  }>> {
+    if (!supabase) return [];
+    const { data: players } = await supabase
+      .from('players')
+      .select('id, pseudo, emoji, created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (!players || players.length === 0) return [];
+    const playerIds = players.map((p: any) => p.id);
+
+    const { data: games } = await supabase
+      .from('games')
+      .select('player_id, score, status')
+      .in('player_id', playerIds)
+      .eq('status', 'ACTIVE');
+
+    const gameMap = new Map((games || []).map((g: any) => [g.player_id, g]));
+
+    return players.map((p: any) => {
+      const game = gameMap.get(p.id);
+      let pseudo = p.pseudo || 'Unknown';
+      const match = pseudo.match(/^\[([A-Z]{2})\]\s*(.*)/);
+      if (match) pseudo = match[2];
+      return { id: p.id, pseudo, emoji: p.emoji || '🎲', score: game?.score ?? 0, status: game?.status ?? 'WAITING', joinedAt: p.created_at };
+    });
+  }
+
+  async kickPlayer(playerId: string): Promise<void> {
+    if (!supabase) return;
+    // Mark their game as ABANDONED — the session guard will redirect them to GAME_OVER
+    await supabase.from('games').update({ status: 'ABANDONED' }).eq('player_id', playerId).eq('status', 'ACTIVE');
+    await supabase.from('players').delete().eq('id', playerId);
+  }
+
+  // ─── MASTER VALIDATIONS ───────────────────────────────────────────────────────
+
+  async requestMasterValidation(
+    gameId: string, cellId: number, challengeText: string,
+    playerNickname: string, playerEmoji: string, sessionId: string
+  ): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.from('master_validations').upsert({
+      game_id: gameId, cell_id: cellId, challenge_text: challengeText,
+      player_nickname: playerNickname, player_emoji: playerEmoji,
+      session_id: sessionId, status: 'PENDING',
+    }, { onConflict: 'game_id,cell_id', ignoreDuplicates: false });
+    if (error) throw error;
+  }
+
+  async getPendingMasterValidations(sessionId: string): Promise<any[]> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('master_validations')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: true });
+    return data || [];
+  }
+
+  async approveMasterValidation(validation: any): Promise<void> {
+    if (!supabase) return;
+    // Validate the cell in the player's game
+    await this.validateCell(validation.game_id, validation.cell_id, { witnessName: 'Master', witnessSignature: 'approved' }, true);
+    // Mark as approved
+    await supabase.from('master_validations').update({ status: 'APPROVED', resolved_at: new Date().toISOString() }).eq('id', validation.id);
+  }
+
+  async rejectMasterValidation(validationId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('master_validations').update({ status: 'REJECTED', resolved_at: new Date().toISOString() }).eq('id', validationId);
+  }
+
+  subscribeMasterValidations(sessionId: string, callback: (validations: any[]) => void) {
+    if (!supabase) return () => {};
+    this.getPendingMasterValidations(sessionId).then(callback);
+    const ch = supabase
+      .channel(`mv_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_validations',
+        filter: `session_id=eq.${sessionId}` },
+        () => this.getPendingMasterValidations(sessionId).then(callback))
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }
+
+  // ─── SPOTLIGHT CONTROL ────────────────────────────────────────────────────────
+
+  async setSpotlightDisabled(disabled: boolean): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ spotlight_disabled: disabled }).eq('id', latest.id);
+  }
+
+  async setChallengeCooldown(secs: number): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ challenge_cooldown_secs: secs }).eq('id', latest.id);
+  }
+
+  subscribeHotTakes(sessionId: string, callback: (takes: any[]) => void) {
+    if (!supabase) return () => {};
+    this.getHotTakes(sessionId).then(callback);
+    const ch = supabase
+      .channel(`ht_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregame_hot_takes',
+        filter: `session_id=eq.${sessionId}` },
+        () => this.getHotTakes(sessionId).then(callback))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pregame_ht_votes',
+        filter: `session_id=eq.${sessionId}` },
+        () => this.getHotTakes(sessionId).then(callback))
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }
 }
 
 export const gameService = new GameBackendService();
