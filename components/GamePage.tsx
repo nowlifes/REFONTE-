@@ -18,6 +18,7 @@ import IceBlockOverlay from './IceBlockOverlay';
 import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
+import WitnessRequestBanner from './WitnessRequestBanner';
 
 interface GamePageProps {
   state: any;
@@ -233,6 +234,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   return (
     <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
       <NetworkStatus />
+      {/* Witness request banner — shown when another player designated us as witness */}
+      {s.gameSession && (
+        <WitnessRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
+      )}
       <ActivityFeed />
       <BackgroundParticles />
       

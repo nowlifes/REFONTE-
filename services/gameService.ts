@@ -1389,6 +1389,63 @@ async resetSession(): Promise<void> {
     await supabase.from('event_session').update({ challenge_cooldown_secs: secs }).eq('id', latest.id);
   }
 
+  // ─── PLAYER MANAGEMENT ───────────────────────────────────────────────────
+
+  async renamePlayer(playerId: string, newPseudo: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('players').update({ pseudo: newPseudo }).eq('id', playerId);
+  }
+
+  // ─── WITNESS MODE ─────────────────────────────────────────────────────────
+
+  async requestWitnessConfirmation(validationId: string, witnessPlayerId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase
+      .from('master_validations')
+      .update({ witness_player_id: witnessPlayerId, witness_status: 'PENDING' })
+      .eq('id', validationId);
+  }
+
+  async getMyWitnessRequests(playerId: string): Promise<any[]> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('master_validations')
+      .select('*')
+      .eq('witness_player_id', playerId)
+      .eq('witness_status', 'PENDING');
+    return data ?? [];
+  }
+
+  async confirmWitness(validation: any): Promise<void> {
+    if (!supabase) return;
+    await this.approveMasterValidation(validation);
+    await supabase
+      .from('master_validations')
+      .update({ witness_status: 'CONFIRMED', resolved_at: new Date().toISOString() })
+      .eq('id', validation.id);
+  }
+
+  async rejectWitness(validationId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase
+      .from('master_validations')
+      .update({ witness_status: 'REJECTED', resolved_at: new Date().toISOString() })
+      .eq('id', validationId);
+  }
+
+  subscribeWitnessRequests(playerId: string, onRequests: (requests: any[]) => void): () => void {
+    if (!supabase) return () => {};
+    this.getMyWitnessRequests(playerId).then(onRequests);
+    const ch = supabase
+      .channel(`witness_${playerId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'master_validations',
+        filter: `witness_player_id=eq.${playerId}`,
+      }, () => { this.getMyWitnessRequests(playerId).then(onRequests); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }
+
   subscribeHotTakes(sessionId: string, callback: (takes: any[]) => void) {
     if (!supabase) return () => {};
     this.getHotTakes(sessionId).then(callback);
