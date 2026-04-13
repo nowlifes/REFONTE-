@@ -239,7 +239,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${chaosMode ? 'ring-[8px] ring-inset ring-[#FF4500]' : isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
       {/* PAUSE OVERLAY */}
       {isGamePaused && (
-        <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0A1629]/95 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0A1629]/95 animate-in fade-in duration-300">
           <div className="bg-[#111C35] border-[4px] border-[#FFD700] rounded-3xl p-10 shadow-[8px_8px_0px_black] text-center max-w-xs w-full mx-6 flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-[#FFD700]/15 border-[3px] border-[#FFD700] flex items-center justify-center">
               <span className="text-3xl">⏸</span>
@@ -332,7 +332,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             return <FlashlightOverlay secondsLeft={freezeSecondsLeft} senderName={s.tauntSenderName} />;
           default: // FREEZE
             return (
-              <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
+              <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 animate-in fade-in duration-200">
                 <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
                   <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
                   <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
