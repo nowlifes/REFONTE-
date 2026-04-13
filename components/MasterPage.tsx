@@ -42,6 +42,8 @@ interface MasterPageProps {
   setSpotlightDisabled?: (disabled: boolean) => Promise<void>;
   challengeCooldownSecs?: number;
   setChallengeCooldown?: (secs: number) => Promise<void>;
+  isGamePaused?: boolean;
+  setGamePaused?: (paused: boolean) => Promise<void>;
 }
 
 const PREGAME_LABELS: Record<string, string> = {
@@ -100,6 +102,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   secureSessionId, state: s, actions: a,
   pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown,
   spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown,
+  isGamePaused, setGamePaused,
 }) => {
   const { t, language } = useLanguage();
 
@@ -477,6 +480,24 @@ const MasterPage: React.FC<MasterPageProps> = ({
               <span className={!isSessionActive ? 'text-white' : 'text-white/70'}>{t('closed')}</span>
             </button>
           </div>
+
+          {/* Pause button — only when session active */}
+          {isSessionActive && setGamePaused && (
+            <button
+              onClick={() => setGamePaused(!isGamePaused)}
+              className={`w-full py-3 rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black transition-all mb-3 ${
+                isGamePaused
+                  ? 'bg-[#FFD700] text-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                  : 'bg-white/10 text-white border-white/20 shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+              }`}
+            >
+              {isGamePaused ? (
+                <><Play size={15} strokeWidth={3} fill="currentColor" /> Reprendre le jeu</>
+              ) : (
+                <><span className="text-base leading-none">⏸</span> Mettre en pause</>
+              )}
+            </button>
+          )}
 
           {/* QR code — hero */}
           {secureSessionId ? (
@@ -1034,7 +1055,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       )}
                     </div>
 
-                    {/* Kick — inline confirm */}
+                    {/* Actions bas — reconnect + kick */}
                     {renamingPlayerId !== player.id && (
                       kickConfirmId === player.id ? (
                         <div className="flex gap-2 px-3 pb-3 -mt-1">
@@ -1055,13 +1076,26 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => setKickConfirmId(player.id)}
-                          className="w-full py-1.5 border-t border-white/5 flex items-center justify-center gap-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-500/5 transition-all"
-                        >
-                          <UserX size={11} strokeWidth={2.5} />
-                          <span className="font-impact uppercase text-[8px] tracking-widest">Kick</span>
-                        </button>
+                        <div className="flex border-t border-white/5">
+                          {/* Forcer reconnexion (soft — garde le joueur, reset la partie) */}
+                          <button
+                            onClick={async () => {
+                              await gameService.resetPlayerGame(player.id);
+                              await refreshPlayers();
+                            }}
+                            className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-[#FFD700]/50 hover:text-[#FFD700] hover:bg-[#FFD700]/5 transition-all border-r border-white/5"
+                          >
+                            <RefreshCw size={11} strokeWidth={2.5} />
+                            <span className="font-impact uppercase text-[8px] tracking-widest">Reconnecter</span>
+                          </button>
+                          <button
+                            onClick={() => setKickConfirmId(player.id)}
+                            className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-500/5 transition-all"
+                          >
+                            <UserX size={11} strokeWidth={2.5} />
+                            <span className="font-impact uppercase text-[8px] tracking-widest">Kick</span>
+                          </button>
+                        </div>
                       )
                     )}
                   </div>

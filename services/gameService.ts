@@ -1391,6 +1391,57 @@ async resetSession(): Promise<void> {
 
   // ─── PLAYER MANAGEMENT ───────────────────────────────────────────────────
 
+  // ─── PAUSE ────────────────────────────────────────────────────────────────
+
+  async setPaused(paused: boolean): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ is_paused: paused }).eq('id', latest.id);
+  }
+
+  // ─── SOFT RECONNECT (keeps player row, resets game only) ──────────────────
+
+  async resetPlayerGame(playerId: string): Promise<void> {
+    if (!supabase) return;
+    // Abandon current active game — player stays in the session, can restart
+    await supabase
+      .from('games')
+      .update({ status: 'ABANDONED' })
+      .eq('player_id', playerId)
+      .eq('status', 'ACTIVE');
+  }
+
+  // ─── DOUBLE CONNECTIONS ───────────────────────────────────────────────────
+
+  async getPlayersWithSameDevice(sessionId: string): Promise<Array<{deviceId: string; players: any[]}>> {
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('players')
+      .select('id, pseudo, emoji, device_id, last_seen_at')
+      .eq('session_id', sessionId)
+      .not('device_id', 'is', null);
+    if (!data) return [];
+    // Group by device_id to find duplicates
+    const map = new Map<string, any[]>();
+    for (const p of data) {
+      if (!map.has(p.device_id)) map.set(p.device_id, []);
+      map.get(p.device_id)!.push(p);
+    }
+    return Array.from(map.entries())
+      .filter(([, players]) => players.length > 1)
+      .map(([deviceId, players]) => ({ deviceId, players }));
+  }
+
+  async updatePlayerDeviceId(playerId: string, deviceId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase
+      .from('players')
+      .update({ device_id: deviceId, last_seen_at: new Date().toISOString() })
+      .eq('id', playerId);
+  }
+
   async renamePlayer(playerId: string, newPseudo: string): Promise<void> {
     if (!supabase) return;
     // Preserve the [XX] country prefix stored in pseudo, only replace the display name

@@ -55,7 +55,7 @@ const App: React.FC = () => {
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown } = useEventSession();
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown, isGamePaused, setGamePaused } = useEventSession();
   const { language } = useLanguage();
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
@@ -408,6 +408,8 @@ const App: React.FC = () => {
            setSpotlightDisabled={setSpotlightDisabled}
            challengeCooldownSecs={challengeCooldownSecs}
            setChallengeCooldown={setChallengeCooldown}
+           isGamePaused={isGamePaused}
+           setGamePaused={setGamePaused}
          />
       )}
 
@@ -439,6 +441,7 @@ const App: React.FC = () => {
               onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
               secureSessionId={secureSessionId}
               challengeCooldownSecs={challengeCooldownSecs}
+              isGamePaused={isGamePaused}
            />
         </ErrorBoundary>
       )}

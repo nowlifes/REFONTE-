@@ -13,6 +13,7 @@ export const useEventSession = () => {
   const [countdownEndsAt, setCountdownEndsAt] = useState<number | null>(null);
   const [spotlightDisabled, setSpotlightDisabled] = useState(false);
   const [challengeCooldownSecs, setChallengeCooldownSecs] = useState(0);
+  const [isGamePaused, setIsGamePaused] = useState(false);
   // Track whether we've ever successfully loaded session state.
   // Used by checkSession to fail-open (don't kick players on network errors).
   const hasLoadedOnce = useRef(false);
@@ -28,7 +29,7 @@ export const useEventSession = () => {
         gameService.getTransitionState(),
         supabase
           .from('event_session')
-          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs')
+          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused')
           .order('id', { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -42,6 +43,7 @@ export const useEventSession = () => {
       setCountdownEndsAt(fullRow?.countdown_ends_at ? new Date(fullRow.countdown_ends_at).getTime() : null);
       setSpotlightDisabled(fullRow?.spotlight_disabled ?? false);
       setChallengeCooldownSecs(fullRow?.challenge_cooldown_secs ?? 0);
+      setIsGamePaused(fullRow?.is_paused ?? false);
 
       // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
       if (status) {
@@ -103,6 +105,7 @@ export const useEventSession = () => {
                 setCountdownEndsAt(p.countdown_ends_at ? new Date(p.countdown_ends_at).getTime() : null);
                 setSpotlightDisabled(p.spotlight_disabled ?? false);
                 setChallengeCooldownSecs(p.challenge_cooldown_secs ?? 0);
+                setIsGamePaused(p.is_paused ?? false);
                 if (!p.is_active) {
                   setSecureSessionId(null);
                 } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
@@ -221,6 +224,11 @@ export const useEventSession = () => {
     setChallengeCooldown: async (secs: number) => {
       setChallengeCooldownSecs(secs);
       await gameService.setChallengeCooldown(secs);
+    },
+    isGamePaused,
+    setGamePaused: async (paused: boolean) => {
+      setIsGamePaused(paused);
+      await gameService.setPaused(paused);
     },
   };
 };

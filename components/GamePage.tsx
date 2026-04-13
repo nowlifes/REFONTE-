@@ -31,9 +31,10 @@ interface GamePageProps {
   onPhotoProof?: (cellId: number, url: string) => void;
   secureSessionId?: string | null;
   challengeCooldownSecs?: number;
+  isGamePaused?: boolean;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0 }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
@@ -233,6 +234,23 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   return (
     <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
+      {/* PAUSE OVERLAY */}
+      {isGamePaused && (
+        <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0A1629]/95 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-[#111C35] border-[4px] border-[#FFD700] rounded-3xl p-10 shadow-[8px_8px_0px_black] text-center max-w-xs w-full mx-6 flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-[#FFD700]/15 border-[3px] border-[#FFD700] flex items-center justify-center">
+              <span className="text-3xl">⏸</span>
+            </div>
+            <h2 className="font-impact uppercase text-[#FFD700] text-2xl tracking-wider">Jeu en pause</h2>
+            <p className="text-white/60 text-sm leading-relaxed">Le master a mis la partie en pause. Attends qu'elle reprenne.</p>
+            <div className="flex gap-1.5 mt-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="w-2 h-2 rounded-full bg-[#FFD700] animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <NetworkStatus />
       {/* Witness request banner — shown when another player designated us as witness */}
       {s.gameSession && (
