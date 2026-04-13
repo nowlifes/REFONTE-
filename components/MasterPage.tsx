@@ -44,6 +44,15 @@ interface MasterPageProps {
   setChallengeCooldown?: (secs: number) => Promise<void>;
   isGamePaused?: boolean;
   setGamePaused?: (paused: boolean) => Promise<void>;
+  // 5.x bar cadence & chaos
+  currentBar?: number;
+  barCadence?: string;
+  chaosMode?: boolean;
+  maxValidationsPerBar?: number;
+  advanceBar?: () => Promise<void>;
+  setBarCadenceValue?: (cadence: string) => Promise<void>;
+  setChaosMode?: (chaos: boolean) => Promise<void>;
+  setMaxValidationsPerBar?: (max: number) => Promise<void>;
 }
 
 const PREGAME_LABELS: Record<string, string> = {
@@ -103,6 +112,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
   pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown,
   spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown,
   isGamePaused, setGamePaused,
+  currentBar = 1, barCadence = '1,2,2', chaosMode = false, maxValidationsPerBar = 0,
+  advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
 }) => {
   const { t, language } = useLanguage();
 
@@ -805,6 +816,134 @@ const MasterPage: React.FC<MasterPageProps> = ({
             </div>
           )}
         </Section>
+
+        {/* ── BAR CADENCE & CHAOS MODE (spec 5.x) ──────────────────────── */}
+        {isSessionActive && (
+          <Section
+            icon={<Zap size={14} strokeWidth={3} />}
+            title="Cadence & Chaos"
+            accent="#FF8C00"
+            collapsible
+            defaultOpen={false}
+          >
+            <div className="flex flex-col gap-4">
+
+              {/* Current bar indicator + advance */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-1.5">Bar actuel</p>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3].map(b => {
+                      const cadenceGoals = (barCadence || '1,2,2').split(',').map(Number);
+                      const goal = cadenceGoals[b - 1] ?? 1;
+                      return (
+                        <div key={b} className={`flex-1 rounded-xl border-[2px] px-2 py-2 text-center transition-all ${
+                          b === currentBar
+                            ? 'bg-[#FF8C00]/20 border-[#FF8C00] shadow-[2px_2px_0px_black]'
+                            : b < currentBar
+                            ? 'bg-white/5 border-white/5 opacity-40'
+                            : 'bg-white/5 border-white/10'
+                        }`}>
+                          <div className="font-impact text-[9px] text-white/40 uppercase tracking-widest">Bar {b}</div>
+                          <div className={`font-impact text-[18px] ${b === currentBar ? 'text-[#FF8C00]' : 'text-white/30'}`}>{goal}</div>
+                          <div className="font-impact text-[7px] text-white/30 uppercase">ligne{goal > 1 ? 's' : ''}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Advance bar button */}
+              {currentBar < 3 && advanceBar && (
+                <button
+                  onClick={async () => { await advanceBar(); }}
+                  className="w-full py-3 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                >
+                  <ChevronRight size={16} strokeWidth={3} />
+                  Passer au bar {currentBar + 1}
+                </button>
+              )}
+
+              {/* Cadence selector */}
+              {setBarCadenceValue && (
+                <div>
+                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-2">Format de soirée</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['1,2,2', '2,2,1', '2,1,2'] as const).map(cadence => (
+                      <button
+                        key={cadence}
+                        onClick={() => setBarCadenceValue(cadence)}
+                        className={`py-2.5 rounded-xl font-impact text-[10px] uppercase tracking-wide border-[2px] transition-all ${
+                          barCadence === cadence
+                            ? 'bg-[#FF8C00] text-black border-black shadow-[2px_2px_0px_black]'
+                            : 'bg-white/5 border-white/10 text-white/50 active:bg-white/10'
+                        }`}
+                      >
+                        {cadence.replace(/,/g, '–')}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-white/25 text-[8px] font-impact uppercase tracking-widest mt-1.5 text-center">
+                    {barCadence === '1,2,2' ? 'Recommandé · montée en puissance' : barCadence === '2,2,1' ? 'Sprint final réduit' : 'Pic au milieu'}
+                  </p>
+                </div>
+              )}
+
+              {/* Anti-spam: max validations per bar */}
+              {setMaxValidationsPerBar && (
+                <div>
+                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-2">Anti-spam par bar</p>
+                  <div className="flex gap-2">
+                    {[0, 2, 3, 5].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setMaxValidationsPerBar(val)}
+                        className={`flex-1 py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] transition-all ${
+                          maxValidationsPerBar === val
+                            ? 'bg-[#00F5A0] text-black border-black shadow-[2px_2px_0px_black]'
+                            : 'bg-white/5 border-white/10 text-white/50 active:bg-white/10'
+                        }`}
+                      >
+                        {val === 0 ? '∞' : val}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-white/25 text-[8px] font-impact uppercase tracking-widest mt-1.5 text-center">
+                    {maxValidationsPerBar === 0 ? 'Illimité' : `Max ${maxValidationsPerBar} défi${maxValidationsPerBar > 1 ? 's' : ''} validé${maxValidationsPerBar > 1 ? 's' : ''} par bar`}
+                  </p>
+                </div>
+              )}
+
+              {/* CHAOS MODE toggle — bar 3 only */}
+              {setChaosMode && (
+                <div className={`rounded-xl border-[2px] p-4 transition-all ${chaosMode ? 'border-[#FF4500] bg-[#FF4500]/10' : 'border-white/10 bg-white/3'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-impact uppercase text-[12px] tracking-wide text-white flex items-center gap-2">
+                        <span>⚡</span> Mode Chaos
+                      </div>
+                      <p className="text-white/40 text-[9px] font-impact uppercase tracking-widest mt-0.5">
+                        Bar 3 · race aux 2 dernières lignes
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setChaosMode(!chaosMode)}
+                      className={`w-14 h-8 rounded-full border-[2px] border-black relative transition-all ${chaosMode ? 'bg-[#FF4500] shadow-[2px_2px_0px_black]' : 'bg-white/10'}`}
+                    >
+                      <div className={`absolute top-1 w-5 h-5 rounded-full bg-white border border-black shadow-[1px_1px_0px_black] transition-all duration-200 ${chaosMode ? 'left-[calc(100%-22px)]' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  {chaosMode && (
+                    <p className="font-impact uppercase text-[9px] text-[#FF4500] tracking-widest mt-3 text-center animate-pulse">
+                      ⚡ CHAOS ACTIVÉ — pas de cooldown, qui finit le 1er gagne
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
         {/* ── AUTRES ACTIONS ────────────────────────────────────────────── */}
         <Section

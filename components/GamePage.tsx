@@ -33,9 +33,12 @@ interface GamePageProps {
   secureSessionId?: string | null;
   challengeCooldownSecs?: number;
   isGamePaused?: boolean;
+  chaosMode?: boolean;
+  currentBar?: number;
+  barCadence?: string;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2' }) => {
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
@@ -235,7 +238,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   };
 
   return (
-    <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
+    <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${chaosMode ? 'ring-[8px] ring-inset ring-[#FF4500]' : isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
       {/* PAUSE OVERLAY */}
       {isGamePaused && (
         <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0A1629]/95 backdrop-blur-md animate-in fade-in duration-300">
@@ -253,6 +256,15 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           </div>
         </div>
       )}
+      {/* ⚡ CHAOS MODE banner — sticky top strip */}
+      {chaosMode && (
+        <div className="fixed top-0 inset-x-0 z-[160] pointer-events-none">
+          <div className="bg-gradient-to-r from-[#FF4500] via-[#FF8C00] to-[#FF4500] bg-[length:200%_100%] animate-[shimmer_1.5s_linear_infinite] py-1.5 text-center">
+            <span className="font-impact uppercase text-black text-[11px] tracking-[0.35em]">⚡ MODE CHAOS — FONCE ⚡</span>
+          </div>
+        </div>
+      )}
+
       <NetworkStatus />
       {/* Witness request banner — shown when another player designated us as witness */}
       {s.gameSession && (
@@ -413,8 +425,25 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
         
         <div className="flex items-center gap-2">
+             {/* Bar indicator pill */}
+             {(() => {
+               const cadenceGoals = barCadence.split(',').map(Number);
+               const barGoal = cadenceGoals[currentBar - 1] ?? 1;
+               return chaosMode ? (
+                 <div className="flex items-center gap-1 bg-[#FF4500]/20 border border-[#FF4500]/50 rounded-lg px-2 py-1 animate-pulse">
+                   <span className="text-[9px]">⚡</span>
+                   <span className="font-impact text-[#FF4500] text-[9px] uppercase tracking-wider">CHAOS</span>
+                 </div>
+               ) : (
+                 <div className="flex items-center gap-1 bg-[#FF8C00]/10 border border-[#FF8C00]/30 rounded-lg px-2 py-1">
+                   <span className="font-impact text-[#FF8C00] text-[9px] uppercase tracking-wider">Bar {currentBar}</span>
+                   <span className="text-[#FF8C00]/40 text-[8px]">·</span>
+                   <span className="font-impact text-white/40 text-[9px] uppercase">{barGoal}L</span>
+                 </div>
+               );
+             })()}
              {/* Mini Language Switcher */}
-             <button 
+             <button
                 onClick={toggleLanguage}
                 className="bg-black/40 border border-white/20 rounded-lg px-2 py-1 flex items-center gap-1.5 active:scale-95 transition-all"
              >
@@ -514,14 +543,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         )}
       </main>
 
-      {/* CADENCE COOLDOWN badge */}
+      {/* CADENCE COOLDOWN badge + anti-spam gamified message */}
       {challengeCooldownSecs > 0 && cooldownSecondsLeft > 0 && (
-        <div className="shrink-0 flex justify-center z-40 -mb-1">
+        <div className="shrink-0 flex flex-col items-center gap-1 z-40 -mb-1">
           <div className="flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200">
             <span className="text-sm">⏳</span>
             <div className="flex flex-col leading-none">
-              <span className="font-impact text-black uppercase text-[11px] tracking-widest">PROCHAIN DÉFI</span>
-              <span className="font-impact text-black/60 uppercase text-[9px] tracking-widest">dans {cooldownSecondsLeft}s</span>
+              <span className="font-impact text-black uppercase text-[11px] tracking-widest">Tu es trop fort 😏</span>
+              <span className="font-impact text-black/60 uppercase text-[9px] tracking-widest">va socialiser · prochain défi dans {cooldownSecondsLeft}s</span>
             </div>
           </div>
         </div>

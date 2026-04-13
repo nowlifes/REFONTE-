@@ -14,6 +14,11 @@ export const useEventSession = () => {
   const [spotlightDisabled, setSpotlightDisabled] = useState(false);
   const [challengeCooldownSecs, setChallengeCooldownSecs] = useState(0);
   const [isGamePaused, setIsGamePaused] = useState(false);
+  // 5.x — Bar cadence & chaos mode
+  const [currentBar, setCurrentBar] = useState(1);
+  const [barCadence, setBarCadence] = useState('1,2,2');
+  const [chaosMode, setChaosMode] = useState(false);
+  const [maxValidationsPerBar, setMaxValidationsPerBar] = useState(0);
   // Track whether we've ever successfully loaded session state.
   // Used by checkSession to fail-open (don't kick players on network errors).
   const hasLoadedOnce = useRef(false);
@@ -29,7 +34,7 @@ export const useEventSession = () => {
         gameService.getTransitionState(),
         supabase
           .from('event_session')
-          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused')
+          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused, current_bar, bar_cadence, chaos_mode, max_validations_per_bar')
           .order('id', { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -44,6 +49,10 @@ export const useEventSession = () => {
       setSpotlightDisabled(fullRow?.spotlight_disabled ?? false);
       setChallengeCooldownSecs(fullRow?.challenge_cooldown_secs ?? 0);
       setIsGamePaused(fullRow?.is_paused ?? false);
+      setCurrentBar(fullRow?.current_bar ?? 1);
+      setBarCadence(fullRow?.bar_cadence ?? '1,2,2');
+      setChaosMode(fullRow?.chaos_mode ?? false);
+      setMaxValidationsPerBar(fullRow?.max_validations_per_bar ?? 0);
 
       // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
       if (status) {
@@ -106,6 +115,10 @@ export const useEventSession = () => {
                 setSpotlightDisabled(p.spotlight_disabled ?? false);
                 setChallengeCooldownSecs(p.challenge_cooldown_secs ?? 0);
                 setIsGamePaused(p.is_paused ?? false);
+                if (p.current_bar !== undefined) setCurrentBar(p.current_bar ?? 1);
+                if (p.bar_cadence !== undefined) setBarCadence(p.bar_cadence ?? '1,2,2');
+                if (p.chaos_mode !== undefined) setChaosMode(p.chaos_mode ?? false);
+                if (p.max_validations_per_bar !== undefined) setMaxValidationsPerBar(p.max_validations_per_bar ?? 0);
                 if (!p.is_active) {
                   setSecureSessionId(null);
                 } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
@@ -229,6 +242,28 @@ export const useEventSession = () => {
     setGamePaused: async (paused: boolean) => {
       setIsGamePaused(paused);
       await gameService.setPaused(paused);
+    },
+    // 5.x — Bar cadence & chaos mode
+    currentBar,
+    barCadence,
+    chaosMode,
+    maxValidationsPerBar,
+    advanceBar: async () => {
+      const newBar = currentBar + 1;
+      setCurrentBar(newBar);
+      await gameService.advanceBar();
+    },
+    setBarCadenceValue: async (cadence: string) => {
+      setBarCadence(cadence);
+      await gameService.setBarCadence(cadence);
+    },
+    setChaosMode: async (chaos: boolean) => {
+      setChaosMode(chaos);
+      await gameService.setChaosMode(chaos);
+    },
+    setMaxValidationsPerBar: async (max: number) => {
+      setMaxValidationsPerBar(max);
+      await gameService.setMaxValidationsPerBar(max);
     },
   };
 };

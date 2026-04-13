@@ -55,7 +55,7 @@ const App: React.FC = () => {
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown, isGamePaused, setGamePaused } = useEventSession();
+  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown, isGamePaused, setGamePaused, currentBar, barCadence, chaosMode, maxValidationsPerBar, advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar } = useEventSession();
   const { language } = useLanguage();
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
@@ -410,6 +410,14 @@ const App: React.FC = () => {
            setChallengeCooldown={setChallengeCooldown}
            isGamePaused={isGamePaused}
            setGamePaused={setGamePaused}
+           currentBar={currentBar}
+           barCadence={barCadence}
+           chaosMode={chaosMode}
+           maxValidationsPerBar={maxValidationsPerBar}
+           advanceBar={advanceBar}
+           setBarCadenceValue={setBarCadenceValue}
+           setChaosMode={setChaosMode}
+           setMaxValidationsPerBar={setMaxValidationsPerBar}
          />
       )}
 
@@ -440,8 +448,11 @@ const App: React.FC = () => {
               onCrownClick={() => setShowHiddenLogin(true)}
               onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
               secureSessionId={secureSessionId}
-              challengeCooldownSecs={challengeCooldownSecs}
+              challengeCooldownSecs={chaosMode ? 0 : challengeCooldownSecs}
               isGamePaused={isGamePaused}
+              chaosMode={chaosMode}
+              currentBar={currentBar}
+              barCadence={barCadence}
            />
         </ErrorBoundary>
       )}

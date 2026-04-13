@@ -1391,6 +1391,52 @@ async resetSession(): Promise<void> {
 
   // ─── PLAYER MANAGEMENT ───────────────────────────────────────────────────
 
+  // ─── BAR CADENCE & CHAOS MODE (spec 5.x) ────────────────────────────────
+
+  /** Increment current_bar counter and reset per-bar counters on all active games. */
+  async advanceBar(): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id, current_bar').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    const newBar = (latest.current_bar ?? 1) + 1;
+    await supabase.from('event_session').update({ current_bar: newBar }).eq('id', latest.id);
+    // Reset per-bar counters on all active games so anti-spam resets per bar
+    await supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE');
+  }
+
+  async setCurrentBar(bar: number): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ current_bar: bar }).eq('id', latest.id);
+  }
+
+  async setBarCadence(cadence: string): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ bar_cadence: cadence }).eq('id', latest.id);
+  }
+
+  async setChaosMode(chaos: boolean): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ chaos_mode: chaos }).eq('id', latest.id);
+  }
+
+  async setMaxValidationsPerBar(max: number): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('event_session').update({ max_validations_per_bar: max }).eq('id', latest.id);
+  }
+
   // ─── PAUSE ────────────────────────────────────────────────────────────────
 
   async setPaused(paused: boolean): Promise<void> {
