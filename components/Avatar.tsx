@@ -25,7 +25,8 @@ const Avatar: React.FC<AvatarProps> = ({ seed, size = 40, className = "", select
   
   // Deterministic Emoji from the curated adult list
   const emoji = useMemo(() => {
-    return ADULT_EMOJI_MAP[seed] || '🎲'; // Default to Dice if unknown
+    // seed can be a key ('Knight') or an emoji char directly ('⚔️') — handle both
+    return ADULT_EMOJI_MAP[seed] || seed || '🎲';
   }, [seed]);
 
   // Deterministic Dark Gradient

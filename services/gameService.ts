@@ -1514,6 +1514,55 @@ async resetSession(): Promise<void> {
       .subscribe();
     return () => supabase.removeChannel(ch);
   }
+
+  // ── 4.3 Account Recovery ──────────────────────────────────────────
+
+  /** Generate (or regenerate) a one-time recovery token for a player.
+   *  Expires at the end of the event day (24 h from now).
+   *  Returns the token string to embed in a QR code URL. */
+  async generateRecoveryToken(playerId: string): Promise<string> {
+    if (!supabase) throw new Error('No backend');
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from('players')
+      .update({ recovery_token: token, recovery_token_expires_at: expiresAt })
+      .eq('id', playerId);
+    if (error) throw error;
+    return token;
+  }
+
+  /** Look up a player by recovery token. Returns null if not found or expired. */
+  async recoverByToken(token: string): Promise<{ playerId: string; pseudo: string; emoji: string } | null> {
+    if (!supabase) return null;
+    const { data } = await supabase
+      .from('players')
+      .select('id, pseudo, emoji, recovery_token_expires_at')
+      .eq('recovery_token', token)
+      .maybeSingle();
+    if (!data) return null;
+    if (data.recovery_token_expires_at && new Date(data.recovery_token_expires_at) < new Date()) return null;
+    return { playerId: data.id, pseudo: data.pseudo, emoji: data.emoji };
+  }
+
+  // ── 4.1 Profile editing ───────────────────────────────────────────
+
+  /** Update pseudo (preserving [XX] country prefix) and emoji for a player. */
+  async updatePlayerProfile(playerId: string, newNickname: string, newAvatarKey: string): Promise<void> {
+    if (!supabase) throw new Error('No backend');
+    const { data: player } = await supabase
+      .from('players')
+      .select('pseudo')
+      .eq('id', playerId)
+      .maybeSingle();
+    const prefix = player?.pseudo?.match(/^\[[A-Z]{2}\]\s*/)?.[0] ?? '';
+    const emojiChar = ADULT_EMOJI_MAP[newAvatarKey] || newAvatarKey || '🎲';
+    const { error } = await supabase
+      .from('players')
+      .update({ pseudo: prefix + newNickname, emoji: emojiChar })
+      .eq('id', playerId);
+    if (error) throw error;
+  }
 }
 
 export const gameService = new GameBackendService();

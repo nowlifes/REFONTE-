@@ -4,7 +4,7 @@ import {
   Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X,
   Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle, Expand,
   Play, ChevronRight, StopCircle, UserX, RefreshCw, Check, Zap, Pencil,
-  Eye, ChevronDown, ChevronUp,
+  Eye, ChevronDown, ChevronUp, QrCode, Loader2,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -132,6 +132,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isSavingRename, setIsSavingRename] = useState(false);
+  // ── Recovery QR (4.3)
+  const [recoveryQR, setRecoveryQR] = useState<{ playerId: string; token: string | null; loading: boolean } | null>(null);
 
   // ── Master validations
   const [pendingValidations, setPendingValidations] = useState<any[]>([]);
@@ -1051,6 +1053,22 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           >
                             <Pencil size={13} className="text-white/30" strokeWidth={2.5} />
                           </button>
+                          {/* Recovery QR (4.3) */}
+                          <button
+                            onClick={async () => {
+                              setRecoveryQR({ playerId: player.id, token: null, loading: true });
+                              try {
+                                const token = await gameService.generateRecoveryToken(player.id);
+                                setRecoveryQR({ playerId: player.id, token, loading: false });
+                              } catch {
+                                setRecoveryQR(null);
+                              }
+                            }}
+                            className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center active:bg-white/15 transition-all shrink-0"
+                            title="QR de récupération"
+                          >
+                            <QrCode size={13} className="text-white/30" strokeWidth={2.5} />
+                          </button>
                         </>
                       )}
                     </div>
@@ -1102,6 +1120,44 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RECOVERY QR MODAL (4.3) */}
+      {recoveryQR && (
+        <div className="fixed inset-0 z-[210] bg-black/85 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-[#111C35] border-[3px] border-white/15 rounded-3xl p-6 w-full max-w-xs shadow-[8px_8px_0px_black] flex flex-col items-center gap-5 relative">
+            <button
+              onClick={() => setRecoveryQR(null)}
+              className="absolute top-4 right-4 w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <X size={18} strokeWidth={2.5} className="text-white/40" />
+            </button>
+            <div className="flex flex-col items-center gap-1 text-center">
+              <span className="text-2xl">🔑</span>
+              <h3 className="font-impact uppercase text-[#FFD700] text-[15px] tracking-wide">QR de récupération</h3>
+              <p className="text-white/40 text-[10px] font-impact uppercase tracking-widest">
+                {playersList.find(p => p.id === recoveryQR.playerId)?.pseudo ?? '...'}
+              </p>
+            </div>
+            {recoveryQR.loading ? (
+              <div className="w-[200px] h-[200px] flex items-center justify-center">
+                <Loader2 size={32} className="text-white/30 animate-spin" />
+              </div>
+            ) : recoveryQR.token ? (
+              <div className="bg-white p-4 rounded-2xl border-[4px] border-[#FFD700] shadow-[4px_4px_0px_black]">
+                <QRCodeSVG
+                  value={`${window.location.origin}${window.location.pathname}?recover=${recoveryQR.token}`}
+                  size={180}
+                  level="H"
+                  fgColor="#000000"
+                />
+              </div>
+            ) : null}
+            <p className="text-white/30 text-[9px] font-impact uppercase tracking-widest text-center">
+              Valable 24h · 1 scan suffit
+            </p>
           </div>
         </div>
       )}

@@ -19,6 +19,7 @@ import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
 import WitnessRequestBanner from './WitnessRequestBanner';
+import EditProfileSheet from './EditProfileSheet';
 
 interface GamePageProps {
   state: any;
@@ -38,6 +39,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   // Score count-up animation (#6)
   const [displayScore, setDisplayScore] = useState(s.score);
@@ -348,6 +350,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             key={s.lineCompleteEvent.totalLines}
             className="relative flex flex-col items-center gap-4 px-8 animate-in zoom-in-75 fade-in duration-300"
           >
+            {/* Player logo */}
+            <Avatar seed={s.avatarId} size={52} className="ring-[3px] ring-[#FFD700] ring-offset-[3px] ring-offset-[#0A1629]" />
             {/* Badge — line number */}
             <div className={`border-[4px] border-black rounded-2xl px-5 py-2 shadow-[6px_6px_0px_black] ${s.lineCompleteEvent.isFullGrid ? 'bg-[#FF2D6A]' : 'bg-[#FFD700]'}`}>
               <span className="font-impact text-black uppercase text-[13px] tracking-widest">
@@ -387,23 +391,26 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
       {/* Header compact */}
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
-        <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10 active:scale-95 transition-transform">
-          <Avatar
-            seed={s.avatarId}
-            size={36}
-            className={`rounded-lg transition-all duration-300 ${
-              s.isFrozen
-                ? 'ring-2 ring-[#FF2E63] ring-offset-1 ring-offset-[#0A1629]'
-                : isFever
-                ? 'ring-2 ring-[#FFD700] ring-offset-1 ring-offset-[#0A1629]'
-                : 'ring-1 ring-[#00F5A0]/50 ring-offset-1 ring-offset-[#0A1629]'
-            }`}
-          />
-          <div className="flex flex-col items-start leading-none">
+        {/* Avatar (tap → edit profile) + name (tap → badges) */}
+        <div className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10">
+          <button onClick={() => setShowEditProfile(true)} className="active:scale-90 transition-transform">
+            <Avatar
+              seed={s.avatarId}
+              size={36}
+              className={`rounded-lg transition-all duration-300 ${
+                s.isFrozen
+                  ? 'ring-2 ring-[#FF2E63] ring-offset-1 ring-offset-[#0A1629]'
+                  : isFever
+                  ? 'ring-2 ring-[#FFD700] ring-offset-1 ring-offset-[#0A1629]'
+                  : 'ring-1 ring-[#00F5A0]/50 ring-offset-1 ring-offset-[#0A1629]'
+              }`}
+            />
+          </button>
+          <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex flex-col items-start leading-none active:opacity-70 transition-opacity">
             <span className="font-impact text-[10px] text-[#00F5A0] uppercase tracking-tighter">{s.nickname}</span>
             <span className="text-[7px] text-slate-500 font-impact uppercase tracking-widest mt-0.5">{s.country || 'FR'}</span>
-          </div>
-        </button>
+          </button>
+        </div>
         
         <div className="flex items-center gap-2">
              {/* Mini Language Switcher */}
@@ -605,6 +612,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               onUseJoker={a.useJoker}
               onScanRequest={() => a.setActiveScannerMode('MASTER')}
               onSubmitProof={() => {}}
+              playerNickname={s.nickname}
+              playerAvatarId={s.avatarId}
               onRequestMasterValidation={
                 s.selectedCell && s.gameSession && secureSessionId
                   ? async () => {
@@ -624,11 +633,21 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
       {s.activeScannerMode === 'MASTER' && (
-          <QRScanner 
-            mode={'MASTER'} 
-            onScanSuccess={() => a.validateCell()} 
+          <QRScanner
+            mode={'MASTER'}
+            onScanSuccess={() => a.validateCell()}
             onClose={() => {a.setActiveScannerMode(null); a.setSelectedCell(null);}}
           />
+      )}
+
+      {/* 4.1 Edit Profile Sheet */}
+      {showEditProfile && (
+        <EditProfileSheet
+          currentNickname={s.nickname}
+          currentAvatarId={s.avatarId}
+          onSave={async (nick, avatarKey) => { await a.updateProfile(nick, avatarKey); }}
+          onClose={() => setShowEditProfile(false)}
+        />
       )}
     </div>
   );

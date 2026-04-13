@@ -98,6 +98,25 @@ export const useBingoGame = () => {
     const initApp = async () => {
       setIsLoading(true);
 
+      // 4.3 Account recovery via magic token (?recover=TOKEN)
+      // Must run BEFORE the ?s= check so we don't wipe the restored user_id.
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const recoverToken = urlParams?.get('recover');
+      if (recoverToken) {
+        try {
+          const recovered = await gameService.recoverByToken(recoverToken);
+          if (recovered) {
+            localStorage.setItem('bingo_user_id', recovered.playerId);
+            console.log('[Recovery] Account restored for', recovered.pseudo);
+          }
+        } catch (e) {
+          console.warn('[Recovery] Token lookup failed', e);
+        }
+        // Clean URL — remove ?recover= param regardless of success
+        const cleanUrl = window.location.pathname + (urlParams?.get('s') ? `?s=${urlParams.get('s')}` : '');
+        window.history.replaceState({}, '', cleanUrl);
+      }
+
       // Session freshness check: if the player arrives via a QR code (?s=UUID)
       // and that UUID differs from the one they used last time, force a clean slate.
       // This guarantees that scanning a new QR always starts a brand-new game.
@@ -532,12 +551,25 @@ export const useBingoGame = () => {
       localStorage.removeItem('bingo_last_session');
       localStorage.removeItem('bingo_user_id');
       localStorage.removeItem('bingo_session_token');
-    }
+    },
+
+    // 4.1 Profile editing — updates pseudo + emoji in DB, syncs local state
+    updateProfile: async (newNickname: string, newAvatarKey: string) => {
+      const userId = user?.id;
+      if (!userId) return;
+      try {
+        await gameService.updatePlayerProfile(userId, newNickname, newAvatarKey);
+        setNickname(newNickname);
+        setAvatarId(newAvatarKey);
+      } catch (e: any) {
+        alert(`Erreur mise à jour profil: ${e.message}`);
+      }
+    },
   };
 
   return {
     state: {
-      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime,
+      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,

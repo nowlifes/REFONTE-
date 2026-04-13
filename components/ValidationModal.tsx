@@ -4,6 +4,7 @@ import { X, Check, RefreshCw, ScanLine, Camera, Trash2 } from 'lucide-react';
 import { BingoCellData, ChallengeType } from '../types';
 import MasterRunePad from './MasterRunePad';
 import { useLanguage } from '../contexts/LanguageContext';
+import Avatar from './Avatar';
 
 interface ValidationModalProps {
   cell: BingoCellData;
@@ -15,11 +16,14 @@ interface ValidationModalProps {
   onUseJoker: () => void;
   onScanRequest?: () => void;
   onRequestMasterValidation?: () => Promise<void>;
+  /** 4.2 Player logo — displayed in modal header */
+  playerNickname?: string;
+  playerAvatarId?: string;
 }
 
 type ModalStep = 'INFO' | 'WITNESS_MODE' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS';
 
-const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest, onRequestMasterValidation }) => {
+const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest, onRequestMasterValidation, playerNickname, playerAvatarId }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<ModalStep>(cell.type === ChallengeType.MASTER ? 'MASTER_PAD' : 'INFO');
 
@@ -110,12 +114,21 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
         {/* ─── INFO STEP ─── */}
         {step === 'INFO' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header — type badge + challenge text */}
+            {/* Header — type badge + player logo + challenge text */}
             <div className={`shrink-0 px-6 pt-6 pb-5 border-b border-white/8`}>
-              <div className={`inline-flex items-center gap-1.5 ${accentBg} ${isWitness ? 'text-white' : 'text-black'} px-2.5 py-1 rounded-lg mb-4`}>
-                <span className="text-[9px] font-impact uppercase tracking-widest">
-                  {isWitness ? t('social_feat') : t('solo_feat')}
-                </span>
+              <div className="flex items-center justify-between mb-4">
+                <div className={`inline-flex items-center gap-1.5 ${accentBg} ${isWitness ? 'text-white' : 'text-black'} px-2.5 py-1 rounded-lg`}>
+                  <span className="text-[9px] font-impact uppercase tracking-widest">
+                    {isWitness ? t('social_feat') : t('solo_feat')}
+                  </span>
+                </div>
+                {/* 4.2 Player logo */}
+                {playerAvatarId && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-impact uppercase text-[9px] text-white/40 tracking-widest">{playerNickname}</span>
+                    <Avatar seed={playerAvatarId} size={28} className="ring-1 ring-white/20" />
+                  </div>
+                )}
               </div>
               <p className={`font-impact font-[900] text-[22px] ${accentText} uppercase leading-tight italic tracking-tight`}>
                 "{cell.text}"
