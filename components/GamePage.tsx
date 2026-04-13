@@ -204,6 +204,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   const [isResetPressing, setIsResetPressing] = useState(false);
   const [resetProgress, setResetProgress] = useState(0);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const resetIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startResetPress = () => {
@@ -218,10 +219,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         if (resetIntervalRef.current) clearInterval(resetIntervalRef.current);
         resetIntervalRef.current = null;
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
-        if (window.confirm("Reset profile and start over?")) {
-           a.resetGame();
-           a.setView(AppView.NICKNAME);
-        }
+        setShowResetConfirm(true);
         setIsResetPressing(false);
         setResetProgress(0);
       }
@@ -677,6 +675,33 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           onSave={async (nick, avatarKey) => { await a.updateProfile(nick, avatarKey); }}
           onClose={() => setShowEditProfile(false)}
         />
+      )}
+
+      {/* RESET CONFIRMATION */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[350] bg-black/80 flex items-end justify-center animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-[#0A1629] border-t-[4px] border-x-[4px] border-black rounded-t-[28px] shadow-[0_-8px_0px_black] px-5 pt-6 pb-10 animate-in slide-in-from-bottom-4 duration-250">
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+            <h3 className="font-impact uppercase text-white text-xl tracking-tight text-center mb-2">Recommencer ?</h3>
+            <p className="font-impact uppercase text-white/40 text-[10px] tracking-widest text-center leading-relaxed mb-6">
+              Ton profil et ta progression seront effacés.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 py-4 bg-white/8 border-[2px] border-white/15 rounded-2xl font-impact uppercase text-white/60 text-[13px] tracking-widest active:bg-white/15 transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => { setShowResetConfirm(false); a.resetGame(); a.setView(AppView.NICKNAME); }}
+                className="flex-[2] py-4 bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] font-impact uppercase text-white text-[13px] tracking-widest active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                Oui, reset
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
