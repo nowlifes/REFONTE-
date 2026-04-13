@@ -96,7 +96,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
                   onMouseLeave={endPress}
                   onTouchStart={startPress}
                   onTouchEnd={endPress}
-                  className={`p-2 transition-all duration-300 ${isPressing ? 'text-gold-400 scale-125' : 'text-white/20 hover:text-white'}`}
+                  className={`p-2 transition-all duration-300 ${isPressing ? 'text-[#FFD700] scale-125' : 'text-white/20 hover:text-white'}`}
               >
                  <Lock className="w-5 h-5" />
               </button>
@@ -105,7 +105,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
                   {[1, 2, 3].map((dot) => (
                     <div 
                       key={dot} 
-                      className={`w-1 h-1 rounded-full transition-all duration-300 ${progress >= dot ? 'bg-gold-400 shadow-[0_0_5px_#EAB308]' : 'bg-white/10'}`}
+                      className={`w-1 h-1 rounded-full transition-all duration-300 ${progress >= dot ? 'bg-[#FFD700] shadow-[0_0_5px_#FFD700]' : 'bg-white/10'}`}
                     />
                   ))}
                 </div>

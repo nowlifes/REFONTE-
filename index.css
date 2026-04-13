@@ -64,6 +64,9 @@
 .shadow-gold-lg {
   box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
 }
+.drop-shadow-gold {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
 
 /* WINNING CELL — domino stagger */
 @keyframes winning-pop {

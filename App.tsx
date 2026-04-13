@@ -34,12 +34,12 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 const RotateDeviceOverlay = () => {
     const { t } = useLanguage();
     return (
-        <div className="fixed inset-0 z-[1000] bg-navy-950 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[1000] bg-[#0A1629] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
             <div className="mb-6 animate-[spin_3s_linear_infinite] origin-center">
-                 <Smartphone className="w-20 h-20 text-gold-500 rotate-90" />
+                 <Smartphone className="w-20 h-20 text-[#FFD700] rotate-90" />
             </div>
-            <h2 className="text-3xl font-black font-bold text-white mb-4 uppercase tracking-widest">{t('rotate_device')}</h2>
-            <p className="text-slate-400 text-lg font-sans max-w-md">{t('rotate_desc')}</p>
+            <h2 className="text-3xl font-impact text-white mb-4 uppercase tracking-widest italic">{t('rotate_device')}</h2>
+            <p className="text-white/50 text-lg font-sans max-w-md">{t('rotate_desc')}</p>
         </div>
     );
 };
@@ -290,16 +290,16 @@ const App: React.FC = () => {
   // GLOBAL LOADING STATE
   if (s.isLoading || isSessionLoading) {
     return (
-      <div className="min-h-[100dvh] bg-navy-950 flex flex-col items-center justify-center relative">
+      <div className="min-h-[100dvh] bg-[#0A1629] flex flex-col items-center justify-center relative">
         <BackgroundParticles />
         <div className="w-24 h-24 mb-6 relative">
-           <div className="absolute inset-0 border-4 border-gold-500/30 rounded-full animate-pulse"></div>
-           <div className="absolute inset-0 border-t-4 border-gold-500 rounded-full animate-spin"></div>
+           <div className="absolute inset-0 border-4 border-[#FFD700]/30 rounded-full animate-pulse"></div>
+           <div className="absolute inset-0 border-t-4 border-[#FFD700] rounded-full animate-spin"></div>
            <div className="absolute inset-0 flex items-center justify-center">
              <ShieldLogo onCrownClick={() => setShowHiddenLogin(true)} className="w-12 h-12 animate-pulse" />
            </div>
         </div>
-        <p className="text-gold-400 font-black text-xl tracking-widest animate-pulse">{t('loading')}</p>
+        <p className="text-[#FFD700] font-impact text-xl tracking-widest animate-pulse uppercase">{t('loading')}</p>
       </div>
     );
   }
@@ -326,15 +326,15 @@ const App: React.FC = () => {
          />
          {ui.showMasterLogin && (
            <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
-              <div className="w-full max-w-sm bg-navy-900 border-2 border-gold-500 rounded-xl p-8 relative shadow-gold-lg">
-                 <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X className="w-6 h-6" /></button>
+              <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
+                 <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black/50 active:text-black"><X className="w-6 h-6" strokeWidth={3} /></button>
                  <div className="text-center mb-6">
-                   <div className="w-16 h-16 bg-navy-800 rounded-full border border-gold-500 flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-gold-400" /></div>
-                   <h3 className="text-2xl font-black font-bold text-gold-400 uppercase">{t('master_access_title')}</h3>
+                   <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
+                   <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
                  </div>
                  <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
-                    <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="Code" className={`w-full bg-white border-2 rounded-lg p-4 text-center text-black text-xl font-bold tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-gold-500/50 focus:border-gold-400'}`} autoFocus />
-                    <button type="submit" className="w-full bg-gold-600 hover:bg-gold-500 text-navy-950 font-bold py-3 rounded-lg uppercase tracking-wider transition-colors">{t('unlock')}</button>
+                    <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="••••" className={`w-full bg-white border-[3px] rounded-xl p-4 text-center text-black text-2xl font-impact tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-black'}`} autoFocus />
+                    <button type="submit" className="w-full bg-black text-[#FFD700] font-impact py-4 rounded-xl uppercase tracking-wider text-lg active:scale-95 transition-all">{t('unlock')}</button>
                  </form>
               </div>
            </div>
@@ -581,16 +581,16 @@ const App: React.FC = () => {
       {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
       {showHiddenLogin && (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="w-full max-w-sm bg-navy-950 border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
-              <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-slate-600 hover:text-white"><X className="w-6 h-6" /></button>
+           <div className="w-full max-w-sm bg-[#0A1629] border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
+              <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-white/30 hover:text-white"><X className="w-6 h-6" /></button>
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
                   <KeyRound className="w-10 h-10 text-red-500" />
                 </div>
-                <h3 className="text-2xl font-black font-bold text-red-500 uppercase tracking-tighter italic">
+                <h3 className="text-2xl font-impact text-red-500 uppercase tracking-tighter italic">
                   {t('master_access_title')}
                 </h3>
-                <p className="text-[10px] text-slate-500 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
+                <p className="text-[10px] text-white/40 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
               </div>
               <form onSubmit={handleHiddenLoginSubmit} className="space-y-6">
                  <input 

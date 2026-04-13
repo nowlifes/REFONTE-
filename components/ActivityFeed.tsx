@@ -34,11 +34,11 @@ const ActivityFeed: React.FC = () => {
             ${index === 0 ? 'scale-100 opacity-100' : index === 1 ? 'scale-95 opacity-60' : 'scale-90 opacity-30'}
           `}
         >
-          <div className="w-8 h-8 bg-gold-500 rounded-lg flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 bg-[#FFD700] rounded-lg flex items-center justify-center shrink-0">
              <span className="text-lg leading-none">{activity.player_emoji}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-impact uppercase tracking-tighter text-gold-400 truncate">
+            <p className="text-[10px] font-impact uppercase tracking-tighter text-[#FFD700] truncate">
               {activity.player_pseudo}
             </p>
             <p className="text-[9px] font-impact uppercase tracking-widest text-white leading-none">
@@ -47,9 +47,9 @@ const ActivityFeed: React.FC = () => {
           </div>
           <div className="shrink-0">
             {activity.type === 'LINE_COMPLETED' ? (
-              <Zap className="w-4 h-4 text-gold-500 animate-pulse" fill="currentColor" />
+              <Zap className="w-4 h-4 text-[#FFD700] animate-pulse" fill="currentColor" />
             ) : (
-              <Trophy className="w-4 h-4 text-gold-500 animate-bounce" fill="currentColor" />
+              <Trophy className="w-4 h-4 text-[#FFD700] animate-bounce" fill="currentColor" />
             )}
           </div>
         </div>

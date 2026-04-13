@@ -418,7 +418,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           </button>
           <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex flex-col items-start leading-none active:opacity-70 transition-opacity">
             <span className="font-impact text-[10px] text-[#00F5A0] uppercase tracking-tighter">{s.nickname}</span>
-            <span className="text-[7px] text-slate-500 font-impact uppercase tracking-widest mt-0.5">{s.country || 'FR'}</span>
+            <span className="text-[7px] text-white/40 font-impact uppercase tracking-widest mt-0.5">{s.country || 'FR'}</span>
           </button>
         </div>
         
@@ -588,7 +588,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               onTouchStart={startCrownPress}
               onTouchEnd={endCrownPress}
               onClick={handleCrownClick} 
-              className={`w-16 h-16 bg-white border-[4px] border-black rounded-2xl flex flex-col items-center justify-center shadow-[6px_6px_0px_black] -mt-16 cursor-pointer transition-all group relative ${isCrownPressing ? 'scale-125 bg-gold-400' : 'active:scale-95'}`}
+              className={`w-16 h-16 bg-white border-[4px] border-black rounded-2xl flex flex-col items-center justify-center shadow-[6px_6px_0px_black] -mt-16 cursor-pointer transition-all group relative ${isCrownPressing ? 'scale-125 bg-[#FFD700]' : 'active:scale-95'}`}
             >
                <Crown size={30} className={`text-black transition-transform ${isCrownPressing ? 'animate-bounce' : 'group-hover:rotate-12'}`} fill="currentColor" />
                

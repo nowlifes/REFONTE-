@@ -3,6 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import canvasConfetti from 'canvas-confetti';
 import { BingoCellData, ChallengeType, CellStatus, AppView, UserProfile, GameSession, TauntType } from '../types';
 import { CHALLENGES_EN, CHALLENGES_FR, INITIAL_JOKERS, SOUNDS } from '../constants';
+
+// Max age of offline-cached session before we discard it (24 hours)
+const EXPIRATION_TIME = 24 * 60 * 60 * 1000;
 import { gameService } from '../services/gameService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBadges } from './useBadges';
