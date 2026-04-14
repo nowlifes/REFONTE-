@@ -90,6 +90,8 @@ const App: React.FC = () => {
   const [launchCountdown, setLaunchCountdown] = useState<{ value: number; isGo: boolean } | null>(null);
   useEffect(() => {
     if (!countdownEndsAt || s.view === AppView.MASTER_DASHBOARD) { setLaunchCountdown(null); return; }
+    // Ignore stale countdown (already expired for more than 5s on load)
+    if (countdownEndsAt - Date.now() < -5000) { setLaunchCountdown(null); return; }
     let fired = false;
     const update = () => {
       const msLeft = countdownEndsAt - Date.now();
@@ -368,7 +370,7 @@ const App: React.FC = () => {
       <GameRoom setView={a.setView}>
 
       {/* PRE-GAME — overrides player views when active (master is unaffected) */}
-      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.nickname && !!localStorage.getItem('bingo_user_id') && (
+      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && s.nickname && !!localStorage.getItem('bingo_user_id') && (
         <PreGamePage
           phase={pregamePhase}
           subjectId={pregameSubjectId}
@@ -439,7 +441,7 @@ const App: React.FC = () => {
       {/* 4 & 5. ONBOARDING — handled inline in NicknamePage via OnboardingCards */}
 
       {/* 6. GAME PAGE (Main View) */}
-      {s.view === AppView.GAME && (
+      {s.view === AppView.GAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
         <ErrorBoundary>
            <GamePage
               state={s}

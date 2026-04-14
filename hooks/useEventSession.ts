@@ -43,8 +43,9 @@ export const useEventSession = () => {
       setIsSessionActive(status);
       setTransitionEndsAt(transition.endsAt);
       setNextBarName(transition.barName);
-      setPregamePhase(fullRow?.pregame_phase ?? null);
-      setPregameSubjectId(fullRow?.pregame_subject_id ?? null);
+      // Only propagate pregame phase when session is active — prevents stale DB values from auto-launching pregame
+      setPregamePhase(status ? (fullRow?.pregame_phase ?? null) : null);
+      setPregameSubjectId(status ? (fullRow?.pregame_subject_id ?? null) : null);
       setCountdownEndsAt(fullRow?.countdown_ends_at ? new Date(fullRow.countdown_ends_at).getTime() : null);
       setSpotlightDisabled(fullRow?.spotlight_disabled ?? false);
       setChallengeCooldownSecs(fullRow?.challenge_cooldown_secs ?? 0);
@@ -109,8 +110,9 @@ export const useEventSession = () => {
                 setIsSessionActive(!!p.is_active);
                 setTransitionEndsAt(p.transition_ends_at ? new Date(p.transition_ends_at).getTime() : null);
                 setNextBarName(p.next_bar_name ?? null);
-                setPregamePhase(p.pregame_phase ?? null);
-                setPregameSubjectId(p.pregame_subject_id ?? null);
+                // Only propagate pregame phase when session is active
+                setPregamePhase(p.is_active ? (p.pregame_phase ?? null) : null);
+                setPregameSubjectId(p.is_active ? (p.pregame_subject_id ?? null) : null);
                 setCountdownEndsAt(p.countdown_ends_at ? new Date(p.countdown_ends_at).getTime() : null);
                 setSpotlightDisabled(p.spotlight_disabled ?? false);
                 setChallengeCooldownSecs(p.challenge_cooldown_secs ?? 0);
