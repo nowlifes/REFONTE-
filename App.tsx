@@ -105,7 +105,8 @@ const App: React.FC = () => {
         setTimeout(() => {
           setLaunchCountdown(null);
           const cur = sRef.current;
-          if (cur.nickname && !cur.gameSession) {
+          // Only start game when character creation is complete (registerPlayer done → view = PRE_GAME)
+          if (cur.view === AppView.PRE_GAME && cur.nickname && !cur.gameSession) {
             aRef.current.startGame(cur.nickname);
           }
         }, 800);
@@ -115,6 +116,17 @@ const App: React.FC = () => {
     const iv = setInterval(update, 100);
     return () => { clearInterval(iv); };
   }, [countdownEndsAt, s.view]);
+
+  // Auto-start for players who complete character creation after the countdown already fired.
+  // Covers: player was on NICKNAME during countdown → finished OnboardingCards later → enters PRE_GAME.
+  useEffect(() => {
+    if (s.view !== AppView.PRE_GAME || !s.nickname || s.gameSession) return;
+    if (!countdownEndsAt) return;
+    const msSinceCountdown = Date.now() - countdownEndsAt;
+    // Countdown hasn't fired yet, or fired more than 5 minutes ago (stale)
+    if (msSinceCountdown < 0 || msSinceCountdown > 5 * 60 * 1000) return;
+    aRef.current.startGame(s.nickname);
+  }, [s.view, s.nickname, s.gameSession, countdownEndsAt]);
 
     const resetSession = async () => {
     await baseResetSession();
