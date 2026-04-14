@@ -28,10 +28,11 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick 
   const isFr = language === 'fr';
 
   return (
-    <div className="fixed inset-0 bg-[#0A1629] overflow-hidden">
-      <BackgroundParticles />
-
-      <div className="absolute inset-0 flex flex-col select-none" style={{ zIndex: 10 }}>
+    <div className="fixed inset-0 bg-[#0A1629] flex flex-col select-none">
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <BackgroundParticles />
+      </div>
+      <div className="relative flex flex-col flex-1 min-h-0" style={{ zIndex: 10 }}>
 
         {/* Hidden master access — top left */}
         <div className="shrink-0 flex justify-start px-4" style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
@@ -152,7 +153,7 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick 
           <p className="text-[8px] font-impact uppercase tracking-widest text-white">Bingo Crawl</p>
         </div>
 
-      </div>
+      </div>{/* end relative content */}
     </div>
   );
 };
