@@ -74,7 +74,7 @@ const Section: React.FC<{
 }> = ({ icon, title, accent = '#ffffff', badge, children, collapsible, defaultOpen = true }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="bg-[#111C35] border border-white/8 rounded-2xl overflow-hidden shadow-[4px_4px_0px_black]">
+    <div className="bg-[#1A1A2E] border border-white/15 rounded-2xl overflow-hidden shadow-[4px_4px_0px_black]">
       <button
         onClick={collapsible ? () => setOpen(o => !o) : undefined}
         className={`w-full flex items-center gap-3 px-4 py-3.5 ${collapsible ? 'cursor-pointer active:bg-white/5 transition-colors' : 'cursor-default'}`}
@@ -1005,7 +1005,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       {/* RESET CONFIRMATION */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[#111C35] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#FF2E63] animate-in zoom-in duration-300">
+          <div className="w-full max-w-sm bg-[#1A1A2E] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#FF2E63] animate-in zoom-in duration-300">
             <button onClick={() => setShowResetConfirm(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 transition-colors">
               <X size={22} strokeWidth={2.5} />
             </button>
@@ -1042,7 +1042,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       {/* NEW SESSION CONFIRMATION */}
       {showNewSessionConfirm && (
         <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[#111C35] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#00FF9D] animate-in zoom-in duration-300">
+          <div className="w-full max-w-sm bg-[#1A1A2E] border-[3px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#00FF9D] animate-in zoom-in duration-300">
             <button onClick={() => setShowNewSessionConfirm(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 transition-colors">
               <X size={22} strokeWidth={2.5} />
             </button>
@@ -1079,7 +1079,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       {/* CHALLENGES LIST MODAL */}
       {showChallenges && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-[#111C35] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[80vh]">
+          <div className="w-full max-w-lg bg-[#1A1A2E] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[80vh]">
             <button onClick={() => setShowChallenges(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 z-10 transition-colors">
               <X size={22} strokeWidth={2.5} />
             </button>
@@ -1088,7 +1088,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
             </h3>
             <div className="overflow-y-auto flex-1 pr-1 space-y-2 no-scrollbar">
               {dbChallenges.map((c, i) => (
-                <div key={i} className="p-3 bg-white/5 border border-white/8 rounded-xl flex items-center gap-3">
+                <div key={i} className="p-3 bg-white/5 border border-white/15 rounded-xl flex items-center gap-3">
                   <span className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center font-impact text-white/40 text-[10px] italic shrink-0">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="text-[9px] font-impact uppercase text-white/30 mb-0.5">{c.type}</div>
@@ -1106,7 +1106,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       {/* PLAYER LIST MODAL */}
       {showPlayers && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-[#111C35] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[85vh]">
+          <div className="w-full max-w-lg bg-[#1A1A2E] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[85vh]">
             <button onClick={() => setShowPlayers(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 z-10 transition-colors">
               <X size={22} strokeWidth={2.5} />
             </button>
@@ -1135,7 +1135,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 </div>
               ) : (
                 playersList.map((player, i) => (
-                  <div key={player.id} className="bg-white/5 border border-white/8 rounded-xl overflow-hidden">
+                  <div key={player.id} className="bg-white/5 border border-white/15 rounded-xl overflow-hidden">
                     <div className="p-3 flex items-center gap-3">
                       {/* Rank */}
                       <span className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center font-impact text-white/40 text-[10px] italic shrink-0">
@@ -1266,7 +1266,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       {/* RECOVERY QR MODAL (4.3) */}
       {recoveryQR && (
         <div className="fixed inset-0 z-[210] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-[#111C35] border-[3px] border-white/15 rounded-3xl p-6 w-full max-w-xs shadow-[8px_8px_0px_black] flex flex-col items-center gap-5 relative">
+          <div className="bg-[#1A1A2E] border-[3px] border-white/15 rounded-3xl p-6 w-full max-w-xs shadow-[8px_8px_0px_black] flex flex-col items-center gap-5 relative">
             <button
               onClick={() => setRecoveryQR(null)}
               className="absolute top-4 right-4 w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"

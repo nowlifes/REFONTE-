@@ -25,6 +25,7 @@ interface PreGamePageProps {
   playerId: string | null;
   nickname: string;
   avatarId: string;
+  onCrownClick?: () => void;       // master hidden login trigger
 }
 
 // ─── EMOJI MAP (same as Avatar) ───────────────────────────────────────────────
@@ -714,7 +715,7 @@ const TimerBar: React.FC<{ endsAt: number; totalSeconds: number; label: string }
 // ─── MAIN PRE-GAME PAGE ────────────────────────────────────────────────────────
 
 const PreGamePage: React.FC<PreGamePageProps> = ({
-  phase, subjectId, secureSessionId, playerId, nickname, avatarId
+  phase, subjectId, secureSessionId, playerId, nickname, avatarId, onCrownClick
 }) => {
   const { language } = useLanguage();
   const isFr = language === 'fr';
@@ -799,6 +800,14 @@ const PreGamePage: React.FC<PreGamePageProps> = ({
             <p className="font-sans text-white/50 text-sm">
               {isFr ? 'Reviens une fois ta fiche identité remplie.' : 'Come back once you\'ve set up your identity card.'}
             </p>
+            {onCrownClick && (
+              <button
+                onClick={onCrownClick}
+                className="mt-6 px-4 py-2 bg-white/5 border border-white/10 rounded-xl font-impact text-white/20 uppercase text-[9px] tracking-widest active:bg-white/10 transition-all"
+              >
+                {isFr ? 'Accès Master' : 'Master Access'}
+              </button>
+            )}
           </div>
         )}
       </div>

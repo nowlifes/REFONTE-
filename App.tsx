@@ -376,6 +376,7 @@ const App: React.FC = () => {
           playerId={localStorage.getItem('bingo_user_id') || ''}
           nickname={s.nickname}
           avatarId={s.avatarId || ''}
+          onCrownClick={() => setShowHiddenLogin(true)}
         />
       )}
 
