@@ -91,7 +91,7 @@ const Section: React.FC<{
         )}
       </button>
       {(!collapsible || open) && (
-        <div className="border-t border-white/8 px-4 pt-3 pb-5">{children}</div>
+        <div className="border-t border-white/8 px-4 pt-3 pb-4">{children}</div>
       )}
     </div>
   );
@@ -337,11 +337,11 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const qrColor = secureSessionId ? sessionColor(secureSessionId) : '#ffffff';
 
   return (
-    <div className="fixed inset-0 bg-[#0A1629] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#0A1629] flex flex-col">
       <BackgroundParticles />
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-4 pt-10 pb-4 z-10">
+      <header className="shrink-0 flex items-center justify-between px-4 pb-4 z-10" style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center gap-2.5">
           <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
           <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
@@ -459,7 +459,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-10 pt-2 flex flex-col gap-4 no-scrollbar z-10">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 flex flex-col gap-4 no-scrollbar z-10" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
@@ -468,28 +468,30 @@ const MasterPage: React.FC<MasterPageProps> = ({
           accent="#00FF9D"
           badge={isSessionActive ? <Pill color="#00FF9D" label="LIVE" /> : undefined}
         >
+          <div className="flex flex-col gap-3">
+
           {/* Open / Close */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setSessionActive(true)}
-              className={`py-4 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
+              className={`py-3 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
                 isSessionActive
                   ? 'bg-[#00FF9D] shadow-none translate-x-[1px] translate-y-[1px]'
                   : 'bg-white/10 text-white shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
               }`}
             >
-              <DoorOpen size={22} className={isSessionActive ? 'text-black' : 'text-white'} strokeWidth={2.5} />
+              <DoorOpen size={20} className={isSessionActive ? 'text-black' : 'text-white'} strokeWidth={2.5} />
               <span className={isSessionActive ? 'text-black' : 'text-white/70'}>{t('open')}</span>
             </button>
             <button
               onClick={() => setSessionActive(false)}
-              className={`py-4 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
+              className={`py-3 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
                 !isSessionActive
                   ? 'bg-[#FF2E63] shadow-none translate-x-[1px] translate-y-[1px]'
                   : 'bg-white/10 text-white shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
               }`}
             >
-              <DoorClosed size={22} className={!isSessionActive ? 'text-white' : 'text-white'} strokeWidth={2.5} />
+              <DoorClosed size={20} className="text-white" strokeWidth={2.5} />
               <span className={!isSessionActive ? 'text-white' : 'text-white/70'}>{t('closed')}</span>
             </button>
           </div>
@@ -498,7 +500,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           {isSessionActive && setGamePaused && (
             <button
               onClick={() => setGamePaused(!isGamePaused)}
-              className={`w-full py-4 rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black transition-all mb-4 ${
+              className={`w-full py-3 rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black transition-all ${
                 isGamePaused
                   ? 'bg-[#FFD700] text-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
                   : 'bg-white/10 text-white border-white/20 shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
@@ -516,7 +518,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           {secureSessionId ? (
             <button
               onClick={() => setShowQRFullscreen(true)}
-              className="relative w-full group mb-3"
+              className="relative w-full group"
             >
               <div
                 className="bg-white mx-auto rounded-2xl p-3 w-fit border-[4px] shadow-[6px_6px_0px_black] group-active:translate-x-[2px] group-active:translate-y-[2px] group-active:shadow-[2px_2px_0px_black] transition-all"
@@ -524,7 +526,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
               >
                 <QRCodeSVG
                   value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
-                  size={160}
+                  size={140}
                   level="H"
                   fgColor="#000000"
                 />
@@ -537,7 +539,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
               </div>
             </button>
           ) : (
-            <div className="border-[2px] border-dashed border-white/10 rounded-2xl p-6 text-center mb-3">
+            <div className="border-[2px] border-dashed border-white/10 rounded-2xl p-6 text-center">
               <p className="font-impact text-white/30 uppercase text-[10px] tracking-widest">
                 Crée une nouvelle session<br />pour générer le QR
               </p>
@@ -545,20 +547,22 @@ const MasterPage: React.FC<MasterPageProps> = ({
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             <button
               onClick={() => setShowNewSessionConfirm(true)}
-              className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+              className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
             >
               <Sparkles size={16} strokeWidth={3} /> {t('create_new_session')}
             </button>
             <button
               onClick={() => a.setView(s.cells.length > 0 ? AppView.GAME : AppView.NICKNAME)}
-              className="w-full py-3.5 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border border-white/15 active:bg-white/15 transition-all"
+              className="w-full py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border border-white/15 active:bg-white/15 transition-all"
             >
               <Gamepad2 size={15} strokeWidth={2.5} /> {t('back_to_game')}
             </button>
           </div>
+
+          </div>{/* end flex flex-col gap-3 */}
         </Section>
 
         {/* ── PRE-GAME ──────────────────────────────────────────────────── */}
@@ -727,18 +731,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
             {/* Cadence */}
             {setChallengeCooldown && (
               <div>
-                <p className="font-impact text-white uppercase text-[12px] tracking-widest mb-3">
+                <p className="font-impact text-white uppercase text-[12px] tracking-widest mb-2.5">
                   Cadence entre défis
                   {(challengeCooldownSecs ?? 0) > 0 && (
                     <span className="ml-2 text-[#FFD700]">— {challengeCooldownSecs}s</span>
                   )}
                 </p>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {[0, 30, 60, 120, 300].map(secs => (
                     <button
                       key={secs}
                       onClick={() => setChallengeCooldown(secs)}
-                      className={`flex-1 py-2.5 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
+                      className={`py-2.5 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
                         (challengeCooldownSecs ?? 0) === secs
                           ? 'bg-[#FFD700] text-black shadow-none translate-x-[1px] translate-y-[1px]'
                           : 'bg-white/10 text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
@@ -828,29 +832,27 @@ const MasterPage: React.FC<MasterPageProps> = ({
           >
             <div className="flex flex-col gap-4">
 
-              {/* Current bar indicator + advance */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <p className="font-impact text-[11px] uppercase tracking-widest text-white/50 mb-2">Bar actuel</p>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3].map(b => {
-                      const cadenceGoals = (barCadence || '1,2,2').split(',').map(Number);
-                      const goal = cadenceGoals[b - 1] ?? 1;
-                      return (
-                        <div key={b} className={`flex-1 rounded-xl border-[2px] px-2 py-3 text-center transition-all ${
-                          b === currentBar
-                            ? 'bg-[#FF8C00]/20 border-[#FF8C00] shadow-[2px_2px_0px_black]'
-                            : b < currentBar
-                            ? 'bg-white/5 border-white/5 opacity-40'
-                            : 'bg-white/5 border-white/10'
-                        }`}>
-                          <div className="font-impact text-[10px] text-white/40 uppercase tracking-widest">Bar {b}</div>
-                          <div className={`font-impact text-[22px] leading-tight ${b === currentBar ? 'text-[#FF8C00]' : 'text-white/30'}`}>{goal}</div>
-                          <div className="font-impact text-[9px] text-white/30 uppercase">ligne{goal > 1 ? 's' : ''}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* Current bar indicator */}
+              <div>
+                <p className="font-impact text-[11px] uppercase tracking-widest text-white/50 mb-2">Bar actuel</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map(b => {
+                    const cadenceGoals = (barCadence || '1,2,2').split(',').map(Number);
+                    const goal = cadenceGoals[b - 1] ?? 1;
+                    return (
+                      <div key={b} className={`rounded-xl border-[2px] px-2 py-3 text-center transition-all ${
+                        b === currentBar
+                          ? 'bg-[#FF8C00]/20 border-[#FF8C00] shadow-[2px_2px_0px_black]'
+                          : b < currentBar
+                          ? 'bg-white/5 border-white/5 opacity-40'
+                          : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="font-impact text-[10px] text-white/40 uppercase tracking-widest">Bar {b}</div>
+                        <div className={`font-impact text-[22px] leading-tight ${b === currentBar ? 'text-[#FF8C00]' : 'text-white/30'}`}>{goal}</div>
+                        <div className="font-impact text-[9px] text-white/30 uppercase">ligne{goal > 1 ? 's' : ''}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -953,25 +955,25 @@ const MasterPage: React.FC<MasterPageProps> = ({
           collapsible
           defaultOpen={false}
         >
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setShowChallenges(true)}
-                className="py-4 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
+                className="py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
               >
-                <List size={15} strokeWidth={2.5} /> {dbChallenges.length} Défis
+                <List size={14} strokeWidth={2.5} /> {dbChallenges.length} Défis
               </button>
               <button
                 onClick={() => { refreshPlayers(); setShowPlayers(true); }}
-                className="py-4 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
+                className="py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
               >
-                <Users size={15} strokeWidth={2.5} /> {playerCount} Joueurs
+                <Users size={14} strokeWidth={2.5} /> {playerCount} Joueurs
               </button>
             </div>
             <button
               onClick={handleWrapped}
               disabled={isWrapping}
-              className="w-full py-4 bg-[#FFD700] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+              className="w-full py-3.5 bg-[#FFD700] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
             >
               <PartyPopper size={16} className={isWrapping ? 'animate-bounce' : ''} strokeWidth={2.5} />
               {isWrapping ? 'Fermeture...' : 'Fin de soirée (Wrapped)'}
