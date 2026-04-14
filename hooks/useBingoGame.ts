@@ -426,6 +426,28 @@ export const useBingoGame = () => {
        }
     },
 
+    // Register player in DB (creates user) without starting game session.
+    // Called after OnboardingCards — player waits in lobby until Master fires countdown.
+    registerPlayer: async (name: string) => {
+      if (!name.trim()) return;
+      setIsLoading(true);
+      try {
+        let currentUserId = user?.id;
+        if (!currentUserId) {
+          const newUser = await gameService.createUser(name, avatarId, country);
+          setUser(newUser);
+          currentUserId = newUser.id;
+          localStorage.setItem('bingo_user_id', newUser.id);
+          await gameService.claimDevice(newUser.id, getMyDeviceId());
+        }
+        setView(AppView.PRE_GAME);
+      } catch (e: any) {
+        alert(`Erreur: ${e.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+
     startGame: async (name: string) => {
       if (!name.trim()) return;
       setIsLoading(true);

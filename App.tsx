@@ -29,6 +29,7 @@ import GamePage from './components/GamePage';
 import GameRoom from './components/GameRoom';
 import GameOverPage from './components/GameOverPage';
 import PreGamePage from './components/PreGamePage';
+import LobbyPage from './components/LobbyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const RotateDeviceOverlay = () => {
@@ -385,6 +386,15 @@ const App: React.FC = () => {
       {/* 1. NICKNAME PAGE — shown when no pregame or player has no nickname yet */}
       {s.view === AppView.NICKNAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
+      )}
+
+      {/* 1b. LOBBY — player registered, waiting for Master to launch pregame/game */}
+      {s.view === AppView.PRE_GAME && !pregamePhase && (
+        <LobbyPage
+          nickname={s.nickname || ''}
+          avatarId={s.avatarId || ''}
+          onCrownClick={() => setShowHiddenLogin(true)}
+        />
       )}
 
       {/* 2. MASTER PAGE */}

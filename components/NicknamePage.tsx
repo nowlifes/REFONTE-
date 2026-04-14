@@ -230,7 +230,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
            </button>
 
            {showOnboarding && (
-             <OnboardingCards onDone={() => { setShowOnboarding(false); a.startGame(s.nickname); }} />
+             <OnboardingCards onDone={() => { setShowOnboarding(false); a.registerPlayer(s.nickname); }} />
            )}
          </div>
 
