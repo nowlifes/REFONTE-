@@ -77,21 +77,21 @@ const Section: React.FC<{
     <div className="bg-[#1A1A2E] border border-white/15 rounded-2xl overflow-hidden shadow-[4px_4px_0px_black]">
       <button
         onClick={collapsible ? () => setOpen(o => !o) : undefined}
-        className={`w-full flex items-center gap-3 px-4 py-3.5 ${collapsible ? 'cursor-pointer active:bg-white/5 transition-colors' : 'cursor-default'}`}
+        className={`w-full flex items-center gap-3 px-4 py-4 ${collapsible ? 'cursor-pointer active:bg-white/5 transition-colors' : 'cursor-default'}`}
       >
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${accent}20` }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${accent}25` }}>
           <span style={{ color: accent }}>{icon}</span>
         </div>
-        <span className="font-impact text-white uppercase text-[11px] tracking-widest flex-1 text-left">{title}</span>
+        <span className="font-impact text-white uppercase text-sm tracking-widest flex-1 text-left">{title}</span>
         {badge}
         {collapsible && (
-          <span className="text-white/20 shrink-0">
-            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <span className="text-white/30 shrink-0 ml-1">
+            {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </span>
         )}
       </button>
       {(!collapsible || open) && (
-        <div className="px-4 pb-4">{children}</div>
+        <div className="border-t border-white/8 px-4 pt-3 pb-5">{children}</div>
       )}
     </div>
   );
@@ -99,8 +99,8 @@ const Section: React.FC<{
 
 // ─── Small badge ──────────────────────────────────────────────────────────────
 const Pill: React.FC<{ color: string; label: string }> = ({ color, label }) => (
-  <div className="rounded-lg px-2 py-0.5 border border-black shrink-0" style={{ backgroundColor: color }}>
-    <span className="font-impact text-[8px] text-black uppercase tracking-widest">{label}</span>
+  <div className="rounded-lg px-2.5 py-1 border border-black shrink-0" style={{ backgroundColor: color }}>
+    <span className="font-impact text-[10px] text-black uppercase tracking-widest">{label}</span>
   </div>
 );
 
@@ -341,26 +341,26 @@ const MasterPage: React.FC<MasterPageProps> = ({
       <BackgroundParticles />
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-4 pt-8 pb-3 z-10">
-        <div className="flex items-center gap-2">
-          <Crown size={18} className="text-[#FFD700]" fill="currentColor" />
-          <span className="font-impact text-white uppercase text-[13px] tracking-widest italic">MASTER</span>
+      <header className="shrink-0 flex items-center justify-between px-4 pt-10 pb-4 z-10">
+        <div className="flex items-center gap-2.5">
+          <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
+          <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
         </div>
         <div className="flex items-center gap-2">
           {/* Player count */}
           {isSessionActive && secureSessionId && (
             <button
               onClick={() => setShowPlayers(true)}
-              className="flex items-center gap-1.5 bg-white/8 border border-white/10 rounded-xl px-2.5 py-1.5 active:bg-white/15 transition-all"
+              className="flex items-center gap-1.5 bg-white/8 border border-white/15 rounded-xl px-3 py-2 active:bg-white/15 transition-all"
             >
-              <Users size={12} className="text-white/60" />
-              <span className="font-impact text-white text-[11px] uppercase tracking-wide">{playerCount}</span>
+              <Users size={14} className="text-white/60" />
+              <span className="font-impact text-white text-sm uppercase tracking-wide">{playerCount}</span>
             </button>
           )}
           {/* Session status pill */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-[2px] border-black shadow-[3px_3px_0px_black] ${isSessionActive ? 'bg-[#00FF9D]' : 'bg-[#FF2E63]'}`}>
-            <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-            <span className="font-impact text-black uppercase text-[10px] tracking-widest">
+          <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border-[2px] border-black shadow-[3px_3px_0px_black] ${isSessionActive ? 'bg-[#00FF9D]' : 'bg-[#FF2E63]'}`}>
+            <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+            <span className="font-impact text-black uppercase text-[11px] tracking-widest">
               {isSessionActive ? 'ACTIVE' : 'FERMÉE'}
             </span>
           </div>
@@ -459,7 +459,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-8 pt-1 flex flex-col gap-3 no-scrollbar z-10">
+      <div className="flex-1 overflow-y-auto px-4 pb-10 pt-2 flex flex-col gap-4 no-scrollbar z-10">
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
@@ -469,27 +469,27 @@ const MasterPage: React.FC<MasterPageProps> = ({
           badge={isSessionActive ? <Pill color="#00FF9D" label="LIVE" /> : undefined}
         >
           {/* Open / Close */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <button
               onClick={() => setSessionActive(true)}
-              className={`py-3.5 rounded-xl border-[2px] border-black font-impact uppercase text-[10px] tracking-widest flex flex-col items-center gap-1 transition-all ${
+              className={`py-4 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
                 isSessionActive
                   ? 'bg-[#00FF9D] shadow-none translate-x-[1px] translate-y-[1px]'
                   : 'bg-white/10 text-white shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
               }`}
             >
-              <DoorOpen size={20} className={isSessionActive ? 'text-black' : 'text-white'} strokeWidth={2.5} />
+              <DoorOpen size={22} className={isSessionActive ? 'text-black' : 'text-white'} strokeWidth={2.5} />
               <span className={isSessionActive ? 'text-black' : 'text-white/70'}>{t('open')}</span>
             </button>
             <button
               onClick={() => setSessionActive(false)}
-              className={`py-3.5 rounded-xl border-[2px] border-black font-impact uppercase text-[10px] tracking-widest flex flex-col items-center gap-1 transition-all ${
+              className={`py-4 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
                 !isSessionActive
                   ? 'bg-[#FF2E63] shadow-none translate-x-[1px] translate-y-[1px]'
                   : 'bg-white/10 text-white shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
               }`}
             >
-              <DoorClosed size={20} className={!isSessionActive ? 'text-white' : 'text-white'} strokeWidth={2.5} />
+              <DoorClosed size={22} className={!isSessionActive ? 'text-white' : 'text-white'} strokeWidth={2.5} />
               <span className={!isSessionActive ? 'text-white' : 'text-white/70'}>{t('closed')}</span>
             </button>
           </div>
@@ -498,7 +498,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           {isSessionActive && setGamePaused && (
             <button
               onClick={() => setGamePaused(!isGamePaused)}
-              className={`w-full py-3 rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black transition-all mb-3 ${
+              className={`w-full py-4 rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black transition-all mb-4 ${
                 isGamePaused
                   ? 'bg-[#FFD700] text-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
                   : 'bg-white/10 text-white border-white/20 shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
@@ -545,18 +545,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             <button
               onClick={() => setShowNewSessionConfirm(true)}
-              className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+              className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
             >
-              <Sparkles size={15} strokeWidth={3} /> {t('create_new_session')}
+              <Sparkles size={16} strokeWidth={3} /> {t('create_new_session')}
             </button>
             <button
               onClick={() => a.setView(s.cells.length > 0 ? AppView.GAME : AppView.NICKNAME)}
-              className="w-full py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 border border-white/10 active:bg-white/15 transition-all"
+              className="w-full py-3.5 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border border-white/15 active:bg-white/15 transition-all"
             >
-              <Gamepad2 size={14} strokeWidth={2.5} /> {t('back_to_game')}
+              <Gamepad2 size={15} strokeWidth={2.5} /> {t('back_to_game')}
             </button>
           </div>
         </Section>
@@ -624,7 +624,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 >
                   🔥 Passer Hot Takes
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1 transition-all">
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1 transition-all">
                   <StopCircle size={12} /> Arrêter pré-game
                 </button>
               </div>
@@ -658,7 +658,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 >
                   🔥 Passer Hot Takes
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1">
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
                   <StopCircle size={12} /> Arrêter pré-game
                 </button>
               </div>
@@ -671,7 +671,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 >
                   <ChevronRight size={14} strokeWidth={3} /> Lancer le Vote
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1">
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
                   <StopCircle size={12} /> Arrêter pré-game
                 </button>
               </div>
@@ -685,12 +685,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   <Play size={18} strokeWidth={3} fill="currentColor" />
                   {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1">
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
                   <StopCircle size={12} /> Arrêter pré-game
                 </button>
               </div>
             ) : (
-              <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1">
+              <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
                 <StopCircle size={12} /> Réinitialiser pré-game
               </button>
             )}
@@ -708,18 +708,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
           >
             {/* Spotlight toggle */}
             {setSpotlightDisabled && (
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <p className="font-impact text-white uppercase text-[11px] tracking-widest">Spotlight ⚡</p>
-                  <p className="font-impact text-white/30 uppercase text-[8px] tracking-widest mt-0.5">
+                  <p className="font-impact text-white uppercase text-[13px] tracking-wide">Spotlight ⚡</p>
+                  <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest mt-0.5">
                     {spotlightDisabled ? 'Désactivé' : 'Actif — cellule bonus / 30 min'}
                   </p>
                 </div>
                 <button
                   onClick={() => setSpotlightDisabled(!spotlightDisabled)}
-                  className={`relative w-12 h-6 rounded-full border-[2px] border-black transition-all shadow-[2px_2px_0px_black] ${spotlightDisabled ? 'bg-white/10' : 'bg-[#FFD700]'}`}
+                  className={`relative w-14 h-7 rounded-full border-[2px] border-black transition-all shadow-[2px_2px_0px_black] ${spotlightDisabled ? 'bg-white/10' : 'bg-[#FFD700]'}`}
                 >
-                  <div className={`absolute top-0.5 w-4 h-4 bg-white border-[2px] border-black rounded-full transition-all shadow-[1px_1px_0px_black] ${spotlightDisabled ? 'left-0.5' : 'left-[22px]'}`} />
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white border-[2px] border-black rounded-full transition-all shadow-[1px_1px_0px_black] ${spotlightDisabled ? 'left-0.5' : 'left-[26px]'}`} />
                 </button>
               </div>
             )}
@@ -727,18 +727,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
             {/* Cadence */}
             {setChallengeCooldown && (
               <div>
-                <p className="font-impact text-white uppercase text-[10px] tracking-widest mb-2">
+                <p className="font-impact text-white uppercase text-[12px] tracking-widest mb-3">
                   Cadence entre défis
                   {(challengeCooldownSecs ?? 0) > 0 && (
                     <span className="ml-2 text-[#FFD700]">— {challengeCooldownSecs}s</span>
                   )}
                 </p>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                   {[0, 30, 60, 120, 300].map(secs => (
                     <button
                       key={secs}
                       onClick={() => setChallengeCooldown(secs)}
-                      className={`flex-1 py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
+                      className={`flex-1 py-2.5 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
                         (challengeCooldownSecs ?? 0) === secs
                           ? 'bg-[#FFD700] text-black shadow-none translate-x-[1px] translate-y-[1px]'
                           : 'bg-white/10 text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
@@ -831,22 +831,22 @@ const MasterPage: React.FC<MasterPageProps> = ({
               {/* Current bar indicator + advance */}
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-1.5">Bar actuel</p>
+                  <p className="font-impact text-[11px] uppercase tracking-widest text-white/50 mb-2">Bar actuel</p>
                   <div className="flex items-center gap-2">
                     {[1, 2, 3].map(b => {
                       const cadenceGoals = (barCadence || '1,2,2').split(',').map(Number);
                       const goal = cadenceGoals[b - 1] ?? 1;
                       return (
-                        <div key={b} className={`flex-1 rounded-xl border-[2px] px-2 py-2 text-center transition-all ${
+                        <div key={b} className={`flex-1 rounded-xl border-[2px] px-2 py-3 text-center transition-all ${
                           b === currentBar
                             ? 'bg-[#FF8C00]/20 border-[#FF8C00] shadow-[2px_2px_0px_black]'
                             : b < currentBar
                             ? 'bg-white/5 border-white/5 opacity-40'
                             : 'bg-white/5 border-white/10'
                         }`}>
-                          <div className="font-impact text-[9px] text-white/40 uppercase tracking-widest">Bar {b}</div>
-                          <div className={`font-impact text-[18px] ${b === currentBar ? 'text-[#FF8C00]' : 'text-white/30'}`}>{goal}</div>
-                          <div className="font-impact text-[7px] text-white/30 uppercase">ligne{goal > 1 ? 's' : ''}</div>
+                          <div className="font-impact text-[10px] text-white/40 uppercase tracking-widest">Bar {b}</div>
+                          <div className={`font-impact text-[22px] leading-tight ${b === currentBar ? 'text-[#FF8C00]' : 'text-white/30'}`}>{goal}</div>
+                          <div className="font-impact text-[9px] text-white/30 uppercase">ligne{goal > 1 ? 's' : ''}</div>
                         </div>
                       );
                     })}
@@ -858,9 +858,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
               {currentBar < 3 && advanceBar && (
                 <button
                   onClick={async () => { await advanceBar(); }}
-                  className="w-full py-3 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                  className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                 >
-                  <ChevronRight size={16} strokeWidth={3} />
+                  <ChevronRight size={18} strokeWidth={3} />
                   Passer au bar {currentBar + 1}
                 </button>
               )}
@@ -868,13 +868,13 @@ const MasterPage: React.FC<MasterPageProps> = ({
               {/* Cadence selector */}
               {setBarCadenceValue && (
                 <div>
-                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-2">Format de soirée</p>
+                  <p className="font-impact text-[11px] uppercase tracking-widest text-white/50 mb-2.5">Format de soirée</p>
                   <div className="grid grid-cols-3 gap-2">
                     {(['1,2,2', '2,2,1', '2,1,2'] as const).map(cadence => (
                       <button
                         key={cadence}
                         onClick={() => setBarCadenceValue(cadence)}
-                        className={`py-2.5 rounded-xl font-impact text-[10px] uppercase tracking-wide border-[2px] transition-all ${
+                        className={`py-3 rounded-xl font-impact text-[11px] uppercase tracking-wide border-[2px] transition-all ${
                           barCadence === cadence
                             ? 'bg-[#FF8C00] text-black border-black shadow-[2px_2px_0px_black]'
                             : 'bg-white/5 border-white/10 text-white/50 active:bg-white/10'
@@ -884,7 +884,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       </button>
                     ))}
                   </div>
-                  <p className="text-white/25 text-[8px] font-impact uppercase tracking-widest mt-1.5 text-center">
+                  <p className="text-white/30 text-[10px] font-impact uppercase tracking-widest mt-2 text-center">
                     {barCadence === '1,2,2' ? 'Recommandé · montée en puissance' : barCadence === '2,2,1' ? 'Sprint final réduit' : 'Pic au milieu'}
                   </p>
                 </div>
@@ -893,13 +893,13 @@ const MasterPage: React.FC<MasterPageProps> = ({
               {/* Anti-spam: max validations per bar */}
               {setMaxValidationsPerBar && (
                 <div>
-                  <p className="font-impact text-[9px] uppercase tracking-widest text-white/40 mb-2">Anti-spam par bar</p>
+                  <p className="font-impact text-[11px] uppercase tracking-widest text-white/50 mb-2.5">Anti-spam par bar</p>
                   <div className="flex gap-2">
                     {[0, 2, 3, 5].map(val => (
                       <button
                         key={val}
                         onClick={() => setMaxValidationsPerBar(val)}
-                        className={`flex-1 py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] transition-all ${
+                        className={`flex-1 py-3 rounded-xl font-impact text-[12px] uppercase border-[2px] transition-all ${
                           maxValidationsPerBar === val
                             ? 'bg-[#00F5A0] text-black border-black shadow-[2px_2px_0px_black]'
                             : 'bg-white/5 border-white/10 text-white/50 active:bg-white/10'
@@ -909,7 +909,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       </button>
                     ))}
                   </div>
-                  <p className="text-white/25 text-[8px] font-impact uppercase tracking-widest mt-1.5 text-center">
+                  <p className="text-white/30 text-[10px] font-impact uppercase tracking-widest mt-2 text-center">
                     {maxValidationsPerBar === 0 ? 'Illimité' : `Max ${maxValidationsPerBar} défi${maxValidationsPerBar > 1 ? 's' : ''} validé${maxValidationsPerBar > 1 ? 's' : ''} par bar`}
                   </p>
                 </div>
@@ -917,13 +917,13 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
               {/* CHAOS MODE toggle — bar 3 only */}
               {setChaosMode && (
-                <div className={`rounded-xl border-[2px] p-4 transition-all ${chaosMode ? 'border-[#FF4500] bg-[#FF4500]/10' : 'border-white/10 bg-white/3'}`}>
+                <div className={`rounded-xl border-[2px] p-4 transition-all ${chaosMode ? 'border-[#FF4500] bg-[#FF4500]/10' : 'border-white/10 bg-white/5'}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-impact uppercase text-[12px] tracking-wide text-white flex items-center gap-2">
+                      <div className="font-impact uppercase text-[13px] tracking-wide text-white flex items-center gap-2">
                         <span>⚡</span> Mode Chaos
                       </div>
-                      <p className="text-white/40 text-[9px] font-impact uppercase tracking-widest mt-0.5">
+                      <p className="text-white/40 text-[10px] font-impact uppercase tracking-widest mt-0.5">
                         Bar 3 · race aux 2 dernières lignes
                       </p>
                     </div>
@@ -935,7 +935,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     </button>
                   </div>
                   {chaosMode && (
-                    <p className="font-impact uppercase text-[9px] text-[#FF4500] tracking-widest mt-3 text-center animate-pulse">
+                    <p className="font-impact uppercase text-[10px] text-[#FF4500] tracking-widest mt-3 text-center animate-pulse">
                       ⚡ CHAOS ACTIVÉ — pas de cooldown, qui finit le 1er gagne
                     </p>
                   )}
@@ -953,42 +953,42 @@ const MasterPage: React.FC<MasterPageProps> = ({
           collapsible
           defaultOpen={false}
         >
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setShowChallenges(true)}
-                className="py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 border border-white/10 active:bg-white/15 transition-all"
+                className="py-4 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
               >
-                <List size={13} strokeWidth={2.5} /> {dbChallenges.length} Défis
+                <List size={15} strokeWidth={2.5} /> {dbChallenges.length} Défis
               </button>
               <button
                 onClick={() => { refreshPlayers(); setShowPlayers(true); }}
-                className="py-3 bg-white/10 text-white rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 border border-white/10 active:bg-white/15 transition-all"
+                className="py-4 bg-white/10 text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-1.5 border border-white/15 active:bg-white/15 transition-all"
               >
-                <Users size={13} strokeWidth={2.5} /> {playerCount} Joueurs
+                <Users size={15} strokeWidth={2.5} /> {playerCount} Joueurs
               </button>
             </div>
             <button
               onClick={handleWrapped}
               disabled={isWrapping}
-              className="w-full py-3 bg-[#FFD700] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+              className="w-full py-4 bg-[#FFD700] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
             >
-              <PartyPopper size={14} className={isWrapping ? 'animate-bounce' : ''} strokeWidth={2.5} />
+              <PartyPopper size={16} className={isWrapping ? 'animate-bounce' : ''} strokeWidth={2.5} />
               {isWrapping ? 'Fermeture...' : 'Fin de soirée (Wrapped)'}
             </button>
             <button
               onClick={handleSimulate}
               disabled={isSimulating}
-              className="w-full py-2.5 bg-white/5 border border-white/10 text-white/60 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-2 active:bg-white/10 transition-all disabled:opacity-50"
+              className="w-full py-3 bg-white/5 border border-white/10 text-white/60 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 active:bg-white/10 transition-all disabled:opacity-50"
             >
-              <Users size={12} className={isSimulating ? 'animate-bounce' : ''} strokeWidth={2.5} />
+              <Users size={13} className={isSimulating ? 'animate-bounce' : ''} strokeWidth={2.5} />
               {isSimulating ? 'Déploiement...' : 'Simuler 5 joueurs'}
             </button>
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="w-full py-2 bg-white/3 border border-red-500/20 text-red-400 rounded-xl font-impact uppercase text-[8px] tracking-widest flex items-center justify-center gap-1.5 active:bg-red-500/10 transition-all"
+              className="w-full py-3 bg-white/3 border border-red-500/20 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1.5 active:bg-red-500/10 transition-all"
             >
-              <Trash2 size={11} strokeWidth={2.5} /> {t('reset_session')}
+              <Trash2 size={13} strokeWidth={2.5} /> {t('reset_session')}
             </button>
           </div>
         </Section>

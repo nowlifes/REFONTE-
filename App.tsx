@@ -368,7 +368,7 @@ const App: React.FC = () => {
       <GameRoom setView={a.setView}>
 
       {/* PRE-GAME — overrides player views when active (master is unaffected) */}
-      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.nickname && (
+      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.nickname && !!localStorage.getItem('bingo_user_id') && (
         <PreGamePage
           phase={pregamePhase}
           subjectId={pregameSubjectId}
@@ -381,7 +381,7 @@ const App: React.FC = () => {
       )}
 
       {/* 1. NICKNAME PAGE — shown when no pregame or player has no nickname yet */}
-      {s.view === AppView.NICKNAME && !(isSessionActive && pregamePhase && s.nickname) && (
+      {s.view === AppView.NICKNAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
       )}
 
