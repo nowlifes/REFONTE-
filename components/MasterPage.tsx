@@ -337,11 +337,15 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const qrColor = secureSessionId ? sessionColor(secureSessionId) : '#ffffff';
 
   return (
-    <div className="fixed inset-0 bg-[#0A1629] flex flex-col">
+    <div className="fixed inset-0 bg-[#0A1629] overflow-hidden">
+      {/* Background particles — absolute, behind everything (z-index: 0 from CSS) */}
       <BackgroundParticles />
 
+      {/* Content layer — on top of particles, full screen, flex column */}
+      <div className="absolute inset-0 flex flex-col" style={{ zIndex: 10 }}>
+
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-4 pb-4 z-10" style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
+      <header className="shrink-0 flex items-center justify-between px-4 pb-4" style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center gap-2.5">
           <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
           <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
@@ -369,7 +373,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* ── VALIDATIONS ALERT BANNER (always on top) ──────────────────────── */}
       {isSessionActive && pendingValidations.length > 0 && (
-        <div className="shrink-0 mx-4 mb-2 z-10 animate-in slide-in-from-top-1 duration-200">
+        <div className="shrink-0 mx-4 mb-2 animate-in slide-in-from-top-1 duration-200">
           <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 bg-black/10">
               <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center shrink-0">
@@ -459,7 +463,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 flex flex-col gap-4 no-scrollbar z-10" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 flex flex-col gap-4 no-scrollbar" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
@@ -998,7 +1002,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
         <div className="text-center pt-2">
           <span className="font-impact text-white/15 uppercase text-[9px] tracking-widest">V{APP_VERSION}</span>
         </div>
-      </div>
+      </div>{/* end scrollable content */}
+
+      </div>{/* end content layer */}
 
       {/* ─────────────────────────────────────────────────────────────────────── */}
       {/* MODALS                                                                  */}
