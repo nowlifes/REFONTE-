@@ -386,7 +386,6 @@ const App: React.FC = () => {
       {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && s.nickname && !!localStorage.getItem('bingo_user_id') && (
         <PreGamePage
           phase={pregamePhase}
-          subjectId={pregameSubjectId}
           secureSessionId={secureSessionId}
           playerId={localStorage.getItem('bingo_user_id') || ''}
           nickname={s.nickname}
@@ -425,7 +424,6 @@ const App: React.FC = () => {
            state={s}
            actions={a}
            pregamePhase={pregamePhase}
-           pregameSubjectId={pregameSubjectId}
            setPregamePhase={setPregamePhase}
            triggerCountdown={triggerCountdown}
            clearCountdown={clearCountdown}

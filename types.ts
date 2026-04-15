@@ -44,7 +44,7 @@ export enum AppView {
   ONBOARDING_STYLES = 'ONBOARDING_STYLES', // Step 1
   NICKNAME = 'NICKNAME',                   // Step 2
   ONBOARDING_REWARDS = 'ONBOARDING_REWARDS', // Step 3
-  PRE_GAME = 'PRE_GAME',                   // Pre-game (Truth/Lie + Hot Take)
+  PRE_GAME = 'PRE_GAME',                   // Pre-game (Hot Take)
   GAME = 'GAME',                           // Step 4-6
   MASTER_DASHBOARD = 'MASTER_DASHBOARD',
   LEADERBOARD = 'LEADERBOARD',
@@ -54,27 +54,8 @@ export enum AppView {
 
 // --- PRE-GAME PHASES ---
 export enum PreGamePhase {
-  TRUTH_LIE_SUBMIT = 'TRUTH_LIE_SUBMIT', // Players enter 3 statements (2 true, 1 lie)
-  TRUTH_LIE_VOTE   = 'TRUTH_LIE_VOTE',   // Vote on whose statement is the lie
   HOT_TAKE_SUBMIT  = 'HOT_TAKE_SUBMIT',  // Players submit a hot take
   HOT_TAKE_VOTE    = 'HOT_TAKE_VOTE',    // Real-time thumbs up / down
-}
-
-export interface TruthLieSubmission {
-  id: string;
-  player_id: string;
-  nickname: string;
-  avatar_id: string;
-  statements: [string, string, string]; // always 3 statements (order shuffled for voters)
-  lie_index: number;                    // which index is the lie (only Master sees this)
-  session_id: string;
-  created_at: string;
-}
-
-export interface TruthLieVote {
-  voter_player_id: string;
-  subject_player_id: string;
-  voted_index: number;
 }
 
 export interface HotTake {

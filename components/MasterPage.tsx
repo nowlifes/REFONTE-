@@ -34,8 +34,7 @@ interface MasterPageProps {
   state: any;
   actions: any;
   pregamePhase?: string | null;
-  pregameSubjectId?: string | null;
-  setPregamePhase?: (phase: string | null, subjectId?: string | null) => Promise<void>;
+  setPregamePhase?: (phase: string | null) => Promise<void>;
   triggerCountdown?: (seconds: number) => Promise<void>;
   clearCountdown?: () => Promise<void>;
   spotlightDisabled?: boolean;
@@ -56,8 +55,6 @@ interface MasterPageProps {
 }
 
 const PREGAME_LABELS: Record<string, string> = {
-  TRUTH_LIE_SUBMIT: '🎭 2V/1M — Soumission',
-  TRUTH_LIE_VOTE:   '🎭 2V/1M — Vote',
   HOT_TAKE_SUBMIT:  '🔥 Hot Take — Soumission',
   HOT_TAKE_VOTE:    '🔥 Hot Take — Vote',
 };
@@ -71,27 +68,28 @@ const Section: React.FC<{
   children: React.ReactNode;
   collapsible?: boolean;
   defaultOpen?: boolean;
-}> = ({ icon, title, accent = '#ffffff', badge, children, collapsible, defaultOpen = true }) => {
+  strong?: boolean; // hero visual weight (SESSION card)
+}> = ({ icon, title, accent = '#ffffff', badge, children, collapsible, defaultOpen = true, strong }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="bg-[#1A1A2E] border border-white/15 rounded-2xl overflow-hidden shadow-[4px_4px_0px_black]">
+    <div className={`bg-[#1A1A2E] border rounded-2xl overflow-hidden ${strong ? 'border-white/20 shadow-[5px_5px_0px_black]' : 'border-white/10 shadow-[3px_3px_0px_black]'}`}>
       <button
         onClick={collapsible ? () => setOpen(o => !o) : undefined}
-        className={`w-full flex items-center gap-3 px-4 py-4 ${collapsible ? 'cursor-pointer active:bg-white/5 transition-colors' : 'cursor-default'}`}
+        className={`w-full flex items-center gap-2.5 px-3 py-2.5 ${collapsible ? 'cursor-pointer active:bg-white/5 transition-colors' : 'cursor-default'}`}
       >
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${accent}25` }}>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${accent}20` }}>
           <span style={{ color: accent }}>{icon}</span>
         </div>
-        <span className="font-impact text-white uppercase text-sm tracking-widest flex-1 text-left">{title}</span>
+        <span className="font-impact text-white uppercase text-[12px] tracking-widest flex-1 text-left">{title}</span>
         {badge}
         {collapsible && (
           <span className="text-white/30 shrink-0 ml-1">
-            {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </span>
         )}
       </button>
       {(!collapsible || open) && (
-        <div className="border-t border-white/8 px-4 pt-3 pb-4">{children}</div>
+        <div className="border-t border-white/8 px-3 pt-2 pb-3">{children}</div>
       )}
     </div>
   );
@@ -109,7 +107,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped,
   triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName,
   secureSessionId, state: s, actions: a,
-  pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown,
+  pregamePhase, setPregamePhase, triggerCountdown, clearCountdown,
   spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown,
   isGamePaused, setGamePaused,
   currentBar = 1, barCadence = '1,2,2', chaosMode = false, maxValidationsPerBar = 0,
@@ -174,23 +172,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
   }, [secureSessionId]);
 
   // ── Pre-game
-  const [tlSubmissions, setTlSubmissions] = useState<Array<{player_id: string; nickname: string}>>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [isLaunchingPhase, setIsLaunchingPhase] = useState(false);
 
-  useEffect(() => {
-    if (!secureSessionId || !isSessionActive) { setTlSubmissions([]); return; }
-    gameService.getTruthLieSubmissions(secureSessionId).then((subs: any[]) => {
-      const mapped = subs.map((s: any) => ({ player_id: s.player_id, nickname: s.nickname }));
-      setTlSubmissions(mapped);
-      if (mapped.length > 0 && !selectedSubjectId) setSelectedSubjectId(mapped[0].player_id);
-    }).catch(() => {});
-  }, [secureSessionId, isSessionActive, pregamePhase]);
-
-  const handleSetPhase = async (phase: string | null, subjectId?: string | null) => {
+  const handleSetPhase = async (phase: string | null) => {
     if (!setPregamePhase) return;
     setIsLaunchingPhase(true);
-    try { await setPregamePhase(phase, subjectId); }
+    try { await setPregamePhase(phase); }
     finally { setIsLaunchingPhase(false); }
   };
 
@@ -344,7 +331,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       </div>
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header style={{ flexShrink: 0, position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '1rem', paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
+      <header style={{ flexShrink: 0, position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '0.625rem', paddingTop: 'max(40px, env(safe-area-inset-top, 0px) + 8px)' }}>
         <div className="flex items-center gap-2.5">
           <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
           <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
@@ -462,19 +449,20 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="no-scrollbar" style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 1rem', paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
+      <div className="no-scrollbar" style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem 0.875rem', paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
           icon={<Power size={14} strokeWidth={3} />}
           title="Session"
           accent="#00FF9D"
+          strong
           badge={isSessionActive ? <Pill color="#00FF9D" label="LIVE" /> : undefined}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
 
           {/* Open / Close */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setSessionActive(true)}
               className={`py-3 rounded-xl border-[2px] border-black font-impact uppercase text-[12px] tracking-widest flex flex-col items-center gap-1.5 transition-all ${
@@ -529,7 +517,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
               >
                 <QRCodeSVG
                   value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}`}
-                  size={140}
+                  size={120}
                   level="H"
                   fgColor="#000000"
                 />
@@ -550,7 +538,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <button
               onClick={() => setShowNewSessionConfirm(true)}
               className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
@@ -580,111 +568,22 @@ const MasterPage: React.FC<MasterPageProps> = ({
           >
             {!pregamePhase ? (
               <div className="flex flex-col gap-2">
-                {/* DIRECT GAME LAUNCH — primary action */}
+                {/* Launch game — primary CTA */}
                 <button
                   onClick={handleLaunchGame}
                   disabled={isLaunchingPhase || !triggerCountdown}
-                  className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[14px] tracking-widest border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
-                  <Play size={18} strokeWidth={3} fill="currentColor" />
+                  <Play size={16} strokeWidth={3} fill="currentColor" />
                   {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
                 </button>
-                {/* Divider */}
-                <div className="flex items-center gap-2 py-1">
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="font-impact text-white/30 uppercase text-[9px] tracking-widest">ou d'abord un pré-game</span>
-                  <div className="flex-1 h-px bg-white/10" />
-                </div>
-                {/* Optional pre-game activities */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleSetPhase('TRUTH_LIE_SUBMIT')}
-                    disabled={isLaunchingPhase || !setPregamePhase}
-                    className="flex-1 py-2.5 bg-[#A78BFA]/20 text-[#A78BFA] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#A78BFA]/40 active:bg-[#A78BFA]/30 transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base leading-none">🎭</span>
-                    <span>Vérité/Mensonge</span>
-                  </button>
-                  <button
-                    onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
-                    disabled={isLaunchingPhase || !setPregamePhase}
-                    className="flex-1 py-2.5 bg-[#FF8C00]/20 text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#FF8C00]/40 active:bg-[#FF8C00]/30 transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
-                  >
-                    <span className="text-base leading-none">🔥</span>
-                    <span>Hot Takes</span>
-                  </button>
-                </div>
-              </div>
-            ) : pregamePhase === 'TRUTH_LIE_SUBMIT' ? (
-              <div className="flex flex-col gap-2">
-                <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-center">
-                  <span className="font-impact text-white/50 uppercase text-[10px] tracking-widest">
-                    {tlSubmissions.length} soumission{tlSubmissions.length !== 1 ? 's' : ''} reçue{tlSubmissions.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                {tlSubmissions.length > 0 && (
-                  <>
-                    <select
-                      value={selectedSubjectId}
-                      onChange={e => setSelectedSubjectId(e.target.value)}
-                      className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 font-impact text-white text-[11px] uppercase focus:outline-none focus:border-white/30"
-                    >
-                      {tlSubmissions.map(sub => (
-                        <option key={sub.player_id} value={sub.player_id}>{sub.nickname}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleSetPhase('TRUTH_LIE_VOTE', selectedSubjectId)}
-                      disabled={isLaunchingPhase || !selectedSubjectId}
-                      className="w-full py-2.5 bg-[#A78BFA] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1"
-                    >
-                      <ChevronRight size={14} strokeWidth={3} /> Passer au Vote
-                    </button>
-                  </>
-                )}
+                {/* Hot Takes pre-game option */}
                 <button
                   onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
-                  disabled={isLaunchingPhase}
-                  className="w-full py-2 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
+                  disabled={isLaunchingPhase || !setPregamePhase}
+                  className="w-full py-2.5 bg-[#FF8C00]/15 text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#FF8C00]/30 active:bg-[#FF8C00]/25 transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
                 >
-                  🔥 Passer Hot Takes
-                </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1 transition-all">
-                  <StopCircle size={12} /> Arrêter pré-game
-                </button>
-              </div>
-            ) : pregamePhase === 'TRUTH_LIE_VOTE' ? (
-              <div className="flex flex-col gap-2">
-                <div className="bg-[#A78BFA]/10 border border-[#A78BFA]/30 rounded-xl px-3 py-2 text-center">
-                  <span className="font-impact text-[#A78BFA] uppercase text-[9px] tracking-widest">
-                    Sujet: {tlSubmissions.find(sub => sub.player_id === pregameSubjectId)?.nickname ?? '—'}
-                  </span>
-                </div>
-                <select
-                  value={selectedSubjectId}
-                  onChange={e => setSelectedSubjectId(e.target.value)}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 font-impact text-white text-[11px] uppercase focus:outline-none"
-                >
-                  {tlSubmissions.map(sub => (
-                    <option key={sub.player_id} value={sub.player_id}>{sub.nickname}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => handleSetPhase('TRUTH_LIE_VOTE', selectedSubjectId)}
-                  disabled={isLaunchingPhase || !selectedSubjectId}
-                  className="w-full py-2.5 bg-[#A78BFA] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
-                >
-                  Sujet suivant →
-                </button>
-                <button
-                  onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
-                  disabled={isLaunchingPhase}
-                  className="w-full py-2 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
-                >
-                  🔥 Passer Hot Takes
-                </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
-                  <StopCircle size={12} /> Arrêter pré-game
+                  <span>🔥</span> Pré-game Hot Takes
                 </button>
               </div>
             ) : pregamePhase === 'HOT_TAKE_SUBMIT' ? (
@@ -692,12 +591,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 <button
                   onClick={() => handleSetPhase('HOT_TAKE_VOTE')}
                   disabled={isLaunchingPhase}
-                  className="w-full py-2.5 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1"
+                  className="w-full py-3 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
                 >
                   <ChevronRight size={14} strokeWidth={3} /> Lancer le Vote
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
-                  <StopCircle size={12} /> Arrêter pré-game
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
+                  <StopCircle size={11} /> Arrêter
                 </button>
               </div>
             ) : pregamePhase === 'HOT_TAKE_VOTE' ? (
@@ -705,35 +604,36 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 <button
                   onClick={handleLaunchGame}
                   disabled={isLaunchingPhase || !triggerCountdown}
-                  className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
-                  <Play size={18} strokeWidth={3} fill="currentColor" />
+                  <Play size={16} strokeWidth={3} fill="currentColor" />
                   {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
                 </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
-                  <StopCircle size={12} /> Arrêter pré-game
+                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
+                  <StopCircle size={11} /> Arrêter
                 </button>
               </div>
             ) : (
-              <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-white/5 border border-red-400/30 text-red-400 rounded-xl font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-1">
-                <StopCircle size={12} /> Réinitialiser pré-game
+              <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
+                <StopCircle size={11} /> Réinitialiser
               </button>
             )}
           </Section>
         )}
 
-        {/* ── SPOTLIGHT + CADENCE ───────────────────────────────────────── */}
-        {isSessionActive && (setSpotlightDisabled || setChallengeCooldown) && (
+        {/* ── RÉGLAGES (spotlight, cadence, bar flow, chaos) ─────────────── */}
+        {isSessionActive && (
           <Section
-            icon={<Zap size={14} strokeWidth={3} />}
-            title="Contrôles"
+            icon={<Zap size={13} strokeWidth={3} />}
+            title="Réglages"
             accent="#FFD700"
             collapsible
             defaultOpen={false}
           >
+            <div className="flex flex-col gap-4">
             {/* Spotlight toggle */}
             {setSpotlightDisabled && (
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="font-impact text-white uppercase text-[13px] tracking-wide">Spotlight ⚡</p>
                   <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest mt-0.5">
@@ -775,83 +675,6 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 </div>
               </div>
             )}
-          </Section>
-        )}
-
-        {/* ── BAR TRANSITION ────────────────────────────────────────────── */}
-        <Section
-          icon={<MapPin size={14} strokeWidth={3} fill="currentColor" />}
-          title={language === 'fr' ? 'Changement de bar' : 'Bar Change'}
-          accent="#FF2D6A"
-          collapsible
-          defaultOpen={!!transitionEndsAt}
-          badge={transitionEndsAt ? <Pill color="#FF2D6A" label="ACTIF" /> : undefined}
-        >
-          {transitionEndsAt ? (
-            <div className="flex items-center justify-between bg-[#FF2D6A]/15 border border-[#FF2D6A]/30 rounded-xl p-3">
-              <div>
-                <p className="font-impact text-white/50 uppercase text-[9px] tracking-widest">
-                  {nextBarName ? nextBarName : 'Countdown actif'}
-                </p>
-                <p className="font-impact text-white text-2xl italic">
-                  {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
-                </p>
-              </div>
-              <button
-                onClick={clearBarTransition}
-                className="w-10 h-10 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
-              >
-                <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={2.5} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-1.5">
-                {[2, 5, 10, 15].map(d => (
-                  <button
-                    key={d}
-                    onClick={() => setSelectedDuration(d)}
-                    className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
-                      selectedDuration === d
-                        ? 'bg-white text-black shadow-none translate-x-[1px] translate-y-[1px]'
-                        : 'bg-white/10 text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
-                    }`}
-                  >
-                    {d}{language === 'fr' ? 'min' : 'm'}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                value={barNameInput}
-                onChange={e => setBarNameInput(e.target.value)}
-                placeholder={language === 'fr' ? 'Nom du bar (optionnel)' : 'Bar name (optional)'}
-                className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 font-impact text-white text-[11px] uppercase focus:border-white/30 focus:outline-none placeholder:text-white/20 transition-all"
-              />
-              <button
-                onClick={handleTriggerTransition}
-                disabled={isTriggeringTransition}
-                className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
-              >
-                <Clock size={15} strokeWidth={3} />
-                {isTriggeringTransition
-                  ? 'Envoi...'
-                  : `Lancer countdown (${selectedDuration} min)`}
-              </button>
-            </div>
-          )}
-        </Section>
-
-        {/* ── BAR CADENCE & CHAOS MODE (spec 5.x) ──────────────────────── */}
-        {isSessionActive && (
-          <Section
-            icon={<Zap size={14} strokeWidth={3} />}
-            title="Cadence & Chaos"
-            accent="#FF8C00"
-            collapsible
-            defaultOpen={false}
-          >
-            <div className="flex flex-col gap-4">
 
               {/* Current bar indicator */}
               <div>
@@ -967,6 +790,71 @@ const MasterPage: React.FC<MasterPageProps> = ({
             </div>
           </Section>
         )}
+
+        {/* ── BAR TRANSITION ─────────────────────────────────────────────── */}
+        <Section
+          icon={<MapPin size={14} strokeWidth={3} fill="currentColor" />}
+          title={language === 'fr' ? 'Changement de bar' : 'Bar Change'}
+          accent="#FF2D6A"
+          collapsible
+          defaultOpen={!!transitionEndsAt}
+          badge={transitionEndsAt ? <Pill color="#FF2D6A" label="ACTIF" /> : undefined}
+        >
+          {transitionEndsAt ? (
+            <div className="flex items-center justify-between bg-[#FF2D6A]/15 border border-[#FF2D6A]/30 rounded-xl p-3">
+              <div>
+                <p className="font-impact text-white/50 uppercase text-[9px] tracking-widest">
+                  {nextBarName ? nextBarName : 'Countdown actif'}
+                </p>
+                <p className="font-impact text-white text-2xl italic">
+                  {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                </p>
+              </div>
+              <button
+                onClick={clearBarTransition}
+                className="w-10 h-10 bg-white/10 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={2.5} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1.5">
+                {[2, 5, 10, 15].map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setSelectedDuration(d)}
+                    className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
+                      selectedDuration === d
+                        ? 'bg-white text-black shadow-none translate-x-[1px] translate-y-[1px]'
+                        : 'bg-white/10 text-white shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                    }`}
+                  >
+                    {d}{language === 'fr' ? 'min' : 'm'}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={barNameInput}
+                onChange={e => setBarNameInput(e.target.value)}
+                placeholder={language === 'fr' ? 'Nom du bar (optionnel)' : 'Bar name (optional)'}
+                className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 font-impact text-white text-[11px] uppercase focus:border-white/30 focus:outline-none placeholder:text-white/20 transition-all"
+              />
+              <button
+                onClick={handleTriggerTransition}
+                disabled={isTriggeringTransition}
+                className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+              >
+                <Clock size={15} strokeWidth={3} />
+                {isTriggeringTransition
+                  ? 'Envoi...'
+                  : `Lancer countdown (${selectedDuration} min)`}
+              </button>
+            </div>
+          )}
+        </Section>
+
 
         {/* ── AUTRES ACTIONS ────────────────────────────────────────────── */}
         <Section
