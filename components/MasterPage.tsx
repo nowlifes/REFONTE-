@@ -337,14 +337,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const qrColor = secureSessionId ? sessionColor(secureSessionId) : '#ffffff';
 
   return (
-    <div className="fixed inset-0 bg-[#0A1629] flex flex-col">
-      {/* Background particles — absolute z:0 behind all content */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#0A1629', display: 'flex', flexDirection: 'column' }}>
+      {/* Background particles — absolute z:0 */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
         <BackgroundParticles />
       </div>
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header className="relative shrink-0 flex items-center justify-between px-4 pb-4" style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)', zIndex: 20 }}>
+      <header style={{ flexShrink: 0, position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '1rem', paddingTop: 'max(48px, env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center gap-2.5">
           <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
           <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
@@ -372,7 +372,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* ── VALIDATIONS ALERT BANNER (always on top) ──────────────────────── */}
       {isSessionActive && pendingValidations.length > 0 && (
-        <div className="relative shrink-0 mx-4 mb-2 animate-in slide-in-from-top-1 duration-200" style={{ zIndex: 20 }}>
+        <div style={{ flexShrink: 0, position: 'relative', zIndex: 20, marginLeft: '1rem', marginRight: '1rem', marginBottom: '0.5rem' }}>
           <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 bg-black/10">
               <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center shrink-0">
@@ -462,7 +462,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="relative flex-1 min-h-0 overflow-y-auto px-4 pt-2 flex flex-col gap-4 no-scrollbar" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)', zIndex: 10 }}>
+      <div className="no-scrollbar" style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 1rem', paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
@@ -575,27 +575,45 @@ const MasterPage: React.FC<MasterPageProps> = ({
             title="Pré-Game"
             accent="#A78BFA"
             collapsible
-            defaultOpen={!!pregamePhase}
+            defaultOpen={true}
             badge={pregamePhase ? <Pill color="#A78BFA" label={PREGAME_LABELS[pregamePhase] ?? pregamePhase} /> : undefined}
           >
             {!pregamePhase ? (
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                {/* DIRECT GAME LAUNCH — primary action */}
                 <button
-                  onClick={() => handleSetPhase('TRUTH_LIE_SUBMIT')}
-                  disabled={isLaunchingPhase || !setPregamePhase}
-                  className="flex-1 py-3 bg-[#A78BFA] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
+                  onClick={handleLaunchGame}
+                  disabled={isLaunchingPhase || !triggerCountdown}
+                  className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[14px] tracking-widest border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
                 >
-                  <span className="text-base leading-none">🎭</span>
-                  <span>Vérité/Mensonge</span>
+                  <Play size={18} strokeWidth={3} fill="currentColor" />
+                  {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
                 </button>
-                <button
-                  onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
-                  disabled={isLaunchingPhase || !setPregamePhase}
-                  className="flex-1 py-3 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
-                >
-                  <span className="text-base leading-none">🔥</span>
-                  <span>Hot Takes</span>
-                </button>
+                {/* Divider */}
+                <div className="flex items-center gap-2 py-1">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="font-impact text-white/30 uppercase text-[9px] tracking-widest">ou d'abord un pré-game</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+                {/* Optional pre-game activities */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSetPhase('TRUTH_LIE_SUBMIT')}
+                    disabled={isLaunchingPhase || !setPregamePhase}
+                    className="flex-1 py-2.5 bg-[#A78BFA]/20 text-[#A78BFA] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#A78BFA]/40 active:bg-[#A78BFA]/30 transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
+                  >
+                    <span className="text-base leading-none">🎭</span>
+                    <span>Vérité/Mensonge</span>
+                  </button>
+                  <button
+                    onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
+                    disabled={isLaunchingPhase || !setPregamePhase}
+                    className="flex-1 py-2.5 bg-[#FF8C00]/20 text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#FF8C00]/40 active:bg-[#FF8C00]/30 transition-all disabled:opacity-40 flex flex-col items-center gap-0.5"
+                  >
+                    <span className="text-base leading-none">🔥</span>
+                    <span>Hot Takes</span>
+                  </button>
+                </div>
               </div>
             ) : pregamePhase === 'TRUTH_LIE_SUBMIT' ? (
               <div className="flex flex-col gap-2">
