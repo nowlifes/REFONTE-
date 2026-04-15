@@ -324,14 +324,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const qrColor = secureSessionId ? sessionColor(secureSessionId) : '#ffffff';
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#0A1629', display: 'flex', flexDirection: 'column' }}>
+    <div className="fixed inset-0 bg-[#0A1629] flex flex-col">
       {/* Background particles — absolute z:0 */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <BackgroundParticles />
       </div>
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
-      <header style={{ flexShrink: 0, position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '0.625rem', paddingTop: 'max(40px, env(safe-area-inset-top, 0px) + 8px)' }}>
+      <header className="relative shrink-0 flex items-center justify-between px-4 pb-2.5" style={{ zIndex: 20, paddingTop: 'max(40px, env(safe-area-inset-top, 0px) + 8px)' }}>
         <div className="flex items-center gap-2.5">
           <Crown size={20} className="text-[#FFD700]" fill="currentColor" />
           <span className="font-impact text-white uppercase text-lg tracking-widest italic">MASTER</span>
@@ -359,7 +359,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* ── VALIDATIONS ALERT BANNER (always on top) ──────────────────────── */}
       {isSessionActive && pendingValidations.length > 0 && (
-        <div style={{ flexShrink: 0, position: 'relative', zIndex: 20, marginLeft: '1rem', marginRight: '1rem', marginBottom: '0.5rem' }}>
+        <div className="relative shrink-0 mx-4 mb-2" style={{ zIndex: 20 }}>
           <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 bg-black/10">
               <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center shrink-0">
@@ -449,7 +449,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
       )}
 
       {/* ── SCROLLABLE CONTENT ─────────────────────────────────────────────── */}
-      <div className="no-scrollbar" style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem 0.875rem', paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
+      <div className="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3.5 pt-2 flex flex-col gap-2 no-scrollbar" style={{ zIndex: 10, paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px) + 32px)' }}>
 
         {/* ── QR + SESSION CONTROL ──────────────────────────────────────── */}
         <Section
