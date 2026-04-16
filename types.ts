@@ -44,7 +44,7 @@ export enum AppView {
   ONBOARDING_STYLES = 'ONBOARDING_STYLES', // Step 1
   NICKNAME = 'NICKNAME',                   // Step 2
   ONBOARDING_REWARDS = 'ONBOARDING_REWARDS', // Step 3
-  PRE_GAME = 'PRE_GAME',                   // Pre-game (Hot Take)
+  LOBBY = 'LOBBY',                         // Waiting room (registered, waiting for game launch)
   GAME = 'GAME',                           // Step 4-6
   MASTER_DASHBOARD = 'MASTER_DASHBOARD',
   LEADERBOARD = 'LEADERBOARD',

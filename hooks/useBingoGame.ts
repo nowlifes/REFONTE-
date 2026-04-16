@@ -440,7 +440,7 @@ export const useBingoGame = () => {
           localStorage.setItem('bingo_user_id', newUser.id);
           await gameService.claimDevice(newUser.id, getMyDeviceId());
         }
-        setView(AppView.PRE_GAME);
+        setView(AppView.LOBBY);
       } catch (e: any) {
         alert(`Erreur: ${e.message}`);
       } finally {

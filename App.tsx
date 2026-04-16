@@ -28,7 +28,6 @@ import MasterPage from './components/MasterPage';
 import GamePage from './components/GamePage';
 import GameRoom from './components/GameRoom';
 import GameOverPage from './components/GameOverPage';
-import PreGamePage from './components/PreGamePage';
 import LobbyPage from './components/LobbyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -105,8 +104,8 @@ const App: React.FC = () => {
         setTimeout(() => {
           setLaunchCountdown(null);
           const cur = sRef.current;
-          // Only start game when character creation is complete (registerPlayer done → view = PRE_GAME)
-          if (cur.view === AppView.PRE_GAME && cur.nickname && !cur.gameSession) {
+          // Only start game when character creation is complete (registerPlayer done → view = LOBBY)
+          if (cur.view === AppView.LOBBY && cur.nickname && !cur.gameSession) {
             aRef.current.startGame(cur.nickname);
           }
         }, 800);
@@ -118,9 +117,9 @@ const App: React.FC = () => {
   }, [countdownEndsAt, s.view]);
 
   // Auto-start for players who complete character creation after the countdown already fired.
-  // Covers: player was on NICKNAME during countdown → finished OnboardingCards later → enters PRE_GAME.
+  // Covers: player was on NICKNAME during countdown → finished OnboardingCards later → enters LOBBY.
   useEffect(() => {
-    if (s.view !== AppView.PRE_GAME || !s.nickname || s.gameSession) return;
+    if (s.view !== AppView.LOBBY || !s.nickname || s.gameSession) return;
     if (!countdownEndsAt) return;
     const msSinceCountdown = Date.now() - countdownEndsAt;
     // Countdown hasn't fired yet, or fired more than 5 minutes ago (stale)
@@ -382,25 +381,13 @@ const App: React.FC = () => {
           When no ?s= param is present it is a transparent no-op wrapper. */}
       <GameRoom setView={a.setView}>
 
-      {/* PRE-GAME — overrides player views when active (master is unaffected) */}
-      {isSessionActive && pregamePhase && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && s.nickname && !!localStorage.getItem('bingo_user_id') && (
-        <PreGamePage
-          phase={pregamePhase}
-          secureSessionId={secureSessionId}
-          playerId={localStorage.getItem('bingo_user_id') || ''}
-          nickname={s.nickname}
-          avatarId={s.avatarId || ''}
-          onCrownClick={() => setShowHiddenLogin(true)}
-        />
-      )}
-
-      {/* 1. NICKNAME PAGE — shown when no pregame or player has no nickname yet */}
-      {s.view === AppView.NICKNAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
+      {/* 1. NICKNAME PAGE */}
+      {s.view === AppView.NICKNAME && (
          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
       )}
 
       {/* 1b. LOBBY — player registered, waiting for Master to launch pregame/game */}
-      {s.view === AppView.PRE_GAME && !pregamePhase && (
+      {s.view === AppView.LOBBY && (
         <LobbyPage
           nickname={s.nickname || ''}
           avatarId={s.avatarId || ''}
