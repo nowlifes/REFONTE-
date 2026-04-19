@@ -562,6 +562,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
             </div>
           )}
 
+          {/* Launch game — direct CTA when session is active */}
+          {isSessionActive && triggerCountdown && (
+            <button
+              onClick={handleLaunchGame}
+              disabled={isLaunchingPhase}
+              className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[14px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40"
+            >
+              <Play size={18} strokeWidth={3} fill="currentColor" />
+              {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
+            </button>
+          )}
+
           {/* Action buttons */}
           <div className="flex flex-col gap-1.5">
             <button
@@ -580,71 +592,6 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
           </div>{/* end flex flex-col gap-3 */}
         </Section>
-
-        {/* ── PRE-GAME ──────────────────────────────────────────────────── */}
-        {isSessionActive && (
-          <Section
-            icon={<Sparkles size={14} strokeWidth={3} />}
-            title="Pré-Game"
-            accent="#A78BFA"
-            collapsible
-            defaultOpen={true}
-            badge={pregamePhase ? <Pill color="#A78BFA" label={PREGAME_LABELS[pregamePhase] ?? pregamePhase} /> : undefined}
-          >
-            {!pregamePhase ? (
-              <div className="flex flex-col gap-2">
-                {/* Launch game — primary CTA */}
-                <button
-                  onClick={handleLaunchGame}
-                  disabled={isLaunchingPhase || !triggerCountdown}
-                  className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                >
-                  <Play size={16} strokeWidth={3} fill="currentColor" />
-                  {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
-                </button>
-                {/* Hot Takes pre-game option */}
-                <button
-                  onClick={() => handleSetPhase('HOT_TAKE_SUBMIT')}
-                  disabled={isLaunchingPhase || !setPregamePhase}
-                  className="w-full py-2.5 bg-[#FF8C00]/15 text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border border-[#FF8C00]/30 active:bg-[#FF8C00]/25 transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
-                >
-                  <span>🔥</span> Pré-game Hot Takes
-                </button>
-              </div>
-            ) : pregamePhase === 'HOT_TAKE_SUBMIT' ? (
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => handleSetPhase('HOT_TAKE_VOTE')}
-                  disabled={isLaunchingPhase}
-                  className="w-full py-3 bg-[#FF8C00] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
-                >
-                  <ChevronRight size={14} strokeWidth={3} /> Lancer le Vote
-                </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
-                  <StopCircle size={11} /> Arrêter
-                </button>
-              </div>
-            ) : pregamePhase === 'HOT_TAKE_VOTE' ? (
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleLaunchGame}
-                  disabled={isLaunchingPhase || !triggerCountdown}
-                  className="w-full py-3.5 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                >
-                  <Play size={16} strokeWidth={3} fill="currentColor" />
-                  {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
-                </button>
-                <button onClick={() => handleSetPhase(null)} disabled={isLaunchingPhase} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
-                  <StopCircle size={11} /> Arrêter
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => handleSetPhase(null)} className="w-full py-2 bg-white/5 border border-red-400/20 text-red-400/70 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1">
-                <StopCircle size={11} /> Réinitialiser
-              </button>
-            )}
-          </Section>
-        )}
 
         {/* ── RÉGLAGES (spotlight, cadence, bar flow, chaos) ─────────────── */}
         {isSessionActive && (
