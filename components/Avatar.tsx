@@ -44,8 +44,8 @@ const Avatar: React.FC<AvatarProps> = ({ seed, size = 40, className = "", select
         relative rounded-xl overflow-hidden flex items-center justify-center transition-all duration-300 select-none
         ${bgGradient}
         ${selected 
-          ? 'shadow-[0_0_20px_rgba(234,179,8,0.5)] ring-2 ring-gold-400 scale-105 z-10' 
-          : 'shadow-md ring-1 ring-white/10 hover:ring-gold-500/30 hover:scale-105'
+          ? 'shadow-[0_0_20px_rgba(234,179,8,0.5)] ring-2 ring-[#FFD700] scale-105 z-10' 
+          : 'shadow-md ring-1 ring-white/10 hover:ring-[#FFD700]/30 hover:scale-105'
         }
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
@@ -71,7 +71,7 @@ const Avatar: React.FC<AvatarProps> = ({ seed, size = 40, className = "", select
       <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-40 pointer-events-none h-1/2"></div>
       
       {/* Bottom Glow */}
-      <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-gold-500/5 to-transparent opacity-20 pointer-events-none"></div>
+      <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-[#FFD700]/5 to-transparent opacity-20 pointer-events-none"></div>
     </div>
   );
 };

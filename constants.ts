@@ -181,7 +181,7 @@ export const BADGE_CONFIG: Record<BadgeType, {
   },
   PERFECTIONIST: {
     emoji: '👑',
-    color: 'from-gold-400 to-gold-600'
+    color: 'from-[#FFD700] to-[#FF8C00]'
   }
 };
 
