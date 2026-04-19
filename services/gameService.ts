@@ -1712,6 +1712,14 @@ async resetSession(): Promise<void> {
 
   // ── 4.1 Profile editing ───────────────────────────────────────────
 
+  /** Attach a player to the current secure session if they don't have one yet.
+   *  Silently no-ops if session_id is already set — safe to call on every load. */
+  async linkPlayerToSession(playerId: string, sessionId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('players').update({ session_id: sessionId })
+      .eq('id', playerId).is('session_id', null);
+  }
+
   /** Update pseudo (preserving [XX] country prefix) and emoji for a player. */
   async updatePlayerProfile(playerId: string, newNickname: string, newAvatarKey: string): Promise<void> {
     if (!supabase) throw new Error('No backend');

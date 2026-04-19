@@ -89,7 +89,7 @@ const App: React.FC = () => {
   // 3-2-1 game launch countdown (driven by countdownEndsAt from event_session)
   const [launchCountdown, setLaunchCountdown] = useState<{ value: number; isGo: boolean } | null>(null);
   useEffect(() => {
-    if (!countdownEndsAt || s.view === AppView.MASTER_DASHBOARD) { setLaunchCountdown(null); return; }
+    if (!countdownEndsAt) { setLaunchCountdown(null); return; }
     // Ignore stale countdown (already expired for more than 5s on load)
     if (countdownEndsAt - Date.now() < -5000) { setLaunchCountdown(null); return; }
     let fired = false;
@@ -166,6 +166,12 @@ const App: React.FC = () => {
     }
   };
 
+  // Dev mode: skip password when running locally (import.meta.env.DEV)
+  const handleCrownClick = () => {
+    if (import.meta.env.DEV) { a.setView(AppView.MASTER_DASHBOARD); return; }
+    setShowHiddenLogin(true);
+  };
+
   // --- LANDSCAPE DETECTION ---
   useEffect(() => {
     const checkOrientation = () => {
@@ -186,6 +192,15 @@ const App: React.FC = () => {
          gameService.syncPendingActions();
      }
   }, []);
+
+  // --- WITNESS HEAL: re-link player to session if session_id was null ---
+  // Fixes empty witness list when player joined before the secure session was created
+  useEffect(() => {
+    if (!isSessionActive || !secureSessionId) return;
+    const userId = localStorage.getItem('bingo_user_id');
+    if (!userId) return;
+    gameService.linkPlayerToSession(userId, secureSessionId).catch(() => {});
+  }, [isSessionActive, secureSessionId]);
   
   // --- KICK LOGIC & START ANIMATION ---
   useEffect(() => {
@@ -310,7 +325,7 @@ const App: React.FC = () => {
            <div className="absolute inset-0 border-4 border-[#FFD700]/30 rounded-full animate-pulse"></div>
            <div className="absolute inset-0 border-t-4 border-[#FFD700] rounded-full animate-spin"></div>
            <div className="absolute inset-0 flex items-center justify-center">
-             <ShieldLogo onCrownClick={() => setShowHiddenLogin(true)} className="w-12 h-12 animate-pulse" />
+             <ShieldLogo onCrownClick={handleCrownClick} className="w-12 h-12 animate-pulse" />
            </div>
         </div>
         <p className="text-[#FFD700] font-impact text-xl tracking-widest animate-pulse uppercase">{t('loading')}</p>
@@ -336,7 +351,7 @@ const App: React.FC = () => {
             onMasterAccess={() => uia.setShowMasterLogin(true)} 
             onVipBypass={() => setVipBypass(true)}
             onRefresh={checkSession}
-            onCrownClick={() => setShowHiddenLogin(true)}
+            onCrownClick={handleCrownClick}
          />
          {ui.showMasterLogin && (
            <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
@@ -383,7 +398,7 @@ const App: React.FC = () => {
 
       {/* 1. NICKNAME PAGE */}
       {s.view === AppView.NICKNAME && (
-         <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={() => setShowHiddenLogin(true)} />
+         <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={handleCrownClick} />
       )}
 
       {/* 1b. LOBBY — player registered, waiting for Master to launch pregame/game */}
@@ -391,7 +406,7 @@ const App: React.FC = () => {
         <LobbyPage
           nickname={s.nickname || ''}
           avatarId={s.avatarId || ''}
-          onCrownClick={() => setShowHiddenLogin(true)}
+          onCrownClick={handleCrownClick}
         />
       )}
 
@@ -455,7 +470,7 @@ const App: React.FC = () => {
               actions={a}
               ui={ui}
               uiActions={uia}
-              onCrownClick={() => setShowHiddenLogin(true)}
+              onCrownClick={handleCrownClick}
               onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
               secureSessionId={secureSessionId}
               challengeCooldownSecs={chaosMode ? 0 : challengeCooldownSecs}
