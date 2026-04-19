@@ -1285,11 +1285,12 @@ async resetSession(): Promise<void> {
 
   async getPlayersWithScores(sessionId: string): Promise<Array<{
     id: string; pseudo: string; emoji: string; score: number; status: string; joinedAt: string;
+    deviceId: string | null; lastSeenAt: string | null; gameId: string | null;
   }>> {
     if (!supabase) return [];
     const { data: players } = await supabase
       .from('players')
-      .select('id, pseudo, emoji, created_at')
+      .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
 
@@ -1298,7 +1299,7 @@ async resetSession(): Promise<void> {
 
     const { data: games } = await supabase
       .from('games')
-      .select('player_id, score, status')
+      .select('id, player_id, score, status')
       .in('player_id', playerIds)
       .eq('status', 'ACTIVE');
 
@@ -1309,8 +1310,43 @@ async resetSession(): Promise<void> {
       let pseudo = p.pseudo || 'Unknown';
       const match = pseudo.match(/^\[([A-Z]{2})\]\s*(.*)/);
       if (match) pseudo = match[2];
-      return { id: p.id, pseudo, emoji: p.emoji || '🎲', score: game?.score ?? 0, status: game?.status ?? 'WAITING', joinedAt: p.created_at };
+      return {
+        id: p.id, pseudo, emoji: p.emoji || '🎲',
+        score: game?.score ?? 0, status: game?.status ?? 'WAITING',
+        joinedAt: p.created_at,
+        deviceId: p.device_id ?? null,
+        lastSeenAt: p.last_seen_at ?? null,
+        gameId: game?.id ?? null,
+      };
     });
+  }
+
+  subscribePlayersWithScores(sessionId: string, callback: (players: any[]) => void): () => void {
+    if (!supabase) return () => {};
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const refetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        this.getPlayersWithScores(sessionId).then(callback);
+      }, 300); // coalesce rapid game updates (many players validating at once)
+    };
+
+    this.getPlayersWithScores(sessionId).then(callback); // immediate initial fetch
+
+    const ch = supabase
+      .channel(`players_scores_live_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${sessionId}` }, refetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games' }, refetch)
+      .subscribe((status) => {
+        // Re-fetch on reconnect to catch any missed events while offline
+        if (status === 'SUBSCRIBED') refetch();
+      });
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(ch);
+    };
   }
 
   async kickPlayer(playerId: string): Promise<void> {
@@ -1496,6 +1532,44 @@ async resetSession(): Promise<void> {
     const { data: player } = await supabase.from('players').select('pseudo').eq('id', playerId).maybeSingle();
     const prefix = player?.pseudo?.match(/^\[[A-Z]{2}\]\s*/)?.[0] ?? '';
     await supabase.from('players').update({ pseudo: prefix + newPseudo }).eq('id', playerId);
+  }
+
+  // ─── PLAYER WITNESS (player selects witness directly, no master needed) ──
+
+  /** Create a master_validation row with witness already assigned — called by the player, not the master.
+   *  The witness player will see it in WitnessRequestBanner and can confirm/reject from their phone. */
+  async requestPlayerWitness(
+    gameId: string, cellId: number, challengeText: string,
+    playerNickname: string, playerEmoji: string, sessionId: string,
+    witnessPlayerId: string
+  ): Promise<string> {
+    if (!supabase) throw new Error('No backend');
+    const { data, error } = await supabase
+      .from('master_validations')
+      .upsert({
+        game_id: gameId, cell_id: cellId, challenge_text: challengeText,
+        player_nickname: playerNickname, player_emoji: playerEmoji,
+        session_id: sessionId, status: 'PENDING',
+        witness_player_id: witnessPlayerId, witness_status: 'PENDING',
+      }, { onConflict: 'game_id,cell_id', ignoreDuplicates: false })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data.id;
+  }
+
+  /** Clear all active taunt/freeze effects for a session — master emergency reset. */
+  async clearAllTaunts(sessionId: string): Promise<void> {
+    if (!supabase) return;
+    const { data: players } = await supabase
+      .from('players').select('id').eq('session_id', sessionId);
+    if (!players?.length) return;
+    const playerIds = players.map((p: any) => p.id);
+    await supabase
+      .from('games')
+      .update({ frozen_until: null, taunt_type: null, taunt_data: null })
+      .in('player_id', playerIds)
+      .eq('status', 'ACTIVE');
   }
 
   // ─── WITNESS MODE ─────────────────────────────────────────────────────────

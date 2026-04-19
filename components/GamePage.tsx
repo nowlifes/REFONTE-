@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Crown, Settings, Sparkles, Zap } from 'lucide-react';
+import { Trophy, Crown, Settings, Sparkles, Zap, Pencil } from 'lucide-react';
+import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView, BingoCellData, TauntType } from '../types';
 import BingoCell from './BingoCell';
@@ -39,6 +40,8 @@ interface GamePageProps {
 }
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2' }) => {
+  // Derive the player's emoji character for cell stamps
+  const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
@@ -59,6 +62,38 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     };
     requestAnimationFrame(step);
   }, [s.score]);
+
+  // ── 1-2-2 Row-based progressive unlock ──────────────────────────
+  // unlockedRows = sum of cadence goals up to (and including) currentBar
+  const cadenceArray = barCadence.split(',').map(Number);
+  const unlockedRows = Math.min(5, cadenceArray.slice(0, currentBar).reduce((a, b) => a + b, 0));
+
+  // Separators: future unlock boundaries still within the grid
+  const rowSeparators: { afterRow: number; barLabel: number; isPrimary: boolean }[] = [];
+  {
+    let cum = 0;
+    cadenceArray.forEach((goal, i) => {
+      cum += goal;
+      if (cum < 5 && cum >= unlockedRows) {
+        rowSeparators.push({ afterRow: cum, barLabel: i + 2, isPrimary: cum === unlockedRows });
+      }
+    });
+  }
+
+  // ── Row unlock animation — fires when Master advances the bar ──
+  const prevUnlockedRowsRef = useRef(unlockedRows);
+  const [unlockingRows, setUnlockingRows] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (unlockedRows > prevUnlockedRowsRef.current) {
+      const newRows: number[] = [];
+      for (let r = prevUnlockedRowsRef.current; r < unlockedRows; r++) newRows.push(r);
+      setUnlockingRows(newRows);
+      if (navigator.vibrate) navigator.vibrate([80, 60, 120, 60, 200]);
+      setTimeout(() => setUnlockingRows([]), 900);
+    }
+    prevUnlockedRowsRef.current = unlockedRows;
+  }, [unlockedRows]);
 
   // Progressive unlock detection
   // Stage 1 — corners (ids 0,4,20,24) unlock at score 3
@@ -403,7 +438,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
         {/* Avatar (tap → edit profile) + name (tap → badges) */}
         <div className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10">
-          <button onClick={() => setShowEditProfile(true)} className="active:scale-90 transition-transform">
+          <button onClick={() => setShowEditProfile(true)} className="relative active:scale-90 transition-transform group">
             <Avatar
               seed={s.avatarId}
               size={36}
@@ -415,6 +450,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   : 'ring-1 ring-[#00F5A0]/50 ring-offset-1 ring-offset-[#0A1629]'
               }`}
             />
+            {/* Edit hint — tiny pencil badge */}
+            <div className="absolute -bottom-[3px] -right-[3px] w-[14px] h-[14px] bg-white border border-black rounded-full flex items-center justify-center shadow-[1px_1px_0px_black] pointer-events-none">
+              <Pencil size={7} className="text-black" strokeWidth={3} />
+            </div>
           </button>
           <button id="tutorial-score-target" onClick={() => uia.setShowBadge(true)} className="flex flex-col items-start leading-none active:opacity-70 transition-opacity">
             <span className="font-impact text-[10px] text-[#00F5A0] uppercase tracking-tighter">{s.nickname}</span>
@@ -477,17 +516,26 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
       {/* GRILLE BINGO - 350x350px fixe */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 overflow-hidden w-full">
+        {/* Outer wrapper — relative anchor for row-unlock separators */}
         <div className="relative p-4 bg-black/40 rounded-[2rem] border-[4px] border-white/5 shadow-2xl">
-          <div 
-            id="tutorial-grid-area" 
+          <div
+            id="tutorial-grid-area"
             className="grid grid-cols-5 gap-[4px] p-[4px] bg-[#1A1A2E] rounded-[12px] shadow-inner"
             style={{ width: '350px', height: '350px' }}
           >
               {s.cells.map((cell: BingoCellData) => {
+                const cellRow = Math.floor(cell.id / 5);
+                const isRowLocked = !chaosMode && cellRow >= unlockedRows;
                 const isCorner = CORNER_IDS.includes(cell.id);
                 const isCenter = cell.id === 12;
-                const isLocked = (isCorner && isCornersLocked) || (isCenter && isMysteryCellLocked);
-                const isUnlocking = (isCorner && cornersUnlocking) || (isCenter && mysteryUnlocking);
+                const isLocked = !isRowLocked && ((isCorner && isCornersLocked) || (isCenter && isMysteryCellLocked));
+                const isRowUnlocking = unlockingRows.includes(cellRow);
+                const isUnlocking = (isCorner && cornersUnlocking) || (isCenter && mysteryUnlocking) || isRowUnlocking;
+                // Which bar unlocks this row? Find the first separator whose boundary
+                // is strictly AFTER this row (i.e., the first group that includes this row).
+                const rowUnlocksAtBar = isRowLocked
+                  ? rowSeparators.find(sep => sep.afterRow > cellRow)?.barLabel
+                  : undefined;
                 return (
                   <BingoCell
                     key={cell.id}
@@ -503,10 +551,50 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                     isLocked={isLocked}
                     isUnlocking={isUnlocking}
                     isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
+                    avatarEmoji={playerEmojiChar}
+                    rowLocked={isRowLocked}
+                    rowUnlocksAtBar={rowUnlocksAtBar}
                   />
                 );
               })}
           </div>
+
+          {/* ── Row-unlock separators ───────────────────────────── */}
+          {rowSeparators.map(({ afterRow, barLabel, isPrimary }) => {
+            // Position: centered in the 4px gap between row (afterRow-1) and row (afterRow)
+            // top = outer_padding(16) + grid_padding(4) + afterRow * row_stride(70) - gap_half(2)
+            const topPx = 16 + 4 + afterRow * 70 - 2;
+            return (
+              <div
+                key={barLabel}
+                className="absolute z-20 pointer-events-none flex items-center justify-center"
+                style={{ left: 16, top: topPx - 10, width: 350, height: 20 }}
+              >
+                {/* Glowing divider line */}
+                <div
+                  className={`absolute inset-y-[9px] left-0 right-0 h-[1.5px] separator-glow`}
+                  style={{
+                    background: isPrimary
+                      ? 'linear-gradient(to right, transparent, #FF8C00CC, transparent)'
+                      : 'linear-gradient(to right, transparent, #ffffff40, transparent)',
+                  }}
+                />
+                {/* Badge */}
+                <div
+                  className={`relative flex items-center gap-1 rounded-[6px] border-[2px] border-black shadow-[2px_2px_0px_black] px-[7px] py-[3px]`}
+                  style={{ background: isPrimary ? '#FF8C00' : '#2A3555' }}
+                >
+                  <Lock size={7} strokeWidth={3} style={{ color: isPrimary ? '#000' : '#ffffff80' }} />
+                  <span
+                    className="font-impact uppercase tracking-widest whitespace-nowrap"
+                    style={{ fontSize: '8px', color: isPrimary ? '#000' : '#ffffff70' }}
+                  >
+                    {isPrimary ? `Débloqué au Bar ${barLabel}` : `Bar ${barLabel}`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Progressive unlock progress hint */}
@@ -652,6 +740,24 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                         s.nickname || 'Joueur',
                         s.avatarId || '🎲',
                         secureSessionId!
+                      );
+                    }
+                  : undefined
+              }
+              sessionId={secureSessionId}
+              currentPlayerId={s.gameSession?.userId}
+              onRequestPlayerWitness={
+                s.selectedCell && s.gameSession && secureSessionId
+                  ? async (witnessPlayerId: string) => {
+                      const { gameService: gs } = await import('../services/gameService');
+                      await gs.requestPlayerWitness(
+                        s.gameSession!.id,
+                        s.selectedCell!.id,
+                        s.selectedCell!.text,
+                        s.nickname || 'Joueur',
+                        s.avatarId || '🎲',
+                        secureSessionId!,
+                        witnessPlayerId
                       );
                     }
                   : undefined

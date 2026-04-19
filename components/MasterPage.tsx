@@ -4,7 +4,7 @@ import {
   Power, DoorOpen, DoorClosed, Gamepad2, Crown, Trash2, AlertTriangle, X,
   Users, List, Sparkles, PartyPopper, MapPin, Clock, XCircle, Expand,
   Play, ChevronRight, StopCircle, UserX, RefreshCw, Check, Zap, Pencil,
-  Eye, ChevronDown, ChevronUp, QrCode, Loader2,
+  Eye, ChevronDown, ChevronUp, QrCode, Loader2, KeyRound,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -134,13 +134,17 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
   // ── Player management
   const [showPlayers, setShowPlayers] = useState(false);
-  const [playersList, setPlayersList] = useState<Array<{id: string; pseudo: string; emoji: string; score: number; status: string}>>([]);
+  const [playersList, setPlayersList] = useState<Array<{
+    id: string; pseudo: string; emoji: string; score: number; status: string;
+    deviceId: string | null; lastSeenAt: string | null; gameId: string | null;
+  }>>([]);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
   const [kickingPlayerId, setKickingPlayerId] = useState<string | null>(null);
   const [kickConfirmId, setKickConfirmId] = useState<string | null>(null);
   const [renamingPlayerId, setRenamingPlayerId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isSavingRename, setIsSavingRename] = useState(false);
+  const [clearingDeviceId, setClearingDeviceId] = useState<string | null>(null);
   // ── Recovery QR (4.3)
   const [recoveryQR, setRecoveryQR] = useState<{ playerId: string; token: string | null; loading: boolean } | null>(null);
 
@@ -197,11 +201,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
     return unsub;
   }, [secureSessionId, isSessionActive]);
 
-  // ── Auto-load players list so witness picker is always populated
-  useEffect(() => {
-    if (!secureSessionId || !isSessionActive) { setPlayersList([]); return; }
-    refreshPlayers();
-  }, [secureSessionId, isSessionActive]);
+  // Players list is now kept live via subscribePlayersWithScores — no separate auto-load needed
 
   const handleApproveValidation = async (v: any) => {
     setApprovingId(v.id);
@@ -252,7 +252,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
     gameService.getChallenges().then(setDbChallenges);
   }, []);
 
-  // ── Players list
+  // ── Players list — realtime subscription (active whenever session is live)
   const refreshPlayers = async () => {
     if (!secureSessionId) return;
     setIsLoadingPlayers(true);
@@ -264,11 +264,26 @@ const MasterPage: React.FC<MasterPageProps> = ({
   };
 
   useEffect(() => {
-    if (!showPlayers || !secureSessionId) return;
-    refreshPlayers();
-    const iv = setInterval(refreshPlayers, 5000);
-    return () => clearInterval(iv);
-  }, [showPlayers, secureSessionId]);
+    if (!secureSessionId || !isSessionActive) { setPlayersList([]); return; }
+    // Realtime subscription — updates list instantly on any player/game change
+    const unsub = gameService.subscribePlayersWithScores(secureSessionId, (list) => {
+      setPlayersList(list.sort((a, b) => b.score - a.score));
+      setIsLoadingPlayers(false);
+    });
+    setIsLoadingPlayers(true);
+    return unsub;
+  }, [secureSessionId, isSessionActive]);
+
+  // Compute double connections from current playersList
+  const doubleConnections = React.useMemo(() => {
+    const map = new Map<string, typeof playersList>();
+    for (const p of playersList) {
+      if (!p.deviceId) continue;
+      if (!map.has(p.deviceId)) map.set(p.deviceId, []);
+      map.get(p.deviceId)!.push(p);
+    }
+    return [...map.values()].filter(g => g.length > 1);
+  }, [playersList]);
 
   const handleKickPlayer = async (playerId: string) => {
     setKickingPlayerId(playerId);
@@ -289,6 +304,16 @@ const MasterPage: React.FC<MasterPageProps> = ({
       setRenamingPlayerId(null);
     } catch (e) { console.error(e); }
     finally { setIsSavingRename(false); }
+  };
+
+  // Clear device lock only — keeps the game intact (player reconnects on same device or another)
+  const handleClearDeviceLock = async (playerId: string) => {
+    setClearingDeviceId(playerId);
+    try {
+      await gameService.clearDeviceLock(playerId);
+      setPlayersList(prev => prev.map(p => p.id === playerId ? { ...p, deviceId: null } : p));
+    } catch (e) { console.error(e); }
+    finally { setClearingDeviceId(null); }
   };
 
   const handleReset = async () => {
@@ -700,16 +725,56 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 </div>
               </div>
 
-              {/* Advance bar button */}
-              {currentBar < 3 && advanceBar && (
-                <button
-                  onClick={async () => { await advanceBar(); }}
-                  className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
-                >
-                  <ChevronRight size={18} strokeWidth={3} />
-                  Passer au bar {currentBar + 1}
-                </button>
-              )}
+              {/* Advance bar button — primary action of the evening */}
+              {currentBar < 3 && advanceBar && (() => {
+                const cadenceGoals = (barCadence || '1,2,2').split(',').map(Number);
+                const nextGoal = cadenceGoals[currentBar] ?? 0;
+                return (
+                  <div className="rounded-2xl border-[3px] border-[#FF8C00]/40 bg-[#FF8C00]/8 p-3 flex flex-col gap-2.5">
+                    {/* Preview of what unlocks */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-[3px]">
+                        {Array.from({ length: 5 }).map((_, colIdx) => (
+                          <div key={colIdx} className="flex flex-col gap-[3px]">
+                            {Array.from({ length: 5 }).map((_, rowIdx) => {
+                              const currentlyUnlocked = cadenceGoals.slice(0, currentBar).reduce((a, b) => a + b, 0);
+                              const willUnlock = cadenceGoals.slice(0, currentBar + 1).reduce((a, b) => a + b, 0);
+                              const isActive = rowIdx < currentlyUnlocked;
+                              const isNew = rowIdx >= currentlyUnlocked && rowIdx < willUnlock;
+                              return (
+                                <div
+                                  key={rowIdx}
+                                  className={`w-[10px] h-[10px] rounded-[2px] transition-all ${
+                                    isNew    ? 'bg-[#FF8C00] animate-pulse' :
+                                    isActive ? 'bg-[#00F5A0]/70' :
+                                               'bg-white/8 border border-white/10'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-impact text-[10px] text-[#FF8C00] uppercase tracking-widest leading-none mb-1">
+                          Prochain déblocage
+                        </p>
+                        <p className="font-impact text-white/60 text-[11px] uppercase tracking-wide">
+                          +{nextGoal} ligne{nextGoal > 1 ? 's' : ''} pour tous les joueurs
+                        </p>
+                      </div>
+                    </div>
+                    {/* CTA */}
+                    <button
+                      onClick={async () => { await advanceBar(); }}
+                      className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[14px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                    >
+                      <ChevronRight size={20} strokeWidth={3} />
+                      On passe au Bar {currentBar + 1} !
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Cadence selector */}
               {setBarCadenceValue && (
@@ -758,6 +823,29 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   <p className="text-white/30 text-[10px] font-impact uppercase tracking-widest mt-2 text-center">
                     {maxValidationsPerBar === 0 ? 'Illimité' : `Max ${maxValidationsPerBar} défi${maxValidationsPerBar > 1 ? 's' : ''} validé${maxValidationsPerBar > 1 ? 's' : ''} par bar`}
                   </p>
+                </div>
+              )}
+
+              {/* ── EFFETS VISUELS — kill switch ──────────────────────── */}
+              {secureSessionId && (
+                <div className="rounded-xl border-[2px] border-[#FF2D6A]/30 bg-[#FF2D6A]/5 p-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-impact text-[#FF2D6A] uppercase text-[12px] tracking-wide">💥 Tuer les effets</p>
+                    <p className="font-impact text-white/30 uppercase text-[9px] tracking-widest mt-0.5">
+                      Spotlight + gels + taunts — reset immédiat
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await Promise.all([
+                        setSpotlightDisabled?.(true),
+                        gameService.clearAllTaunts(secureSessionId),
+                      ]);
+                    }}
+                    className="shrink-0 px-3 py-2 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                  >
+                    RESET
+                  </button>
                 </div>
               )}
 
@@ -1016,158 +1104,253 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
       {/* PLAYER LIST MODAL */}
       {showPlayers && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-[#1A1A2E] border-[3px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_black] flex flex-col max-h-[85vh]">
-            <button onClick={() => setShowPlayers(false)} className="absolute top-4 right-4 text-white/20 hover:text-white/60 z-10 transition-colors">
-              <X size={22} strokeWidth={2.5} />
-            </button>
-
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-impact text-white uppercase tracking-tighter italic">
-                JOUEURS ({playersList.length})
-              </h3>
-              <button
-                onClick={refreshPlayers}
-                disabled={isLoadingPlayers}
-                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center active:bg-white/10 transition-all disabled:opacity-50"
-              >
-                <RefreshCw size={15} className={`text-white/40 ${isLoadingPlayers ? 'animate-spin' : ''}`} strokeWidth={2.5} />
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-[#1A1A2E] border-[3px] border-black rounded-2xl relative shadow-[10px_10px_0px_black] flex flex-col" style={{ maxHeight: '90vh' }}>
+            {/* Header */}
+            <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/8">
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-xl font-impact text-white uppercase tracking-tighter italic">
+                  JOUEURS
+                </h3>
+                <div className="bg-white/10 border border-white/15 rounded-lg px-2.5 py-0.5 flex items-center gap-1.5">
+                  {isLoadingPlayers && playersList.length === 0
+                    ? <span className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                    : <span className="font-impact text-white text-sm">{playersList.length}</span>}
+                  {isLoadingPlayers && playersList.length > 0 && (
+                    <span className="w-2.5 h-2.5 border border-white/20 border-t-white/40 rounded-full animate-spin ml-0.5" />
+                  )}
+                </div>
+                {doubleConnections.length > 0 && (
+                  <div className="bg-[#FF8C00] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_black] flex items-center gap-1">
+                    <span className="font-impact text-black text-[10px] uppercase tracking-widest">⚠ {doubleConnections.length} conflit{doubleConnections.length > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setShowPlayers(false)} className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/30 hover:text-white/60 transition-colors">
+                <X size={18} strokeWidth={2.5} />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 pr-1 space-y-2 no-scrollbar">
-              {isLoadingPlayers && playersList.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className="w-6 h-6 border-2 border-white/10 border-t-white/40 rounded-full animate-spin mx-auto" />
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-2 no-scrollbar">
+
+              {/* ── Double connexions alert ──────────────────────────────── */}
+              {doubleConnections.length > 0 && (
+                <div className="bg-[#FF8C00]/10 border-[2px] border-[#FF8C00]/40 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-[#FF8C00]/20">
+                    <span className="text-[#FF8C00] text-sm">⚠</span>
+                    <span className="font-impact text-[#FF8C00] uppercase text-[11px] tracking-widest flex-1">
+                      Double{doubleConnections.length > 1 ? 's' : ''} connexion{doubleConnections.length > 1 ? 's' : ''} détectée{doubleConnections.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2 p-2">
+                    {doubleConnections.map((group, gi) => (
+                      <div key={gi} className="bg-black/20 rounded-xl p-2.5 flex flex-col gap-1.5">
+                        <p className="font-impact text-white/40 uppercase text-[9px] tracking-widest mb-0.5">
+                          Même appareil ({group[0].deviceId?.slice(0, 8)}…)
+                        </p>
+                        <div className="flex flex-col gap-1">
+                          {group.map(p => (
+                            <div key={p.id} className="flex items-center gap-2">
+                              <span className="text-lg leading-none">{p.emoji}</span>
+                              <span className="font-impact text-white text-[12px] uppercase flex-1 truncate">{p.pseudo}</span>
+                              <span className="font-impact text-white/40 text-[10px]">{p.score}/25</span>
+                              <button
+                                onClick={() => handleClearDeviceLock(p.id)}
+                                disabled={clearingDeviceId === p.id}
+                                className="px-2.5 py-1.5 bg-[#00FF9D]/15 border border-[#00FF9D]/30 text-[#00FF9D] rounded-lg font-impact uppercase text-[9px] tracking-widest active:bg-[#00FF9D]/25 transition-all disabled:opacity-40 flex items-center gap-1"
+                                title="Libérer ce device — le joueur peut se reconnecter"
+                              >
+                                {clearingDeviceId === p.id
+                                  ? <span className="w-2.5 h-2.5 border border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full animate-spin" />
+                                  : <>Libérer</>}
+                              </button>
+                              <button
+                                onClick={() => setKickConfirmId(p.id)}
+                                className="w-7 h-7 bg-red-500/10 border border-red-500/20 text-red-400/60 rounded-lg flex items-center justify-center active:bg-red-500/20 transition-all"
+                                title="Kick"
+                              >
+                                <UserX size={12} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ) : playersList.length === 0 ? (
+              )}
+
+              {/* ── Players list ───────────────────────────────────────────── */}
+              {playersList.length === 0 && !isLoadingPlayers ? (
                 <div className="text-center py-10">
                   <p className="font-impact text-[11px] uppercase tracking-widest text-white/20">Aucun joueur</p>
                 </div>
               ) : (
-                playersList.map((player, i) => (
-                  <div key={player.id} className="bg-white/5 border border-white/15 rounded-xl overflow-hidden">
-                    <div className="p-3 flex items-center gap-3">
-                      {/* Rank */}
-                      <span className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center font-impact text-white/40 text-[10px] italic shrink-0">
-                        {i + 1}
-                      </span>
-                      {/* Emoji */}
-                      <span className="text-2xl leading-none shrink-0">{player.emoji}</span>
+                playersList.map((player, i) => {
+                  const lines = Math.floor(player.score / 5);
+                  const isInDoubleConn = doubleConnections.some(g => g.some(p => p.id === player.id));
+                  return (
+                    <div key={player.id} className={`bg-white/5 border rounded-xl overflow-hidden transition-all ${isInDoubleConn ? 'border-[#FF8C00]/40' : 'border-white/10'}`}>
+                      <div className="p-3 flex items-center gap-3">
+                        {/* Rank */}
+                        <span className="w-6 h-6 bg-white/8 rounded-md flex items-center justify-center font-impact text-white/30 text-[9px] italic shrink-0">
+                          {i + 1}
+                        </span>
+                        {/* Emoji */}
+                        <span className="text-xl leading-none shrink-0">{player.emoji}</span>
 
-                      {/* Name — either display or rename input */}
-                      {renamingPlayerId === player.id ? (
-                        <div className="flex-1 flex gap-2 min-w-0">
-                          <input
-                            type="text"
-                            value={renameValue}
-                            onChange={e => setRenameValue(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleSaveRename(player.id); if (e.key === 'Escape') setRenamingPlayerId(null); }}
-                            autoFocus
-                            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 font-impact text-white text-[11px] uppercase focus:outline-none focus:border-white/40 min-w-0"
-                          />
-                          <button
-                            onClick={() => handleSaveRename(player.id)}
-                            disabled={isSavingRename}
-                            className="w-8 h-8 bg-[#00FF9D] border border-black rounded-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50 shrink-0"
-                          >
-                            {isSavingRename
-                              ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" />
-                              : <Check size={14} className="text-black" strokeWidth={3} />}
-                          </button>
-                          <button
-                            onClick={() => setRenamingPlayerId(null)}
-                            className="w-8 h-8 bg-white/10 border border-white/15 rounded-lg flex items-center justify-center active:scale-90 transition-transform shrink-0"
-                          >
-                            <X size={14} className="text-white/50" strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-impact text-white text-[13px] uppercase tracking-tight truncate">{player.pseudo}</div>
-                            <div className={`text-[9px] font-impact uppercase tracking-widest ${player.status === 'ACTIVE' ? 'text-[#00FF9D]' : 'text-white/20'}`}>
-                              {player.status === 'ACTIVE' ? '● EN JEU' : '○ EN ATTENTE'}
-                            </div>
+                        {/* Name — either display or rename input */}
+                        {renamingPlayerId === player.id ? (
+                          <div className="flex-1 flex gap-2 min-w-0">
+                            <input
+                              type="text"
+                              value={renameValue}
+                              onChange={e => setRenameValue(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleSaveRename(player.id); if (e.key === 'Escape') setRenamingPlayerId(null); }}
+                              autoFocus
+                              className="flex-1 bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 font-impact text-white text-[11px] uppercase focus:outline-none focus:border-white/40 min-w-0"
+                            />
+                            <button
+                              onClick={() => handleSaveRename(player.id)}
+                              disabled={isSavingRename}
+                              className="w-8 h-8 bg-[#00FF9D] border border-black rounded-lg flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50 shrink-0"
+                            >
+                              {isSavingRename
+                                ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" />
+                                : <Check size={14} className="text-black" strokeWidth={3} />}
+                            </button>
+                            <button
+                              onClick={() => setRenamingPlayerId(null)}
+                              className="w-8 h-8 bg-white/10 border border-white/15 rounded-lg flex items-center justify-center active:scale-90 transition-transform shrink-0"
+                            >
+                              <X size={14} className="text-white/50" strokeWidth={2.5} />
+                            </button>
                           </div>
-                          {player.status === 'ACTIVE' && (
-                            <div className="bg-[#FFD700] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_black] shrink-0">
-                              <span className="font-impact text-black text-[12px]">{player.score}/25</span>
+                        ) : (
+                          <>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-impact text-white text-[13px] uppercase tracking-tight truncate">{player.pseudo}</span>
+                                {isInDoubleConn && (
+                                  <span className="text-[#FF8C00] text-[10px] shrink-0" title="Double connexion détectée">⚠</span>
+                                )}
+                                {player.deviceId && !isInDoubleConn && (
+                                  <span className="text-white/20 text-[9px] shrink-0" title="Device lié">🔒</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`text-[9px] font-impact uppercase tracking-widest ${player.status === 'ACTIVE' ? 'text-[#00FF9D]' : 'text-white/20'}`}>
+                                  {player.status === 'ACTIVE' ? '● EN JEU' : '○ EN ATTENTE'}
+                                </span>
+                                {player.status === 'ACTIVE' && lines > 0 && (
+                                  <span className="text-[9px] font-impact uppercase text-[#FFD700]/60">
+                                    {lines} ligne{lines > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          {/* Rename button */}
-                          <button
-                            onClick={() => { setRenamingPlayerId(player.id); setRenameValue(player.pseudo); }}
-                            className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center active:bg-white/15 transition-all shrink-0"
-                            title="Renommer"
-                          >
-                            <Pencil size={13} className="text-white/30" strokeWidth={2.5} />
-                          </button>
-                          {/* Recovery QR (4.3) */}
-                          <button
-                            onClick={async () => {
-                              setRecoveryQR({ playerId: player.id, token: null, loading: true });
-                              try {
-                                const token = await gameService.generateRecoveryToken(player.id);
-                                setRecoveryQR({ playerId: player.id, token, loading: false });
-                              } catch {
-                                setRecoveryQR(null);
-                              }
-                            }}
-                            className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center active:bg-white/15 transition-all shrink-0"
-                            title="QR de récupération"
-                          >
-                            <QrCode size={13} className="text-white/30" strokeWidth={2.5} />
-                          </button>
-                        </>
+                            {player.status === 'ACTIVE' && (
+                              <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                <div className="bg-[#FFD700] border-[2px] border-black rounded-lg px-2 py-0.5 shadow-[2px_2px_0px_black]">
+                                  <span className="font-impact text-black text-[12px]">{player.score}/25</span>
+                                </div>
+                                {/* Progress bar */}
+                                <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-[#FFD700] rounded-full transition-all"
+                                    style={{ width: `${(player.score / 25) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {/* Rename button */}
+                            <button
+                              onClick={() => { setRenamingPlayerId(player.id); setRenameValue(player.pseudo); }}
+                              className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center active:bg-white/15 transition-all shrink-0"
+                              title="Renommer"
+                            >
+                              <Pencil size={12} className="text-white/30" strokeWidth={2.5} />
+                            </button>
+                            {/* Recovery QR */}
+                            <button
+                              onClick={async () => {
+                                setRecoveryQR({ playerId: player.id, token: null, loading: true });
+                                try {
+                                  const token = await gameService.generateRecoveryToken(player.id);
+                                  setRecoveryQR({ playerId: player.id, token, loading: false });
+                                } catch {
+                                  setRecoveryQR(null);
+                                }
+                              }}
+                              className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center active:bg-white/15 transition-all shrink-0"
+                              title="QR de récupération de compte"
+                            >
+                              <QrCode size={12} className="text-white/30" strokeWidth={2.5} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Actions row */}
+                      {renamingPlayerId !== player.id && (
+                        kickConfirmId === player.id ? (
+                          <div className="flex gap-2 px-3 pb-3 -mt-1">
+                            <button
+                              onClick={() => handleKickPlayer(player.id)}
+                              disabled={kickingPlayerId === player.id}
+                              className="flex-1 py-2 bg-[#FF2E63] text-white rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                            >
+                              {kickingPlayerId === player.id
+                                ? <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                : <><UserX size={12} strokeWidth={3} /> Kick définitif</>}
+                            </button>
+                            <button
+                              onClick={() => setKickConfirmId(null)}
+                              className="px-3 py-2 bg-white/10 border border-white/15 text-white/50 rounded-lg font-impact uppercase text-[9px] active:bg-white/15 transition-all"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex border-t border-white/5">
+                            {/* Libérer device — garde la partie, déverrouille le device */}
+                            {player.deviceId && (
+                              <button
+                                onClick={() => handleClearDeviceLock(player.id)}
+                                disabled={clearingDeviceId === player.id}
+                                className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#00FF9D]/50 hover:text-[#00FF9D] hover:bg-[#00FF9D]/5 transition-all border-r border-white/5 disabled:opacity-40"
+                                title="Libérer le verrou device — la partie reste intacte"
+                              >
+                                {clearingDeviceId === player.id
+                                  ? <span className="w-2.5 h-2.5 border border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full animate-spin" />
+                                  : <KeyRound size={11} strokeWidth={2.5} />}
+                                <span className="font-impact uppercase text-[8px] tracking-widest">Device</span>
+                              </button>
+                            )}
+                            {/* Reconnexion forcée — reset partie + device */}
+                            <button
+                              onClick={async () => {
+                                await gameService.resetPlayerGame(player.id);
+                              }}
+                              className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#FFD700]/50 hover:text-[#FFD700] hover:bg-[#FFD700]/5 transition-all border-r border-white/5"
+                              title="Reset jeu + déverrouille device (le joueur repart de zéro)"
+                            >
+                              <RefreshCw size={11} strokeWidth={2.5} />
+                              <span className="font-impact uppercase text-[8px] tracking-widest">Reset</span>
+                            </button>
+                            <button
+                              onClick={() => setKickConfirmId(player.id)}
+                              className="flex-1 py-1.5 flex items-center justify-center gap-1 text-red-400/50 hover:text-red-400 hover:bg-red-500/5 transition-all"
+                            >
+                              <UserX size={11} strokeWidth={2.5} />
+                              <span className="font-impact uppercase text-[8px] tracking-widest">Kick</span>
+                            </button>
+                          </div>
+                        )
                       )}
                     </div>
-
-                    {/* Actions bas — reconnect + kick */}
-                    {renamingPlayerId !== player.id && (
-                      kickConfirmId === player.id ? (
-                        <div className="flex gap-2 px-3 pb-3 -mt-1">
-                          <button
-                            onClick={() => handleKickPlayer(player.id)}
-                            disabled={kickingPlayerId === player.id}
-                            className="flex-1 py-2 bg-[#FF2E63] text-white rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-1"
-                          >
-                            {kickingPlayerId === player.id
-                              ? <span className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                              : <><UserX size={12} strokeWidth={3} /> Confirmer kick</>}
-                          </button>
-                          <button
-                            onClick={() => setKickConfirmId(null)}
-                            className="px-3 py-2 bg-white/10 border border-white/15 text-white/50 rounded-lg font-impact uppercase text-[9px] active:bg-white/15 transition-all"
-                          >
-                            Annuler
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex border-t border-white/5">
-                          {/* Forcer reconnexion (soft — garde le joueur, reset la partie) */}
-                          <button
-                            onClick={async () => {
-                              await gameService.resetPlayerGame(player.id);
-                              await refreshPlayers();
-                            }}
-                            className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-[#FFD700]/50 hover:text-[#FFD700] hover:bg-[#FFD700]/5 transition-all border-r border-white/5"
-                          >
-                            <RefreshCw size={11} strokeWidth={2.5} />
-                            <span className="font-impact uppercase text-[8px] tracking-widest">Reconnecter</span>
-                          </button>
-                          <button
-                            onClick={() => setKickConfirmId(player.id)}
-                            className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-red-400/50 hover:text-red-400 hover:bg-red-500/5 transition-all"
-                          >
-                            <UserX size={11} strokeWidth={2.5} />
-                            <span className="font-impact uppercase text-[8px] tracking-widest">Kick</span>
-                          </button>
-                        </div>
-                      )
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -1198,7 +1381,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
             ) : recoveryQR.token ? (
               <div className="bg-white p-4 rounded-2xl border-[4px] border-[#FFD700] shadow-[4px_4px_0px_black]">
                 <QRCodeSVG
-                  value={`${window.location.origin}${window.location.pathname}?recover=${recoveryQR.token}`}
+                  value={`${window.location.origin}${window.location.pathname}?s=${secureSessionId}&recover=${recoveryQR.token}`}
                   size={180}
                   level="H"
                   fgColor="#000000"

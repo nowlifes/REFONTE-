@@ -118,6 +118,13 @@ export const useBingoGame = () => {
           const recovered = await gameService.recoverByToken(recoverToken);
           if (recovered) {
             localStorage.setItem('bingo_user_id', recovered.playerId);
+            // Immediately claim this device so the device-conflict modal is skipped —
+            // the recovery token proves identity, no need to ask "use this phone?".
+            try { await gameService.claimDevice(recovered.playerId, getMyDeviceId()); } catch (_) {}
+            // If the recovery QR includes ?s=SESSION, sync the session token now so
+            // the freshness check below doesn't wipe the just-restored bingo_user_id.
+            const sessionInUrl = urlParams?.get('s');
+            if (sessionInUrl) localStorage.setItem('bingo_session_token', sessionInUrl);
             console.log('[Recovery] Account restored for', recovered.pseudo);
           }
         } catch (e) {

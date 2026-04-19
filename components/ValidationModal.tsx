@@ -1,6 +1,7 @@
 
-import React, { useState, useRef, useLayoutEffect } from 'react';
-import { X, Check, RefreshCw, ScanLine, Camera, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { X, Check, RefreshCw, ScanLine, Camera, Trash2, ChevronRight } from 'lucide-react';
+import { gameService } from '../services/gameService';
 import { BingoCellData, ChallengeType } from '../types';
 import MasterRunePad from './MasterRunePad';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -19,11 +20,19 @@ interface ValidationModalProps {
   /** 4.2 Player logo — displayed in modal header */
   playerNickname?: string;
   playerAvatarId?: string;
+  /** Digital witness flow — player selects who witnessed them */
+  sessionId?: string | null;
+  currentPlayerId?: string;
+  onRequestPlayerWitness?: (witnessPlayerId: string) => Promise<void>;
 }
 
-type ModalStep = 'INFO' | 'WITNESS_MODE' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS';
+type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SENT' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS';
 
-const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest, onRequestMasterValidation, playerNickname, playerAvatarId }) => {
+const ValidationModal: React.FC<ValidationModalProps> = ({
+  cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest,
+  onRequestMasterValidation, playerNickname, playerAvatarId,
+  sessionId, currentPlayerId, onRequestPlayerWitness,
+}) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<ModalStep>(cell.type === ChallengeType.MASTER ? 'MASTER_PAD' : 'INFO');
 
@@ -32,6 +41,40 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [isSendingToMaster, setIsSendingToMaster] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Digital witness state
+  const [witnessPlayers, setWitnessPlayers] = useState<Array<{ id: string; pseudo: string; emoji: string }>>([]);
+  const [isLoadingWitnesses, setIsLoadingWitnesses] = useState(false);
+  const [sendingWitnessTo, setSendingWitnessTo] = useState<string | null>(null);
+  const [selectedWitnessName, setSelectedWitnessName] = useState('');
+
+  // Fetch player list when entering player witness select step
+  useEffect(() => {
+    if (step !== 'PLAYER_WITNESS_SELECT' || !sessionId) return;
+    setIsLoadingWitnesses(true);
+    gameService.getPlayersWithScores(sessionId).then(list => {
+      setWitnessPlayers(
+        list
+          .filter(p => p.id !== currentPlayerId)
+          .map(p => ({ id: p.id, pseudo: p.pseudo, emoji: p.emoji }))
+      );
+      setIsLoadingWitnesses(false);
+    }).catch(() => setIsLoadingWitnesses(false));
+  }, [step, sessionId, currentPlayerId]);
+
+  const handleSelectWitness = async (witnessId: string, witnessName: string) => {
+    if (!onRequestPlayerWitness || sendingWitnessTo) return;
+    setSendingWitnessTo(witnessId);
+    setSelectedWitnessName(witnessName);
+    try {
+      await onRequestPlayerWitness(witnessId);
+      setStep('WITNESS_SENT');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSendingWitnessTo(null);
+    }
+  };
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -165,11 +208,18 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
 
               {/* Primary CTA */}
               <button
-                onClick={() =>
-                  isWitness
-                    ? setStep('WITNESS_MODE')
-                    : onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined })
-                }
+                onClick={() => {
+                  if (isWitness) {
+                    // Digital witness (player in session) takes priority
+                    if (onRequestPlayerWitness && sessionId) {
+                      setStep('PLAYER_WITNESS_SELECT');
+                    } else {
+                      setStep('WITNESS_MODE'); // fallback: physical signature
+                    }
+                  } else {
+                    onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined });
+                  }
+                }}
                 className={`w-full py-5 rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all ${isWitness ? 'bg-[#FF2E63] text-white' : 'bg-[#00FF9D] text-black'}`}
               >
                 {t('i_did_it')}
@@ -252,6 +302,115 @@ const ValidationModal: React.FC<ValidationModalProps> = ({ cell, jokerCount, onC
                 {t('confirm')} !
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ─── PLAYER WITNESS SELECT ─── */}
+        {step === 'PLAYER_WITNESS_SELECT' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="shrink-0 px-6 pt-6 pb-4 border-b border-white/8">
+              <div className="inline-flex items-center gap-1.5 bg-[#FF8C00] text-black px-2.5 py-1 rounded-lg mb-3">
+                <span className="text-[9px] font-impact uppercase tracking-widest">👁 Témoin</span>
+              </div>
+              <p className="font-impact text-white text-xl uppercase leading-tight italic tracking-tight mb-1">
+                Qui était là ?
+              </p>
+              <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest leading-relaxed">
+                Sélectionne le joueur qui va confirmer sur son téléphone
+              </p>
+            </div>
+
+            {/* Player list */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 no-scrollbar">
+              {isLoadingWitnesses ? (
+                <div className="flex items-center justify-center py-10">
+                  <div className="w-6 h-6 border-2 border-white/10 border-t-[#FF8C00] rounded-full animate-spin" />
+                </div>
+              ) : witnessPlayers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="font-impact text-white/30 uppercase text-[11px] tracking-widest">
+                    Aucun autre joueur disponible
+                  </p>
+                  <p className="font-impact text-white/20 uppercase text-[9px] tracking-widest mt-2">
+                    Utilise la validation manuelle
+                  </p>
+                </div>
+              ) : (
+                witnessPlayers.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelectWitness(p.id, p.pseudo)}
+                    disabled={sendingWitnessTo !== null}
+                    className="flex items-center gap-3 p-3.5 bg-white/5 border border-white/10 rounded-2xl active:bg-white/10 hover:border-[#FF8C00]/50 hover:bg-[#FF8C00]/5 transition-all disabled:opacity-50 group"
+                  >
+                    <span className="text-2xl leading-none shrink-0">{p.emoji}</span>
+                    <span className="font-impact text-white uppercase text-[14px] tracking-tight flex-1 text-left truncate">
+                      {p.pseudo}
+                    </span>
+                    {sendingWitnessTo === p.id ? (
+                      <span className="w-5 h-5 border-2 border-[#FF8C00]/30 border-t-[#FF8C00] rounded-full animate-spin shrink-0" />
+                    ) : (
+                      <ChevronRight size={16} className="text-white/20 group-hover:text-[#FF8C00]/60 transition-colors shrink-0" strokeWidth={2.5} />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Fallback to physical signature */}
+            <div className="shrink-0 px-4 pt-2 pb-6 flex flex-col gap-2 border-t border-white/5">
+              <button
+                onClick={() => setStep('WITNESS_MODE')}
+                className="w-full py-2.5 bg-white/5 border border-white/10 text-white/30 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:bg-white/10 transition-all"
+              >
+                Signature manuelle à la place
+              </button>
+              <button
+                onClick={() => setStep('INFO')}
+                className="w-full py-2.5 text-white/20 font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1 active:text-white/40 transition-all"
+              >
+                ← Retour
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── WITNESS SENT ─── */}
+        {step === 'WITNESS_SENT' && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center"
+            style={{ background: 'linear-gradient(180deg, #FF8C00 0%, #FF6A00 60%, #0A1629 100%)' }}>
+            {/* Pulsing eye */}
+            <div className="relative mb-8">
+              <div className="absolute inset-0 rounded-full bg-black/20 animate-ping scale-125" />
+              <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center shadow-[6px_6px_0px_rgba(0,0,0,0.35)] relative">
+                <span className="text-4xl">👁️</span>
+              </div>
+            </div>
+
+            <h2 className="font-impact text-3xl text-black uppercase tracking-tighter italic leading-none mb-2">
+              Demande envoyée !
+            </h2>
+            <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-2">
+              {selectedWitnessName}
+            </p>
+            <p className="font-impact text-black/50 uppercase text-[10px] tracking-widest mb-10 leading-loose max-w-[220px]">
+              doit confirmer sur son téléphone. Ta case se valide automatiquement !
+            </p>
+
+            <div className="flex gap-2 mb-10">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="w-2.5 h-2.5 rounded-full bg-black/30 animate-pulse"
+                  style={{ animationDelay: `${i * 0.2}s` }} />
+              ))}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full py-4 bg-black text-[#FF8C00] rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+            >
+              Fermer
+            </button>
           </div>
         )}
 

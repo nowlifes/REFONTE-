@@ -11,78 +11,127 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   const [requests, setRequests] = useState<any[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!playerId) return;
-    const unsub = gameService.subscribeWitnessRequests(playerId, setRequests);
+    const unsub = gameService.subscribeWitnessRequests(playerId, (reqs) => {
+      setRequests(reqs.filter(r => !dismissed.has(r.id)));
+    });
     return unsub;
-  }, [playerId]);
+  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (requests.length === 0) return null;
+  const visible = requests.filter(r => !dismissed.has(r.id));
+  if (visible.length === 0) return null;
 
-  const current = requests[0]; // Show one at a time
+  const current = visible[0];
+
+  const handleConfirm = async () => {
+    if (confirmingId) return;
+    setConfirmingId(current.id);
+    try {
+      await gameService.confirmWitness(current);
+      setDismissed(prev => new Set([...prev, current.id]));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  const handleReject = async () => {
+    if (rejectingId) return;
+    setRejectingId(current.id);
+    try {
+      await gameService.rejectWitness(current.id);
+      setDismissed(prev => new Set([...prev, current.id]));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRejectingId(null);
+    }
+  };
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-[200] animate-in slide-in-from-top-2 duration-300">
-      <div className="bg-[#FF8C00] border-[3px] border-black rounded-2xl shadow-[6px_6px_0px_black] overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-2.5 bg-black/15 flex items-center gap-2">
-          <span className="text-base leading-none">👁️</span>
-          <span className="font-impact text-black uppercase text-[10px] tracking-widest">
-            Tu as été désigné témoin
-          </span>
-          {requests.length > 1 && (
-            <div className="ml-auto bg-black text-[#FF8C00] rounded-md px-1.5 py-0.5">
-              <span className="font-impact text-[9px]">+{requests.length - 1}</span>
-            </div>
+    <div
+      className="fixed inset-0 z-[300] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300"
+      style={{ background: '#0A1629' }}
+    >
+      {/* ── Top zone — orange, player + challenge ────────────────────── */}
+      <div
+        className="flex-1 flex flex-col justify-end px-6 pb-8 pt-safe"
+        style={{ background: 'linear-gradient(180deg, #FF8C00 0%, #FF6A00 100%)', paddingTop: 'max(56px, env(safe-area-inset-top, 0px) + 40px)' }}
+      >
+        {/* Eye icon */}
+        <div className="mb-6">
+          <div className="w-14 h-14 bg-black/20 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_black]">
+            <span className="text-2xl">👁️</span>
+          </div>
+        </div>
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-1.5 bg-black text-[#FF8C00] px-2.5 py-1 rounded-lg mb-3 w-fit">
+          <span className="font-impact text-[9px] uppercase tracking-widest">Témoin requis</span>
+          {visible.length > 1 && (
+            <span className="bg-[#FF8C00] text-black rounded-md px-1.5 py-0.5 font-impact text-[8px]">
+              +{visible.length - 1}
+            </span>
           )}
         </div>
 
-        {/* Challenge info */}
-        <div className="px-4 py-3">
-          <p className="font-impact text-black/60 uppercase text-[9px] tracking-widest mb-1">
-            {current.player_nickname} dit avoir fait :
-          </p>
-          <p className="font-impact text-black uppercase text-[13px] leading-tight italic mb-3">
+        {/* Who's asking */}
+        <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-2">
+          {current.player_emoji} {current.player_nickname} a besoin de toi :
+        </p>
+
+        {/* Challenge text — the hero */}
+        <div className="bg-black/15 border-[3px] border-black/20 rounded-2xl px-5 py-4 shadow-[4px_4px_0px_rgba(0,0,0,0.2)]">
+          <p className="font-impact text-black text-[22px] uppercase leading-tight italic tracking-tight">
             "{current.challenge_text}"
           </p>
-
-          {/* Actions */}
-          <div className="flex gap-2">
-            <button
-              onClick={async () => {
-                if (confirmingId) return;
-                setConfirmingId(current.id);
-                try { await gameService.confirmWitness(current); }
-                catch (e) { console.error(e); }
-                finally { setConfirmingId(null); }
-              }}
-              disabled={!!confirmingId || !!rejectingId}
-              className="flex-1 py-3 bg-black text-[#FF8C00] rounded-xl font-impact uppercase text-[11px] border-[2px] border-black shadow-[3px_3px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {confirmingId === current.id
-                ? <span className="w-4 h-4 border-2 border-[#FF8C00]/40 border-t-[#FF8C00] rounded-full animate-spin" />
-                : <><Check size={14} strokeWidth={3} /> Je confirme</>
-              }
-            </button>
-            <button
-              onClick={async () => {
-                if (rejectingId) return;
-                setRejectingId(current.id);
-                try { await gameService.rejectWitness(current.id); }
-                catch (e) { console.error(e); }
-                finally { setRejectingId(null); }
-              }}
-              disabled={!!confirmingId || !!rejectingId}
-              className="flex-1 py-3 bg-white text-black rounded-xl font-impact uppercase text-[11px] border-[2px] border-black shadow-[3px_3px_0px_rgba(0,0,0,0.2)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {rejectingId === current.id
-                ? <span className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
-                : <><X size={14} strokeWidth={3} /> Je nie</>
-              }
-            </button>
-          </div>
         </div>
+
+        <p className="mt-4 font-impact text-black/50 uppercase text-[10px] tracking-widest leading-relaxed">
+          Tu as vu cette personne accomplir ce défi ?
+        </p>
+      </div>
+
+      {/* ── Bottom zone — dark, action buttons ───────────────────────── */}
+      <div
+        className="shrink-0 bg-[#0A1629] border-t-[3px] border-black px-5 pt-5 flex flex-col gap-3"
+        style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom, 0px) + 16px)' }}
+      >
+        {/* Confirm */}
+        <button
+          onClick={handleConfirm}
+          disabled={!!confirmingId || !!rejectingId}
+          className="w-full py-5 bg-[#00FF9D] text-black rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60 flex items-center justify-center gap-3"
+        >
+          {confirmingId === current.id ? (
+            <span className="w-6 h-6 border-[3px] border-black/30 border-t-black rounded-full animate-spin" />
+          ) : (
+            <>
+              <Check size={22} strokeWidth={3} />
+              Oui, je confirme !
+            </>
+          )}
+        </button>
+
+        {/* Deny */}
+        <button
+          onClick={handleReject}
+          disabled={!!confirmingId || !!rejectingId}
+          className="w-full py-4 bg-white/5 border-[2px] border-white/15 text-white/50 rounded-2xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 active:bg-white/10 transition-all disabled:opacity-40"
+        >
+          {rejectingId === current.id ? (
+            <span className="w-5 h-5 border-[2px] border-white/20 border-t-white/60 rounded-full animate-spin" />
+          ) : (
+            <>
+              <X size={16} strokeWidth={2.5} />
+              Non, je n'ai pas vu ça
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

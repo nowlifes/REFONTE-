@@ -12,10 +12,16 @@ interface BingoCellProps {
   isLocked?: boolean;
   isUnlocking?: boolean;
   isSpotlight?: boolean;
+  /** Player's emoji — shown on the validated (back) face of the cell */
+  avatarEmoji?: string;
+  /** Row is not yet unlocked — shows teasing blurred challenge text */
+  rowLocked?: boolean;
+  /** Which bar number unlocks this row — shown on the cell */
+  rowUnlocksAtBar?: number;
 }
 
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
-  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight
+  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, avatarEmoji, rowLocked, rowUnlocksAtBar,
 }) => {
   const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
@@ -46,6 +52,75 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
   };
 
   const winDelay = isWinning && winningIndex >= 0 ? `${winningIndex * 80}ms` : '0ms';
+
+  // ── Row-locked: tease the challenge without letting players interact ──
+  if (rowLocked) {
+    const auraColor =
+      type === ChallengeType.MASTER  ? '#FFD700' :
+      type === ChallengeType.WITNESS ? '#FF2D6A' :
+                                       '#00F5A0';
+    const borderOpacity = type === ChallengeType.WITNESS ? '30' : '25';
+    return (
+      <div className="relative w-[66px] h-[66px] select-none" style={{ cursor: 'default' }}>
+        <div
+          className={`absolute inset-0 rounded-[8px] overflow-hidden flex items-center justify-center border-[1.5px] border-dashed bg-[#0B1220]`}
+          style={{ borderColor: `${auraColor}${borderOpacity}` }}
+        >
+          {/* Faint type-colour radial glow behind the text */}
+          <div
+            className="absolute inset-0 rounded-[8px]"
+            style={{
+              background: `radial-gradient(ellipse at center, ${auraColor}12 0%, transparent 70%)`,
+            }}
+          />
+
+          {/* Blurred challenge text — the tease */}
+          <div className="relative z-10 w-full px-[4px] flex flex-col items-center justify-center gap-[2px] pointer-events-none">
+            <span
+              className="font-impact uppercase text-center w-full leading-tight"
+              style={{
+                fontSize: '8px',
+                letterSpacing: '-0.1px',
+                color: auraColor,
+                opacity: 0.65,
+                filter: 'blur(2.8px)',
+              }}
+            >
+              {text}
+            </span>
+          </div>
+
+          {/* Moving light sweep */}
+          <div className="absolute inset-0 overflow-hidden z-20">
+            <div
+              className="absolute inset-y-0 row-locked-sweep"
+              style={{
+                width: '45%',
+                left: '-45%',
+                background: `linear-gradient(to right, transparent, ${auraColor}0A, transparent)`,
+              }}
+            />
+          </div>
+
+          {/* Lock icon */}
+          <Lock
+            className="absolute top-[3px] right-[3px] z-30"
+            style={{ width: 8, height: 8, color: `${auraColor}40`, strokeWidth: 2.5 }}
+          />
+
+          {/* Bar unlock hint — bottom left */}
+          {rowUnlocksAtBar != null && (
+            <div
+              className="absolute bottom-[2px] left-[3px] z-30 font-impact uppercase"
+              style={{ fontSize: '6px', color: `${auraColor}35`, letterSpacing: '0.5px' }}
+            >
+              BAR {rowUnlocksAtBar}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -94,16 +169,34 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
           )}
         </div>
 
-        {/* BACK (validated) */}
+        {/* BACK (validated) — shows player emoji as personal stamp */}
         <div
-          className={`absolute inset-0 backface-hidden rotate-y-180 rounded-[8px] flex items-center justify-center bg-[#FFD700]
+          className={`absolute inset-0 backface-hidden rotate-y-180 rounded-[8px] flex flex-col items-center justify-center bg-[#FFD700] overflow-hidden
             ${isWinning ? 'cell-winning' : ''}
           `}
           style={isWinning ? { animationDelay: winDelay } : undefined}
         >
-          <div className="w-10 h-10 bg-[#00F5A0] rounded-full flex items-center justify-center shadow-sm">
-            <Check className="w-6 h-6 text-black" strokeWidth={5} />
-          </div>
+          {avatarEmoji ? (
+            <>
+              {/* Player emoji — personal stamp */}
+              <span
+                className="leading-none select-none"
+                style={{ fontSize: '28px', filter: 'drop-shadow(1px 2px 0px rgba(0,0,0,0.25))' }}
+                role="img"
+              >
+                {avatarEmoji}
+              </span>
+              {/* Small check badge */}
+              <div className="absolute bottom-[4px] right-[4px] w-[14px] h-[14px] bg-[#00F5A0] border border-black rounded-full flex items-center justify-center shadow-[1px_1px_0px_black]">
+                <Check className="w-[9px] h-[9px] text-black" strokeWidth={4} />
+              </div>
+            </>
+          ) : (
+            /* Fallback: no emoji — standard checkmark */
+            <div className="w-10 h-10 bg-[#00F5A0] rounded-full flex items-center justify-center shadow-sm">
+              <Check className="w-6 h-6 text-black" strokeWidth={5} />
+            </div>
+          )}
         </div>
       </div>
     </div>
