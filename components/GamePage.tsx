@@ -44,6 +44,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
+  const [assignedPlayer, setAssignedPlayer] = useState<string | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
@@ -588,10 +589,28 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   <BingoCell
                     key={cell.id}
                     data={cell}
-                    onClick={(id) => {
+                    onClick={async (id) => {
                       if (s.isFrozen) return;
                       const clicked = s.cells.find((c: BingoCellData) => c.id === id);
-                      if (clicked) setRevealedCell(clicked);
+                      if (!clicked) return;
+                      setRevealedCell(clicked);
+                      if (clicked.text.includes('{JOUEUR}')) {
+                        try {
+                          const { gameService: gs } = await import('../services/gameService');
+                          const entries = await gs.getLeaderboard(s.user?.id);
+                          const others = entries.filter((e: any) => e.pseudo !== s.nickname && e.userId !== s.user?.id);
+                          if (others.length > 0) {
+                            const pick = others[Math.floor(Math.random() * others.length)];
+                            setAssignedPlayer(pick.pseudo);
+                          } else {
+                            setAssignedPlayer(null);
+                          }
+                        } catch {
+                          setAssignedPlayer(null);
+                        }
+                      } else {
+                        setAssignedPlayer(null);
+                      }
                     }}
                     isWinning={s.winningIds.includes(cell.id)}
                     winningIndex={s.winningIds.indexOf(cell.id)}
@@ -773,11 +792,13 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {revealedCell && !s.selectedCell && s.activeScannerMode !== 'MASTER' && (
         <ChallengeRevealSheet
           cell={revealedCell}
+          assignedPlayer={assignedPlayer}
           onConfirm={() => {
             a.handleCellClick(revealedCell.id);
             setRevealedCell(null);
+            setAssignedPlayer(null);
           }}
-          onClose={() => setRevealedCell(null)}
+          onClose={() => { setRevealedCell(null); setAssignedPlayer(null); }}
         />
       )}
 

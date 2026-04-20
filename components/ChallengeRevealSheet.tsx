@@ -8,6 +8,7 @@ interface ChallengeRevealSheetProps {
   cell: BingoCellData;
   onConfirm: () => void;
   onClose: () => void;
+  assignedPlayer?: string | null;
 }
 
 const TYPE_CONFIG = {
@@ -37,11 +38,14 @@ const TYPE_CONFIG = {
   },
 };
 
-const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onConfirm, onClose }) => {
+const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onConfirm, onClose, assignedPlayer }) => {
   const { language } = useLanguage();
   const cfg = TYPE_CONFIG[cell.type];
   const isPartner = cell.isPartner ?? false;
   const partnerHandle = cell.partnerHandle;
+  const displayText = assignedPlayer
+    ? cell.text.replace('{JOUEUR}', assignedPlayer)
+    : cell.text.replace('{JOUEUR}', '???');
 
   const openInstagram = () => {
     if (!partnerHandle) return;
@@ -96,7 +100,7 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
 
           {/* Challenge text */}
           <h2 className="font-impact text-white text-2xl uppercase leading-tight tracking-tight italic mb-2">
-            {cell.text}
+            {displayText}
           </h2>
 
           {/* How to validate */}
