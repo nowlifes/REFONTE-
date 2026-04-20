@@ -582,7 +582,9 @@ export const useBingoGame = () => {
         } : c);
 
         setCells(newCells);
-        setSelectedCell(null);
+        // NOTE: setSelectedCell(null) is intentionally NOT called here.
+        // The ValidationModal manages its own lifecycle (SUCCESS → FORTUNE) and
+        // calls onClose() itself when fully done. onClose = a.setSelectedCell(null).
         setActiveScannerMode(null);
         checkBadges(newCells);
 
@@ -693,6 +695,15 @@ export const useBingoGame = () => {
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive,
       lineCompleteEvent, completedLineCount, challengeValidatedEvent
     },
-    actions
+    actions: {
+      ...actions,
+      grantFortuneTaunt: () => {
+        if (!gameSession) return;
+        setBonusTauntActive(true);
+        setTimeout(() => setBonusTauntActive(false), 2500);
+        gameService.awardBonusTaunt(gameSession.id).catch(() => {});
+        setGameSession(prev => prev ? { ...prev, tauntsBonus: (prev.tauntsBonus ?? 0) + 1 } : prev);
+      }
+    }
   };
 };

@@ -47,6 +47,22 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
+  // Revenge challenge — active for 5 min after a PvP loss
+  const REVANCHE_DURATION_MS = 5 * 60 * 1000;
+  const [revancheExpiresAt, setRevancheExpiresAt] = useState<number | null>(null);
+  const [revancheSecondsLeft, setRevancheSecondsLeft] = useState(0);
+  useEffect(() => {
+    if (!revancheExpiresAt) { setRevancheSecondsLeft(0); return; }
+    const update = () => {
+      const left = Math.max(0, Math.ceil((revancheExpiresAt - Date.now()) / 1000));
+      setRevancheSecondsLeft(left);
+      if (left === 0) setRevancheExpiresAt(null);
+    };
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [revancheExpiresAt]);
+
   // Score count-up animation (#6)
   const [displayScore, setDisplayScore] = useState(s.score);
   const scoreAnimRef = useRef(s.score);
@@ -168,6 +184,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     if (challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) return; // blocked by cooldown
     lastValidationTimeRef.current = Date.now();
     if (data?.proofImage && s.selectedCell) onPhotoProof?.(s.selectedCell.id, data.proofImage);
+    // PvP loss → start revenge timer
+    if (data?.pvpWon === false) {
+      setRevancheExpiresAt(Date.now() + REVANCHE_DURATION_MS);
+    }
     a.validateCell(data);
   };
 
@@ -663,8 +683,25 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <div className="flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200">
             <span className="text-sm">⏳</span>
             <div className="flex flex-col leading-none">
-              <span className="font-impact text-black uppercase text-[11px] tracking-widest">Tu es trop fort 😏</span>
-              <span className="font-impact text-black/60 uppercase text-[9px] tracking-widest">va socialiser · prochain défi dans {cooldownSecondsLeft}s</span>
+              <span className="font-impact text-black uppercase text-[11px] tracking-widest">{t('cooldown_title')}</span>
+              <span className="font-impact text-black/60 uppercase text-[9px] tracking-widest">
+                {t('cooldown_sub').replace('{n}', String(cooldownSecondsLeft))}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REVENGE banner — 5 min after a PvP loss */}
+      {revancheSecondsLeft > 0 && (
+        <div className="shrink-0 flex flex-col items-center gap-1 z-40 -mb-1 animate-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2 bg-[#FF2D6A] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black]">
+            <span className="text-sm">⚔️</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-impact text-white uppercase text-[11px] tracking-widest">{t('revanche_title')}</span>
+              <span className="font-impact text-white/60 uppercase text-[9px] tracking-widest">
+                {t('revanche_sub').replace('{n}', String(Math.ceil(revancheSecondsLeft / 60)))}
+              </span>
             </div>
           </div>
         </div>
@@ -790,13 +827,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                     }
                   : undefined
               }
+              onFortuneWon={a.grantFortuneTaunt}
           />
         </div>
       )}
       {s.activeScannerMode === 'MASTER' && (
           <QRScanner
             mode={'MASTER'}
-            onScanSuccess={() => a.validateCell()}
+            onScanSuccess={() => { a.validateCell(); a.setSelectedCell(null); }}
             onClose={() => {a.setActiveScannerMode(null); a.setSelectedCell(null);}}
           />
       )}

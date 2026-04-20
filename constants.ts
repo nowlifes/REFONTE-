@@ -38,6 +38,10 @@ export const CHALLENGES_FR: ChallengeDef[] = [
   { id: 33, text: "Commander une boisson en portugais", type: ChallengeType.WITNESS },
   { id: 34, text: "Enseigner une expression de ta langue au Master", type: ChallengeType.MASTER },
   { id: 35, text: "Inventer un faux mot portugais pour fête", type: ChallengeType.WITNESS },
+  { id: 36, text: "Pierre-Feuille-Ciseaux avec un autre joueur — premier à 2 victoires", type: ChallengeType.PVP },
+  { id: 37, text: "Qui finit son verre d'eau en premier ?", type: ChallengeType.PVP },
+  { id: 38, text: "Concours de regards — premier à ciller perd", type: ChallengeType.PVP },
+  { id: 39, text: "Pile ou face — annonce ta face avant le lancer", type: ChallengeType.PVP },
 ];
 
 export const CHALLENGES_EN: ChallengeDef[] = [
@@ -74,6 +78,10 @@ export const CHALLENGES_EN: ChallengeDef[] = [
   { id: 33, text: "Order a drink in Portuguese", type: ChallengeType.WITNESS },
   { id: 34, text: "Teach an expression from your language to the Master", type: ChallengeType.MASTER },
   { id: 35, text: "Invent a fake Portuguese word for party", type: ChallengeType.WITNESS },
+  { id: 36, text: "Rock Paper Scissors vs another player — first to 2 wins", type: ChallengeType.PVP },
+  { id: 37, text: "Who finishes their glass of water first?", type: ChallengeType.PVP },
+  { id: 38, text: "Staring contest — first to blink loses", type: ChallengeType.PVP },
+  { id: 39, text: "Heads or tails — call it before the flip", type: ChallengeType.PVP },
 ];
 export const INITIAL_CHALLENGES = CHALLENGES_FR;
 

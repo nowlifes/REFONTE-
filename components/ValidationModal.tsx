@@ -12,7 +12,7 @@ interface ValidationModalProps {
   jokerCount: number;
   lastWitnessTime?: number;
   onClose: () => void;
-  onConfirm: (data?: { witnessName: string, witnessSignature: string, proofImage?: string }) => void;
+  onConfirm: (data?: { witnessName: string, witnessSignature: string, proofImage?: string, pvpWon?: boolean }) => void;
   onSubmitProof: (file: any) => void;
   onUseJoker: () => void;
   onScanRequest?: () => void;
@@ -24,23 +24,46 @@ interface ValidationModalProps {
   sessionId?: string | null;
   currentPlayerId?: string;
   onRequestPlayerWitness?: (witnessPlayerId: string) => Promise<void>;
+  /** Fortune reveal after validation — called when player wins a bonus taunt */
+  onFortuneWon?: () => void;
 }
 
-type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SENT' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS';
+type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SENT' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS' | 'PVP_OUTCOME' | 'FORTUNE';
 
 const ValidationModal: React.FC<ValidationModalProps> = ({
   cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest,
   onRequestMasterValidation, playerNickname, playerAvatarId,
-  sessionId, currentPlayerId, onRequestPlayerWitness,
+  sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
 }) => {
   const { t } = useLanguage();
-  const [step, setStep] = useState<ModalStep>(cell.type === ChallengeType.MASTER ? 'MASTER_PAD' : 'INFO');
+  const initialStep: ModalStep = cell.type === ChallengeType.MASTER ? 'MASTER_PAD'
+    : cell.type === ChallengeType.PVP ? 'PVP_OUTCOME'
+    : 'INFO';
+  const [step, setStep] = useState<ModalStep>(initialStep);
 
   const [witnessName, setWitnessName] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [isSendingToMaster, setIsSendingToMaster] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Fortune state: null = spinning, true = won, false = missed
+  const [fortuneResult, setFortuneResult] = useState<boolean | null>(null);
+  const fortuneRolled = useRef(false);
+
+  // Call this AFTER onConfirm has been called.
+  // Shows FORTUNE spinner → result → then closes via onClose.
+  const triggerFortune = () => {
+    if (fortuneRolled.current) return;
+    fortuneRolled.current = true;
+    setStep('FORTUNE'); // show spinner
+    setTimeout(() => {
+      const won = Math.random() < 0.3;
+      setFortuneResult(won);
+      if (won) onFortuneWon?.();
+      setTimeout(onClose, won ? 2400 : 1600); // onClose = setSelectedCell(null)
+    }, 1100);
+  };
 
   // Digital witness state
   const [witnessPlayers, setWitnessPlayers] = useState<Array<{ id: string; pseudo: string; emoji: string }>>([]);
@@ -105,7 +128,8 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const handleWitnessConfirm = () => {
     if (!witnessName.trim() || !signatureData) return;
     setStep('SUCCESS');
-    setTimeout(() => onConfirm({ witnessName, witnessSignature: signatureData }), 800);
+    onConfirm({ witnessName, witnessSignature: signatureData }); // validate (modal stays open)
+    setTimeout(triggerFortune, 900); // fortune after SUCCESS flash
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
@@ -210,14 +234,15 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               <button
                 onClick={() => {
                   if (isWitness) {
-                    // Digital witness (player in session) takes priority
                     if (onRequestPlayerWitness && sessionId) {
                       setStep('PLAYER_WITNESS_SELECT');
                     } else {
-                      setStep('WITNESS_MODE'); // fallback: physical signature
+                      setStep('WITNESS_MODE');
                     }
                   } else {
-                    onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined });
+                    setStep('SUCCESS');
+                    onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined }); // validate (modal stays open)
+                    setTimeout(triggerFortune, 900);
                   }
                 }}
                 className={`w-full py-5 rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all ${isWitness ? 'bg-[#FF2E63] text-white' : 'bg-[#00FF9D] text-black'}`}
@@ -475,7 +500,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
               {/* Rune pad */}
               <div className="flex-1 bg-black/10 rounded-2xl border-[2px] border-black/15 overflow-hidden flex items-center justify-center min-h-[140px]">
-                <MasterRunePad onSuccess={() => onConfirm()} />
+                <MasterRunePad onSuccess={() => { onConfirm(); onClose(); }} />
               </div>
             </div>
           </div>
@@ -528,6 +553,90 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             <h2 className="font-impact text-4xl text-black uppercase mt-8 tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300 delay-100">
               {t('validated')}
             </h2>
+          </div>
+        )}
+
+        {/* ─── PVP OUTCOME ─── */}
+        {step === 'PVP_OUTCOME' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="shrink-0 px-6 pt-6 pb-5 border-b border-white/8">
+              <div className="inline-flex items-center gap-1.5 bg-[#FF8C00] text-black px-2.5 py-1 rounded-lg mb-4">
+                <span className="text-[9px] font-impact uppercase tracking-widest">⚔️ {t('pvp_feat')}</span>
+              </div>
+              <p className="font-impact text-[20px] text-white uppercase leading-tight italic tracking-tight">
+                "{cell.text}"
+              </p>
+            </div>
+            <div className="flex-1 p-6 flex flex-col gap-4 justify-center">
+              <p className="font-impact text-white/50 uppercase text-[11px] tracking-widest text-center">
+                {t('pvp_result_question')}
+              </p>
+              {/* WON — validate + show fortune */}
+              <button
+                onClick={() => {
+                  setStep('SUCCESS');
+                  onConfirm({ witnessName: '', witnessSignature: '', pvpWon: true });
+                  setTimeout(triggerFortune, 900);
+                }}
+                className="w-full py-5 rounded-2xl font-impact uppercase text-2xl bg-[#00F5A0] text-black border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                {t('pvp_won_btn')}
+              </button>
+              {/* LOST — validate + brief SUCCESS flash + close (no fortune) */}
+              <button
+                onClick={() => {
+                  setStep('SUCCESS');
+                  onConfirm({ witnessName: '', witnessSignature: '', pvpWon: false });
+                  setTimeout(onClose, 1200);
+                }}
+                className="w-full py-4 rounded-2xl font-impact uppercase text-lg bg-white/8 text-white/50 border-[2px] border-white/15 active:bg-white/12 transition-all"
+              >
+                {t('pvp_lost_btn')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── FORTUNE REVEAL ─── */}
+        {step === 'FORTUNE' && (
+          <div
+            className={`flex-1 flex flex-col items-center justify-center p-10 text-center transition-colors duration-500 ${fortuneResult ? 'bg-[#FFD700]' : 'bg-[#1a1f2e]'}`}
+          >
+            {fortuneResult === null ? (
+              /* Spinning state */
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-24 h-24 rounded-full border-[4px] border-white/20 border-t-[#FFD700] animate-spin" />
+                <p className="font-impact text-white/60 uppercase text-[13px] tracking-widest animate-pulse">
+                  {t('fortune_rolling')}
+                </p>
+              </div>
+            ) : fortuneResult ? (
+              /* WON */
+              <>
+                <div className="w-28 h-28 bg-black rounded-full flex items-center justify-center shadow-[8px_8px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-75 duration-300 mb-6">
+                  <span className="text-5xl">⚡</span>
+                </div>
+                <h2 className="font-impact text-4xl text-black uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
+                  {t('fortune_won_title')}
+                </h2>
+                <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mt-3 animate-in slide-in-from-bottom-2 duration-300 delay-100">
+                  {t('fortune_won_sub')}
+                </p>
+              </>
+            ) : (
+              /* MISSED */
+              <>
+                <div className="w-28 h-28 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-in zoom-in-75 duration-300">
+                  <span className="text-5xl opacity-40">🎲</span>
+                </div>
+                <h2 className="font-impact text-3xl text-white/60 uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
+                  {t('fortune_miss_title')}
+                </h2>
+                <p className="font-impact text-white/30 uppercase text-[11px] tracking-widest mt-3">
+                  {t('fortune_miss_sub')}
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>

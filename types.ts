@@ -10,7 +10,8 @@ export enum TauntType {
 export enum ChallengeType {
   AUTO = 'AUTO',       // User clicks "I Did It"
   WITNESS = 'WITNESS', // User hands phone to a friend/stranger to confirm
-  MASTER = 'MASTER'    // User uses Rune Pad with Master
+  MASTER = 'MASTER',   // User uses Rune Pad with Master
+  PVP = 'PVP'          // Head-to-head challenge vs another player (RPS, etc.)
 }
 
 export enum CellStatus {

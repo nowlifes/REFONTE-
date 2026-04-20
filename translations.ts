@@ -218,7 +218,28 @@ export const TRANSLATIONS = {
     mission_report: "RECAP",
     create_new_session: "NEW SESSION",
     create_new_session_confirm: "This wipes ALL data and starts fresh. You sure?",
-    create_new_session_btn: "START FRESH"
+    create_new_session_btn: "START FRESH",
+
+    // Cooldown
+    cooldown_title: "Easy tiger 😏",
+    cooldown_sub: "Go socialise · next challenge in {n}s",
+
+    // PvP Challenge
+    pvp_feat: "PvP Challenge",
+    pvp_result_question: "What happened?",
+    pvp_won_btn: "I WON 🏆",
+    pvp_lost_btn: "I lost... 💀",
+
+    // Fortune reveal
+    fortune_rolling: "FORTUNE...",
+    fortune_won_title: "POWER-UP!",
+    fortune_won_sub: "+1 TAUNT ready to fire",
+    fortune_miss_title: "No luck...",
+    fortune_miss_sub: "Validate anyway",
+
+    // Revenge
+    revanche_title: "REMATCH!",
+    revanche_sub: "Find them in {n}min and play again"
   },
   fr: {
     // General
@@ -436,6 +457,27 @@ export const TRANSLATIONS = {
     mission_report: "RÉCAP",
     create_new_session: "NOUVELLE SESSION",
     create_new_session_confirm: "Ça efface TOUT et repart de zéro. T'es sûr ?",
-    create_new_session_btn: "REPARTIR À ZÉRO"
+    create_new_session_btn: "REPARTIR À ZÉRO",
+
+    // Cooldown
+    cooldown_title: "Tu es trop fort 😏",
+    cooldown_sub: "Va socialiser · prochain défi dans {n}s",
+
+    // PvP Challenge
+    pvp_feat: "Défi PvP",
+    pvp_result_question: "Le résultat ?",
+    pvp_won_btn: "J'AI GAGNÉ 🏆",
+    pvp_lost_btn: "J'ai perdu... 💀",
+
+    // Fortune reveal
+    fortune_rolling: "FORTUNE...",
+    fortune_won_title: "POWER-UP !",
+    fortune_won_sub: "+1 TAUNT prêt à l'emploi",
+    fortune_miss_title: "Pas de chance...",
+    fortune_miss_sub: "Tu valides quand même",
+
+    // Revenge
+    revanche_title: "REVANCHE !",
+    revanche_sub: "Retrouve-les en {n}min et rejoue"
   }
 };
