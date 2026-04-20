@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Claude Code + graphify (runtime state, not source)
+.claude/
+graphify-out/

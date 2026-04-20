@@ -189,6 +189,28 @@ export const useEventSession = () => {
     setIsSessionActive(false); // Optimistic close
     const uuid = await gameService.createNewSession();
     setSecureSessionId(uuid);
+    // Reset cadence so the new evening starts clean at Bar 1 with no chaos
+    setCurrentBar(1);
+    setChaosMode(false);
+    await Promise.all([
+      gameService.advanceBar().catch(() => {}), // will be ignored — bar reset handled below
+      gameService.setChaosMode(false).catch(() => {}),
+    ]);
+    // Force currentBar = 1 in DB (advanceBar only increments, so we set directly)
+    try {
+      const { data: latest } = await supabase
+        .from('event_session')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latest) {
+        await supabase
+          .from('event_session')
+          .update({ current_bar: 1, chaos_mode: false })
+          .eq('id', latest.id);
+      }
+    } catch (e) { console.warn('[EventSession] Failed to reset bar cadence', e); }
     setIsSessionActive(true); // Optimistic open
   };
 

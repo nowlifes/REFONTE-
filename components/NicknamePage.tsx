@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, Lock, KeyRound, X, Loader2, Globe } from 'lucide-react';
+import { ArrowRight, Lock, KeyRound, X, Loader2, Globe, RefreshCw } from 'lucide-react';
+import { gameService } from '../services/gameService';
 import OnboardingCards from './OnboardingCards';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView } from '../types';
@@ -23,6 +24,41 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
   const { t, language, setLanguage } = useLanguage();
   const [selectorMode, setSelectorMode] = useState<'NONE' | 'AVATAR' | 'COUNTRY'>('NONE');
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // ── Profile recovery ────────────────────────────────────────────────
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryPlayers, setRecoveryPlayers] = useState<any[]>([]);
+  const [isLoadingRecovery, setIsLoadingRecovery] = useState(false);
+  const [recoverySuccess, setRecoverySuccess] = useState<string | null>(null);
+
+  const openRecovery = async () => {
+    setShowRecovery(true);
+    setIsLoadingRecovery(true);
+    setRecoverySuccess(null);
+    try {
+      const sessionId = await gameService.recoverSecureSessionId();
+      if (!sessionId) { setRecoveryPlayers([]); setIsLoadingRecovery(false); return; }
+      const players = await gameService.getPlayersWithScores(sessionId);
+      setRecoveryPlayers(players);
+    } catch (e) {
+      console.error(e);
+      setRecoveryPlayers([]);
+    } finally {
+      setIsLoadingRecovery(false);
+    }
+  };
+
+  const handleRecoverPlayer = async (player: any) => {
+    localStorage.setItem('bingo_user_id', player.id);
+    // Claim this device immediately so no conflict modal appears
+    try {
+      const deviceId = localStorage.getItem('bingo_device_id') || crypto.randomUUID();
+      localStorage.setItem('bingo_device_id', deviceId);
+      await gameService.claimDevice(player.id, deviceId);
+    } catch (_) {}
+    setRecoverySuccess(player.pseudo);
+    setTimeout(() => window.location.reload(), 1200);
+  };
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'fr' : 'en');
@@ -232,9 +268,72 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
            {showOnboarding && (
              <OnboardingCards onDone={() => { setShowOnboarding(false); a.registerPlayer(s.nickname); }} />
            )}
+
+           {/* Récupérer mon profil */}
+           <button
+             onClick={openRecovery}
+             className="w-full mt-1 py-2.5 bg-black/10 border-[2px] border-black/20 rounded-xl font-impact text-[9px] uppercase tracking-widest text-black/50 flex items-center justify-center gap-1.5 active:bg-black/20 transition-all"
+           >
+             <RefreshCw className="w-3 h-3" strokeWidth={2.5} />
+             Récupérer mon profil
+           </button>
          </div>
 
          <div className="text-[9px] text-white/20 mt-8 font-impact uppercase tracking-widest">VERSION {APP_VERSION}</div>
+
+         {/* ── RECOVERY MODAL ── */}
+         {showRecovery && (
+           <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+             <div className="w-full max-w-sm bg-white border-t-[4px] border-x-[4px] border-black rounded-t-3xl p-5 max-h-[70vh] flex flex-col shadow-[0_-8px_0px_black]">
+               <div className="flex items-center justify-between mb-3">
+                 <h3 className="font-impact text-[15px] uppercase tracking-wide text-black">Récupérer mon profil</h3>
+                 <button onClick={() => setShowRecovery(false)} className="w-8 h-8 bg-black/10 rounded-full flex items-center justify-center">
+                   <X className="w-4 h-4 text-black" strokeWidth={3} />
+                 </button>
+               </div>
+               <p className="font-impact text-[9px] uppercase tracking-widest text-black/40 mb-4">
+                 Sélectionne ton personnage pour reprendre ta partie
+               </p>
+
+               {recoverySuccess ? (
+                 <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
+                   <div className="w-12 h-12 bg-[#00FF9D] border-[3px] border-black rounded-xl flex items-center justify-center shadow-[3px_3px_0px_black]">
+                     <span className="text-2xl">✓</span>
+                   </div>
+                   <p className="font-impact text-[13px] uppercase text-black tracking-wide">{recoverySuccess} récupéré !</p>
+                   <p className="font-impact text-[9px] uppercase text-black/40 tracking-widest">Rechargement...</p>
+                 </div>
+               ) : isLoadingRecovery ? (
+                 <div className="flex-1 flex items-center justify-center py-8">
+                   <span className="w-8 h-8 border-[3px] border-black/20 border-t-black rounded-full animate-spin" />
+                 </div>
+               ) : recoveryPlayers.length === 0 ? (
+                 <div className="flex-1 flex items-center justify-center py-8">
+                   <p className="font-impact text-[11px] uppercase tracking-widest text-black/40 text-center">Aucun joueur actif trouvé.<br />La session est peut-être fermée.</p>
+                 </div>
+               ) : (
+                 <div className="overflow-y-auto flex-1 space-y-2 no-scrollbar">
+                   {recoveryPlayers.map(p => (
+                     <button
+                       key={p.id}
+                       onClick={() => handleRecoverPlayer(p)}
+                       className="w-full flex items-center gap-3 py-3 px-4 bg-black/5 border-[2px] border-black/10 rounded-xl text-left active:bg-[#FFD700] active:border-black transition-all"
+                     >
+                       <span className="text-2xl shrink-0">{p.emoji}</span>
+                       <div className="flex-1 min-w-0">
+                         <p className="font-impact text-[13px] uppercase text-black leading-none">{p.pseudo}</p>
+                         <p className="font-impact text-[8px] uppercase text-black/30 tracking-widest mt-0.5">
+                           Score : {p.score} pts
+                         </p>
+                       </div>
+                       <ArrowRight className="w-4 h-4 text-black/30 shrink-0" strokeWidth={2.5} />
+                     </button>
+                   ))}
+                 </div>
+               )}
+             </div>
+           </div>
+         )}
 
          {/* Master Login Modal */}
          {ui.showMasterLogin && (

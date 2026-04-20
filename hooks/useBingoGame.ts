@@ -66,6 +66,9 @@ export const useBingoGame = () => {
   // --- BONUS TAUNT NOTIFICATION ---
   const [bonusTauntActive, setBonusTauntActive] = useState(false);
 
+  // --- CHALLENGE VALIDATED FEEDBACK ---
+  const [challengeValidatedEvent, setChallengeValidatedEvent] = useState<{ cellText: string } | null>(null);
+
   // Badge System
   const { badges, newBadge, injectBadge, clearNewBadge, resetBadges } = useBadges(user?.id);
 
@@ -167,23 +170,35 @@ export const useBingoGame = () => {
             if (dbDeviceId && dbDeviceId !== myDeviceId) {
               setIsLoading(false);
               await new Promise<void>(resolve => {
+                let autoClaimTimer: ReturnType<typeof setTimeout> | null = null;
+
+                const doClaim = async () => {
+                  if (autoClaimTimer) clearTimeout(autoClaimTimer);
+                  setDeviceConflict(null);
+                  setIsLoading(true);
+                  await gameService.claimDevice(savedUserId, myDeviceId);
+                  resolve();
+                };
+
+                const doDecline = () => {
+                  if (autoClaimTimer) clearTimeout(autoClaimTimer);
+                  setDeviceConflict(null);
+                  localStorage.removeItem('bingo_user_id');
+                  localStorage.removeItem('bingo_last_session');
+                  setView(AppView.NICKNAME);
+                  setIsLoading(false);
+                  resolve();
+                };
+
                 setDeviceConflict({
                   playerId: savedUserId,
-                  onClaim: async () => {
-                    setDeviceConflict(null);
-                    setIsLoading(true);
-                    await gameService.claimDevice(savedUserId, myDeviceId);
-                    resolve();
-                  },
-                  onDecline: () => {
-                    setDeviceConflict(null);
-                    localStorage.removeItem('bingo_user_id');
-                    localStorage.removeItem('bingo_last_session');
-                    setView(AppView.NICKNAME);
-                    setIsLoading(false);
-                    resolve();
-                  },
+                  onClaim: doClaim,
+                  onDecline: doDecline,
                 });
+
+                // Safety net: if the modal is never interacted with (e.g. render bug,
+                // user walks away), auto-claim after 30s so the app doesn't stay frozen.
+                autoClaimTimer = setTimeout(doClaim, 30_000);
               });
               if (!localStorage.getItem('bingo_user_id')) { return; } // declined
               setIsLoading(true);
@@ -198,9 +213,11 @@ export const useBingoGame = () => {
             setCountry(foundUser.country || 'FR');
 
             // Eviction subscription: if device_id changes away from us → auto-logout
+            // We keep the user_id in localStorage so the next open on THIS device
+            // re-triggers the device-conflict modal instead of wiping their profile.
             const unsubEvict = gameService.subscribePlayerDeviceChange(savedUserId, (newDeviceId) => {
               if (newDeviceId && newDeviceId !== myDeviceId) {
-                localStorage.removeItem('bingo_user_id');
+                // Don't wipe user_id — let them reclaim on next load
                 localStorage.removeItem('bingo_last_session');
                 setView(AppView.NICKNAME);
                 unsubEvict();
@@ -215,7 +232,10 @@ export const useBingoGame = () => {
               setJokers(activeGame.jokers);
               setView(AppView.GAME);
             } else {
-               setView(AppView.NICKNAME);
+              // User exists in DB (profile intact) but no active game yet.
+              // Send directly to LOBBY — nickname/avatar already set above,
+              // no need to re-fill the form. Master countdown will start the game.
+              setView(AppView.LOBBY);
             }
           } else {
             // Player not found in DB (session was reset) — wipe local data
@@ -226,14 +246,17 @@ export const useBingoGame = () => {
           }
         } catch (err) {
           console.error("Init error", err);
-          // Network error during init — try the offline cache before dropping to NicknamePage.
-          // Without this, a brief Supabase timeout on load wipes the player's session and
-          // forces them to create a new character (duplicate session bug).
+          // Network error during init — try the offline cache FIRST before dropping
+          // the player to NicknamePage. navigator.onLine can be true even when Supabase
+          // is unreachable (bad hotel wifi, mobile handoff, etc.), so we don't gate on it.
           const cached = localStorage.getItem('bingo_last_session');
-          if (cached && !navigator.onLine) {
+          if (cached) {
             try {
               const session = JSON.parse(cached);
               if (session.userId === savedUserId && Date.now() - session.startedAt <= EXPIRATION_TIME) {
+                // Restore from cache — nickname/avatar may be stale but better than wipe
+                if (session.nickname) setNickname(session.nickname);
+                if (session.avatarId) setAvatarId(session.avatarId);
                 setCells(session.grid);
                 setJokers(session.jokers ?? INITIAL_JOKERS);
                 setView(AppView.GAME);
@@ -242,7 +265,10 @@ export const useBingoGame = () => {
               }
             } catch { /* bad cache, fall through */ }
           }
-          setView(AppView.NICKNAME);
+          // No usable cache — send to LOBBY not NICKNAME if we have a stored userId.
+          // The user's profile data is gone from memory but their account may still
+          // exist in DB — next successful load will resume from LOBBY.
+          setView(AppView.LOBBY);
         }
       } else {
         setView(AppView.NICKNAME);
@@ -563,11 +589,15 @@ export const useBingoGame = () => {
         playSound('VALIDATE');
         triggerHaptic('success');
         canvasConfetti({
-            particleCount: 50,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#FDE047', '#EAB308', '#FFFFFF']
+            particleCount: 60,
+            spread: 100,
+            origin: { y: 0.55 },
+            colors: ['#FDE047', '#00FF9D', '#FF2D6A', '#FFFFFF']
         });
+
+        // Feedback avatar + texte dans GamePage (auto-dismiss 1.8s)
+        setChallengeValidatedEvent({ cellText: selectedCell.text });
+        setTimeout(() => setChallengeValidatedEvent(null), 1800);
 
         // Backend Sync
         try {
@@ -661,7 +691,7 @@ export const useBingoGame = () => {
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive,
-      lineCompleteEvent, completedLineCount
+      lineCompleteEvent, completedLineCount, challengeValidatedEvent
     },
     actions
   };

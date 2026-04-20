@@ -1,9 +1,7 @@
 /**
- * LobbyPage — Waiting room shown after character creation.
- * Player registered in DB, waiting for Master to launch pre-game phases then the game.
- * Two states visible here:
- *  - No pregame active → "waiting for pre-game launch"
- *  - Pre-game active   → handled by PreGamePage (not this component)
+ * LobbyPage — Salle d'attente après la création du personnage.
+ * Affiche les règles condensées, l'avatar et le pseudo du joueur.
+ * Le jeu démarre quand le Master lance le countdown 3-2-1.
  */
 
 import React from 'react';
@@ -23,15 +21,29 @@ interface LobbyPageProps {
   onCrownClick?: () => void;
 }
 
+const RULES_FR = [
+  { emoji: '🎯', text: 'Valide des défis pour remplir ta grille 5×5' },
+  { emoji: '🤝', text: 'Les défis TÉMOIN nécessitent un autre joueur' },
+  { emoji: '🏆', text: 'Complète une ligne → +1 Joker. Bingo = gloire éternelle !' },
+];
+
+const RULES_EN = [
+  { emoji: '🎯', text: 'Complete challenges to fill your 5×5 grid' },
+  { emoji: '🤝', text: 'WITNESS challenges need another player to confirm' },
+  { emoji: '🏆', text: 'Complete a row → +1 Joker. Full grid = eternal glory!' },
+];
+
 const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick }) => {
   const { language } = useLanguage();
   const isFr = language === 'fr';
+  const rules = isFr ? RULES_FR : RULES_EN;
 
   return (
     <div className="fixed inset-0 bg-[#0A1629] flex flex-col select-none">
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <BackgroundParticles />
       </div>
+
       <div className="relative flex flex-col flex-1 min-h-0" style={{ zIndex: 10 }}>
 
         {/* Hidden master access — top left */}
@@ -48,112 +60,71 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick 
           </button>
         </div>
 
-        {/* Centre */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 text-center">
+        {/* Contenu central */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-5 text-center">
 
-          {/* Avatar card */}
-          <div className="w-24 h-24 bg-[#FFD700] border-[4px] border-black rounded-3xl flex items-center justify-center shadow-[8px_8px_0px_black] text-5xl">
-            {getEmoji(avatarId)}
+          {/* Avatar + nom */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-28 h-28 bg-[#FFD700] border-[4px] border-black rounded-3xl flex items-center justify-center shadow-[8px_8px_0px_black] text-6xl animate-in zoom-in duration-300">
+              {getEmoji(avatarId)}
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-center gap-1.5">
+                <div className="w-4 h-4 bg-[#00F5A0] border-[2px] border-black rounded-full flex items-center justify-center">
+                  <span className="text-black text-[8px] font-black leading-none">✓</span>
+                </div>
+                <p className="text-[#00F5A0] font-impact uppercase text-[10px] tracking-widest">
+                  {isFr ? 'Prêt à jouer' : 'Ready to play'}
+                </p>
+              </div>
+              <h2 className="text-4xl font-impact uppercase tracking-tighter text-white italic leading-none">
+                {nickname}
+              </h2>
+            </div>
           </div>
 
-          {/* Name + created check */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-5 h-5 bg-[#00F5A0] border-[2px] border-black rounded-full flex items-center justify-center">
-                <span className="text-black text-[10px] font-black leading-none">✓</span>
-              </div>
-              <p className="text-[#00F5A0] font-impact uppercase text-[11px] tracking-widest">
-                {isFr ? 'Personnage créé' : 'Character created'}
+          {/* Règles condensées — carte blanche */}
+          <div className="w-full max-w-xs bg-white border-[4px] border-black rounded-2xl shadow-[6px_6px_0px_black] overflow-hidden text-left animate-in slide-in-from-bottom-2 duration-400">
+            <div className="bg-black px-4 py-2.5 flex items-center gap-2">
+              <span className="text-base leading-none">📋</span>
+              <p className="text-[10px] font-impact uppercase tracking-widest text-white">
+                {isFr ? 'Les règles en 3 points' : '3 rules to remember'}
               </p>
             </div>
-            <h2 className="text-4xl font-impact uppercase tracking-tighter text-white italic leading-none">
-              {nickname}
-            </h2>
+            <div className="px-4 py-4 space-y-3.5">
+              {rules.map((rule, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-7 h-7 bg-[#FFD700] border-[2px] border-black rounded-lg flex items-center justify-center shrink-0 mt-0.5 shadow-[2px_2px_0px_black]">
+                    <span className="text-sm leading-none">{rule.emoji}</span>
+                  </div>
+                  <p className="text-[12px] font-impact uppercase text-black leading-tight tracking-tight pt-0.5">
+                    {rule.text}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Waiting indicator */}
+          {/* Indicateur d'attente */}
           <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 px-5 py-3 rounded-full">
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFD700] opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FFD700]" />
             </span>
             <span className="text-[10px] font-impact uppercase tracking-widest text-white/60">
-              {isFr ? 'En attente du Bingo Master' : 'Waiting for the Bingo Master'}
+              {isFr ? 'En attente du Bingo Master…' : 'Waiting for the Bingo Master…'}
             </span>
           </div>
 
-          {/* Info card — what happens next */}
-          <div className="w-full max-w-xs bg-white border-[4px] border-black rounded-2xl shadow-[6px_6px_0px_black] overflow-hidden text-left">
-            <div className="bg-black px-4 py-2">
-              <p className="text-[9px] font-impact uppercase tracking-widest text-white/50">
-                {isFr ? 'Ce qui va se passer' : 'What happens next'}
-              </p>
-            </div>
-            <div className="px-4 py-4 space-y-3">
-
-              {/* Step 1 */}
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#A78BFA] border-2 border-black rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-white font-impact text-xs leading-none">1</span>
-                </div>
-                <div>
-                  <p className="text-[12px] font-impact uppercase text-black leading-tight tracking-tight">
-                    {isFr ? 'Le Master lance le Pré-Game' : 'Master launches Pre-Game'}
-                  </p>
-                  <p className="text-[10px] text-black/50 font-impact uppercase tracking-wide mt-0.5">
-                    {isFr ? 'Activité commune avant le Bingo' : 'Group activity before Bingo'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#FFD700] border-2 border-black rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-black font-impact text-xs leading-none">2</span>
-                </div>
-                <div>
-                  <p className="text-[12px] font-impact uppercase text-black leading-tight tracking-tight">
-                    {isFr ? 'Le Master lance la grille Bingo' : 'Master launches the Bingo grid'}
-                  </p>
-                  <p className="text-[10px] text-black/50 font-impact uppercase tracking-wide mt-0.5">
-                    {isFr ? 'Countdown 3-2-1 puis on joue !' : 'Countdown 3-2-1 then let\'s play!'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-[#00F5A0] border-2 border-black rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-black font-impact text-xs leading-none">3</span>
-                </div>
-                <div>
-                  <p className="text-[12px] font-impact uppercase text-black leading-tight tracking-tight">
-                    {isFr ? 'Ta grille s\'ouvre — bonne soirée !' : 'Your grid opens — have fun!'}
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Note: must wait */}
-            <div className="bg-[#FFD700]/10 border-t-[2px] border-black px-4 py-2.5 flex items-center gap-2">
-              <span className="text-sm leading-none shrink-0">⏳</span>
-              <p className="text-[10px] font-impact uppercase tracking-wide text-black/60 leading-tight">
-                {isFr
-                  ? 'Le jeu démarre uniquement quand le Master est prêt'
-                  : 'Game starts only when the Master is ready'}
-              </p>
-            </div>
-          </div>
         </div>
 
-        {/* Logo bottom */}
-        <div className="shrink-0 flex flex-col items-center gap-2 pb-8 opacity-20" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 0px) + 16px)' }}>
+        {/* Logo bas */}
+        <div className="shrink-0 flex flex-col items-center gap-2 opacity-20" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 0px) + 16px)' }}>
           <ShieldLogo className="w-6 h-6 text-white" />
           <p className="text-[8px] font-impact uppercase tracking-widest text-white">Bingo Crawl</p>
         </div>
 
-      </div>{/* end relative content */}
+      </div>
     </div>
   );
 };

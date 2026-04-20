@@ -308,6 +308,34 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       
       <BadgeNotification badge={s.newBadge} onClose={a.clearNewBadge} />
 
+      {/* CHALLENGE VALIDATED — feedback visuel fort */}
+      {s.challengeValidatedEvent && (
+        <div
+          key={s.challengeValidatedEvent.cellText}
+          className="fixed top-[62px] inset-x-0 flex justify-center z-[165] pointer-events-none animate-in zoom-in-90 fade-in duration-200"
+        >
+          <div className="flex items-center gap-3 bg-[#00FF9D] border-[3px] border-black rounded-2xl px-4 py-2.5 shadow-[5px_5px_0px_black] max-w-[88vw]">
+            {/* Avatar */}
+            <div className="w-9 h-9 bg-[#FFD700] border-[2px] border-black rounded-xl flex items-center justify-center shrink-0 text-xl shadow-[2px_2px_0px_black]">
+              {ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲'}
+            </div>
+            {/* Texte */}
+            <div className="flex flex-col leading-none min-w-0">
+              <span className="font-impact text-black uppercase text-[13px] tracking-tight">
+                ✓ {language === 'fr' ? 'Défi validé !' : 'Challenge done!'}
+              </span>
+              <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest truncate max-w-[52vw]">
+                {s.challengeValidatedEvent.cellText}
+              </span>
+            </div>
+            {/* +1 pill */}
+            <div className="shrink-0 bg-black text-[#00FF9D] font-impact text-[13px] uppercase rounded-lg px-2 py-1 leading-none">
+              +1
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* COMBO notification */}
       {s.comboActive && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
