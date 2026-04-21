@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Smartphone, X, KeyRound } from 'lucide-react';
 import canvasConfetti from 'canvas-confetti';
 
@@ -31,20 +32,138 @@ import GameOverPage from './components/GameOverPage';
 import LobbyPage from './components/LobbyPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+// ─── Rotate overlay ───────────────────────────────────────────────────────────
 const RotateDeviceOverlay = () => {
-    const { t } = useLanguage();
-    return (
-        <div className="fixed inset-0 z-[1000] bg-[#0A1629] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-            <div className="mb-6 animate-[spin_3s_linear_infinite] origin-center">
-                 <Smartphone className="w-20 h-20 text-[#FFD700] rotate-90" />
-            </div>
-            <h2 className="text-3xl font-impact text-white mb-4 uppercase tracking-widest italic">{t('rotate_device')}</h2>
-            <p className="text-white/50 text-lg font-sans max-w-md">{t('rotate_desc')}</p>
-        </div>
-    );
+  const { t } = useLanguage();
+  return (
+    <div className="fixed inset-0 z-[1000] bg-[#0A1629] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+      <div className="mb-6 animate-[spin_3s_linear_infinite] origin-center">
+        <Smartphone className="w-20 h-20 text-[#FFD700] rotate-90" />
+      </div>
+      <h2 className="text-3xl font-impact text-white mb-4 uppercase tracking-widest italic">{t('rotate_device')}</h2>
+      <p className="text-white/50 text-lg font-sans max-w-md">{t('rotate_desc')}</p>
+    </div>
+  );
 };
 
-const App: React.FC = () => {
+// ─── MasterApp — /master route, completely isolated ──────────────────────────
+const MasterApp: React.FC = () => {
+  const { t } = useLanguage();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => import.meta.env.DEV);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+
+  const { state: s, actions: a } = useBingoGame();
+  const {
+    isSessionActive, setSessionActive,
+    resetSession: baseResetSession,
+    createNewSession: baseCreateNewSession,
+    transitionEndsAt, nextBarName,
+    triggerBarTransition, clearBarTransition,
+    secureSessionId,
+    pregamePhase, setPregamePhase,
+    triggerCountdown, clearCountdown,
+    spotlightDisabled, setSpotlightDisabled,
+    challengeCooldownSecs, setChallengeCooldown,
+    isGamePaused, setGamePaused,
+    currentBar, barCadence, chaosMode, maxValidationsPerBar,
+    advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
+  } = useEventSession();
+
+  const resetSession = async () => {
+    await baseResetSession();
+    a.resetGame();
+    window.location.reload();
+  };
+
+  const createNewSession = async () => {
+    await baseCreateNewSession();
+    a.resetGame();
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === HIDDEN_MASTER_PASSWORD) {
+      setIsAuthenticated(true);
+      setPasswordInput('');
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setTimeout(() => setPasswordError(false), 500);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="fixed inset-0 bg-[#0A1629] flex items-center justify-center p-6">
+        <BackgroundParticles />
+        <div className="relative w-full max-w-sm bg-[#0A1629] border-2 border-red-500 rounded-2xl p-8 shadow-[0_0_50px_rgba(239,68,68,0.3)]">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <KeyRound className="w-10 h-10 text-red-500" />
+            </div>
+            <h3 className="text-2xl font-impact text-red-500 uppercase tracking-tighter italic">
+              {t('master_access_title')}
+            </h3>
+            <p className="text-[10px] text-white/40 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
+          </div>
+          <form onSubmit={handlePasswordSubmit} className="space-y-6">
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="SECRET KEY"
+              className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${passwordError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`}
+              autoFocus
+            />
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
+              {t('unlock')}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <MasterPage
+      isSessionActive={isSessionActive}
+      setSessionActive={setSessionActive}
+      resetSession={resetSession}
+      createNewSession={createNewSession}
+      onWrapped={async () => { await setSessionActive(false); }}
+      triggerBarTransition={triggerBarTransition}
+      clearBarTransition={clearBarTransition}
+      transitionEndsAt={transitionEndsAt}
+      nextBarName={nextBarName}
+      secureSessionId={secureSessionId}
+      state={s}
+      actions={a}
+      pregamePhase={pregamePhase}
+      setPregamePhase={setPregamePhase}
+      triggerCountdown={triggerCountdown}
+      clearCountdown={clearCountdown}
+      spotlightDisabled={spotlightDisabled}
+      setSpotlightDisabled={setSpotlightDisabled}
+      challengeCooldownSecs={challengeCooldownSecs}
+      setChallengeCooldown={setChallengeCooldown}
+      isGamePaused={isGamePaused}
+      setGamePaused={setGamePaused}
+      currentBar={currentBar}
+      barCadence={barCadence}
+      chaosMode={chaosMode}
+      maxValidationsPerBar={maxValidationsPerBar}
+      advanceBar={advanceBar}
+      setBarCadenceValue={setBarCadenceValue}
+      setChaosMode={setChaosMode}
+      setMaxValidationsPerBar={setMaxValidationsPerBar}
+    />
+  );
+};
+
+// ─── PlayerApp — /* route, all player logic ───────────────────────────────────
+const PlayerApp: React.FC = () => {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { state: s, actions: a } = useBingoGame();
   const aRef = React.useRef(a);
@@ -55,12 +174,29 @@ const App: React.FC = () => {
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  const { isSessionActive, setSessionActive, resetSession: baseResetSession, createNewSession: baseCreateNewSession, checkSession, isLoading: isSessionLoading, transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId, pregamePhase, pregameSubjectId, setPregamePhase, triggerCountdown, clearCountdown, countdownEndsAt, spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown, isGamePaused, setGamePaused, currentBar, barCadence, chaosMode, maxValidationsPerBar, advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar } = useEventSession();
+  const {
+    isSessionActive, setSessionActive,
+    resetSession: baseResetSession,
+    createNewSession: baseCreateNewSession,
+    checkSession,
+    isLoading: isSessionLoading,
+    transitionEndsAt, nextBarName,
+    triggerBarTransition, clearBarTransition,
+    secureSessionId,
+    pregamePhase, setPregamePhase,
+    triggerCountdown, clearCountdown,
+    countdownEndsAt,
+    spotlightDisabled, setSpotlightDisabled,
+    challengeCooldownSecs, setChallengeCooldown,
+    isGamePaused, setGamePaused,
+    currentBar, barCadence, chaosMode, maxValidationsPerBar,
+    advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
+  } = useEventSession();
   const { language } = useLanguage();
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
   useEffect(() => {
-    const id = setInterval(() => { gameService.checkConnection().catch(() => {}); }, 4 * 60 * 1000); // every 4 min
+    const id = setInterval(() => { gameService.checkConnection().catch(() => {}); }, 4 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -77,20 +213,17 @@ const App: React.FC = () => {
     return () => clearInterval(iv);
   }, [transitionEndsAt, s.view]);
 
-  // Spotlight disable: when master disables spotlight from dashboard, clear it locally
+  // Spotlight disable
   useEffect(() => {
     if (spotlightDisabled) {
-      // Clear spotlight state — useBingoGame will stop showing it
-      // resetSpotlightCount resets the quota so it won't auto-trigger
       a.resetSpotlightCount();
     }
   }, [spotlightDisabled]);
 
-  // 3-2-1 game launch countdown (driven by countdownEndsAt from event_session)
+  // 3-2-1 game launch countdown
   const [launchCountdown, setLaunchCountdown] = useState<{ value: number; isGo: boolean } | null>(null);
   useEffect(() => {
     if (!countdownEndsAt) { setLaunchCountdown(null); return; }
-    // Ignore stale countdown (already expired for more than 5s on load)
     if (countdownEndsAt - Date.now() < -5000) { setLaunchCountdown(null); return; }
     let fired = false;
     const update = () => {
@@ -104,7 +237,6 @@ const App: React.FC = () => {
         setTimeout(() => {
           setLaunchCountdown(null);
           const cur = sRef.current;
-          // Only start game when character creation is complete (registerPlayer done → view = LOBBY)
           if (cur.view === AppView.LOBBY && cur.nickname && !cur.gameSession) {
             aRef.current.startGame(cur.nickname);
           }
@@ -116,18 +248,16 @@ const App: React.FC = () => {
     return () => { clearInterval(iv); };
   }, [countdownEndsAt, s.view]);
 
-  // Auto-start for players who complete character creation after the countdown already fired.
-  // Covers: player was on NICKNAME during countdown → finished OnboardingCards later → enters LOBBY.
+  // Auto-start for late joiners
   useEffect(() => {
     if (s.view !== AppView.LOBBY || !s.nickname || s.gameSession) return;
     if (!countdownEndsAt) return;
     const msSinceCountdown = Date.now() - countdownEndsAt;
-    // Countdown hasn't fired yet, or fired more than 5 minutes ago (stale)
     if (msSinceCountdown < 0 || msSinceCountdown > 5 * 60 * 1000) return;
     aRef.current.startGame(s.nickname);
   }, [s.view, s.nickname, s.gameSession, countdownEndsAt]);
 
-    const resetSession = async () => {
+  const resetSession = async () => {
     await baseResetSession();
     a.resetGame();
     a.setView(AppView.NICKNAME);
@@ -139,14 +269,15 @@ const App: React.FC = () => {
     a.resetGame();
     a.setView(AppView.NICKNAME);
   };
+
   const tut = useTutorial();
-  
+
   const [vipBypass, setVipBypass] = useState(false);
   const [isLandscapeMobile, setIsLandscapeMobile] = useState(false);
   const [showHiddenLogin, setShowHiddenLogin] = useState(false);
   const [hiddenCodeInput, setHiddenCodeInput] = useState('');
   const [hiddenLoginError, setHiddenLoginError] = useState(false);
-  
+
   // Session Start Animation State
   const [showStartAnimation, setShowStartAnimation] = useState(false);
   const [showEndOverlay, setShowEndOverlay] = useState(false);
@@ -156,52 +287,50 @@ const App: React.FC = () => {
   const handleHiddenLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (hiddenCodeInput === HIDDEN_MASTER_PASSWORD) {
-       a.setView(AppView.MASTER_DASHBOARD);
-       setShowHiddenLogin(false);
-       setHiddenCodeInput('');
-       setHiddenLoginError(false);
+      setShowHiddenLogin(false);
+      setHiddenCodeInput('');
+      setHiddenLoginError(false);
+      navigate('/master');
     } else {
-       setHiddenLoginError(true);
-       setTimeout(() => setHiddenLoginError(false), 500);
+      setHiddenLoginError(true);
+      setTimeout(() => setHiddenLoginError(false), 500);
     }
   };
 
-  // Dev mode: skip password when running locally (import.meta.env.DEV)
   const handleCrownClick = () => {
-    if (import.meta.env.DEV) { a.setView(AppView.MASTER_DASHBOARD); return; }
+    if (import.meta.env.DEV) { navigate('/master'); return; }
     setShowHiddenLogin(true);
   };
 
   // --- LANDSCAPE DETECTION ---
   useEffect(() => {
     const checkOrientation = () => {
-        if (window.innerWidth > window.innerHeight && window.innerHeight < 550) {
-            setIsLandscapeMobile(true);
-        } else {
-            setIsLandscapeMobile(false);
-        }
+      if (window.innerWidth > window.innerHeight && window.innerHeight < 550) {
+        setIsLandscapeMobile(true);
+      } else {
+        setIsLandscapeMobile(false);
+      }
     };
     checkOrientation();
     window.addEventListener('resize', checkOrientation);
     return () => window.removeEventListener('resize', checkOrientation);
   }, []);
-  
+
   // --- SYNC CHECK ON MOUNT ---
   useEffect(() => {
-     if (navigator.onLine) {
-         gameService.syncPendingActions();
-     }
+    if (navigator.onLine) {
+      gameService.syncPendingActions();
+    }
   }, []);
 
-  // --- WITNESS HEAL: re-link player to session if session_id was null ---
-  // Fixes empty witness list when player joined before the secure session was created
+  // --- WITNESS HEAL ---
   useEffect(() => {
     if (!isSessionActive || !secureSessionId) return;
     const userId = localStorage.getItem('bingo_user_id');
     if (!userId) return;
     gameService.linkPlayerToSession(userId, secureSessionId).catch(() => {});
   }, [isSessionActive, secureSessionId]);
-  
+
   // --- KICK LOGIC & START ANIMATION ---
   useEffect(() => {
     if (isSessionLoading) return;
@@ -211,54 +340,41 @@ const App: React.FC = () => {
     // 1. KICK LOGIC
     if (!isSessionActive) {
       setVipBypass(false);
-      // If session was active and now is not, and user was in game or leaderboard, show end overlay
       if (prevSessionActive.current && !isFirstLoad.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
-         setShowEndOverlay(true);
+        setShowEndOverlay(true);
       }
-
-      // KICK: Force redirect to NICKNAME if user is in a restricted view when session closes
-      // But only if they haven't seen the end overlay yet
-      if (!showEndOverlay && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
-         aRef.current.setView(AppView.NICKNAME);
-         aRef.current.resetGame();
+      if (!showEndOverlay && s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
+        aRef.current.setView(AppView.NICKNAME);
+        aRef.current.resetGame();
       }
     }
 
     // 2. START ANIMATION LOGIC
-    // We only trigger if it WAS false and IS NOW true, and it's NOT the very first load
-    if (!prevSessionActive.current && isSessionActive && !isFirstLoad.current && s.view !== AppView.MASTER_DASHBOARD) {
-        setShowStartAnimation(true);
+    if (!prevSessionActive.current && isSessionActive && !isFirstLoad.current) {
+      setShowStartAnimation(true);
+      aRef.current.resetGame();
+      aRef.current.setView(AppView.NICKNAME);
+      setShowEndOverlay(false);
 
-        // FORCE RESET FOR NEW SESSION: Return to character creation
-        aRef.current.resetGame();
-        aRef.current.setView(AppView.NICKNAME);
-        setShowEndOverlay(false);
-        
-        // Confetti Explosion
-        const duration = 2000;
-        const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
-        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+      const duration = 2000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-        const interval: any = setInterval(function() {
-          const timeLeft = animationEnd - Date.now();
-          if (timeLeft <= 0) return clearInterval(interval);
-          const particleCount = 50 * (timeLeft / duration);
-          canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-          canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-        }, 250);
-        
-        // Haptic
-        if (navigator.vibrate) navigator.vibrate([100, 100, 200, 100, 400]);
+      const interval: any = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        const particleCount = 50 * (timeLeft / duration);
+        canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+        canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      }, 250);
 
-        // Hide after 3.5s
-        setTimeout(() => setShowStartAnimation(false), 3500);
+      if (navigator.vibrate) navigator.vibrate([100, 100, 200, 100, 400]);
+      setTimeout(() => setShowStartAnimation(false), 3500);
     }
 
-    // Update refs
     prevSessionActive.current = isSessionActive;
     if (isFirstLoad.current) isFirstLoad.current = false;
-
   }, [isSessionActive, s.view, isSessionLoading, showEndOverlay]);
 
   // --- WAKE LOCK ---
@@ -283,36 +399,30 @@ const App: React.FC = () => {
 
   // --- TUTORIAL NEXT LOGIC ---
   const handleTutorialNext = () => {
-    switch(tut.currentStep) {
-        case TutorialStep.STYLES:
-            tut.nextStep();
-            a.setView(AppView.ONBOARDING_REWARDS);
-            break;
-        case TutorialStep.REWARDS:
-            tut.nextStep();
-            a.startGame(s.nickname || "Player");
-            break;
-        case TutorialStep.GRID:
-            let targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY && c.type === ChallengeType.WITNESS);
-            if (!targetCell) {
-               targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY && c.type === ChallengeType.AUTO);
-            }
-            if (!targetCell) {
-               targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY);
-            }
-            if(targetCell) {
-              a.handleCellClick(targetCell.id);
-              tut.nextStep();
-            }
-            break;
-        case TutorialStep.CHALLENGE_MODAL:
-            a.setSelectedCell(null); 
-            tut.nextStep();
-            break;
-        case TutorialStep.SCORE:
-            tut.completeTutorial();
-            canvasConfetti({ particleCount: 150, spread: 100, origin: { y: 0.7 } });
-            break;
+    switch (tut.currentStep) {
+      case TutorialStep.STYLES:
+        tut.nextStep();
+        a.setView(AppView.ONBOARDING_REWARDS);
+        break;
+      case TutorialStep.REWARDS:
+        tut.nextStep();
+        a.startGame(s.nickname || 'Player');
+        break;
+      case TutorialStep.GRID: {
+        let targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY && c.type === ChallengeType.WITNESS);
+        if (!targetCell) targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY && c.type === ChallengeType.AUTO);
+        if (!targetCell) targetCell = s.cells.find((c: any) => c.status === CellStatus.EMPTY);
+        if (targetCell) { a.handleCellClick(targetCell.id); tut.nextStep(); }
+        break;
+      }
+      case TutorialStep.CHALLENGE_MODAL:
+        a.setSelectedCell(null);
+        tut.nextStep();
+        break;
+      case TutorialStep.SCORE:
+        tut.completeTutorial();
+        canvasConfetti({ particleCount: 150, spread: 100, origin: { y: 0.7 } });
+        break;
     }
   };
 
@@ -322,59 +432,53 @@ const App: React.FC = () => {
       <div className="min-h-[100dvh] bg-[#0A1629] flex flex-col items-center justify-center relative">
         <BackgroundParticles />
         <div className="w-24 h-24 mb-6 relative">
-           <div className="absolute inset-0 border-4 border-[#FFD700]/30 rounded-full animate-pulse"></div>
-           <div className="absolute inset-0 border-t-4 border-[#FFD700] rounded-full animate-spin"></div>
-           <div className="absolute inset-0 flex items-center justify-center">
-             <ShieldLogo onCrownClick={handleCrownClick} className="w-12 h-12 animate-pulse" />
-           </div>
+          <div className="absolute inset-0 border-4 border-[#FFD700]/30 rounded-full animate-pulse"></div>
+          <div className="absolute inset-0 border-t-4 border-[#FFD700] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <ShieldLogo onCrownClick={handleCrownClick} className="w-12 h-12 animate-pulse" />
+          </div>
         </div>
         <p className="text-[#FFD700] font-impact text-xl tracking-widest animate-pulse uppercase">{t('loading')}</p>
       </div>
     );
   }
-  
+
   // LANDSCAPE BLOCKER
   if (isLandscapeMobile) {
-      return <RotateDeviceOverlay />;
+    return <RotateDeviceOverlay />;
   }
 
-  /* 
-     SESSION LOCK - STRICT MODE ENABLED
-     This forces the LockedPage if the Master has not opened the session.
-     Only the Master Login is accessible here OR via QR Code scan.
-  */
-  if (!isSessionActive && s.view !== AppView.MASTER_DASHBOARD && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME_OVER && !showEndOverlay && !vipBypass) {
-     return (
-       <>
-         <NetworkStatus />
-         <LockedPage 
-            onMasterAccess={() => uia.setShowMasterLogin(true)} 
-            onVipBypass={() => setVipBypass(true)}
-            onRefresh={checkSession}
-            onCrownClick={handleCrownClick}
-         />
-         {ui.showMasterLogin && (
-           <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
-              <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
-                 <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black/50 active:text-black"><X className="w-6 h-6" strokeWidth={3} /></button>
-                 <div className="text-center mb-6">
-                   <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
-                   <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
-                 </div>
-                 <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
-                    <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="••••" className={`w-full bg-white border-[3px] rounded-xl p-4 text-center text-black text-2xl font-impact tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-black'}`} autoFocus />
-                    <button type="submit" className="w-full bg-black text-[#FFD700] font-impact py-4 rounded-xl uppercase tracking-wider text-lg active:scale-95 transition-all">{t('unlock')}</button>
-                 </form>
+  // SESSION LOCK
+  if (!isSessionActive && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME_OVER && !showEndOverlay && !vipBypass) {
+    return (
+      <>
+        <NetworkStatus />
+        <LockedPage
+          onMasterAccess={() => uia.setShowMasterLogin(true)}
+          onVipBypass={() => setVipBypass(true)}
+          onRefresh={checkSession}
+          onCrownClick={handleCrownClick}
+        />
+        {ui.showMasterLogin && (
+          <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
+              <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black/50 active:text-black"><X className="w-6 h-6" strokeWidth={3} /></button>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
+                <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
               </div>
-           </div>
-         )}
-       </>
-     );
+              <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
+                <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="••••" className={`w-full bg-white border-[3px] rounded-xl p-4 text-center text-black text-2xl font-impact tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-black'}`} autoFocus />
+                <button type="submit" className="w-full bg-black text-[#FFD700] font-impact py-4 rounded-xl uppercase tracking-wider text-lg active:scale-95 transition-all">{t('unlock')}</button>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
-  // --- ROUTING ---
-
-  // Game over: shown when useSessionGuard kicks a player (stale/closed session)
+  // Game over
   if (s.view === AppView.GAME_OVER) {
     return <GameOverPage />;
   }
@@ -383,89 +487,51 @@ const App: React.FC = () => {
     <>
       {showStartAnimation && <SessionStartOverlay />}
       {showEndOverlay && (
-         <SessionEndOverlay
-            nickname={s.nickname}
-            onViewReport={() => {
-               setShowEndOverlay(false);
-               a.setView(AppView.MISSION_REPORT);
-            }}
-         />
-      )}
-
-      {/* GameRoom gates access for players who arrived via ?s=UUID QR code.
-          When no ?s= param is present it is a transparent no-op wrapper. */}
-      <GameRoom setView={a.setView}>
-
-      {/* 1. NICKNAME PAGE */}
-      {s.view === AppView.NICKNAME && (
-         <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={handleCrownClick} />
-      )}
-
-      {/* 1b. LOBBY — player registered, waiting for Master to launch pregame/game */}
-      {s.view === AppView.LOBBY && (
-        <LobbyPage
-          nickname={s.nickname || ''}
-          avatarId={s.avatarId || ''}
-          onCrownClick={handleCrownClick}
+        <SessionEndOverlay
+          nickname={s.nickname}
+          onViewReport={() => {
+            setShowEndOverlay(false);
+            a.setView(AppView.MISSION_REPORT);
+          }}
         />
       )}
 
-      {/* 2. MASTER PAGE */}
-      {s.view === AppView.MASTER_DASHBOARD && (
-         <MasterPage
-           isSessionActive={isSessionActive}
-           setSessionActive={setSessionActive}
-           resetSession={resetSession}
-           createNewSession={createNewSession}
-           onWrapped={async () => { await setSessionActive(false); a.setView(AppView.MISSION_REPORT); }}
-           triggerBarTransition={triggerBarTransition}
-           clearBarTransition={clearBarTransition}
-           transitionEndsAt={transitionEndsAt}
-           nextBarName={nextBarName}
-           secureSessionId={secureSessionId}
-           state={s}
-           actions={a}
-           pregamePhase={pregamePhase}
-           setPregamePhase={setPregamePhase}
-           triggerCountdown={triggerCountdown}
-           clearCountdown={clearCountdown}
-           spotlightDisabled={spotlightDisabled}
-           setSpotlightDisabled={setSpotlightDisabled}
-           challengeCooldownSecs={challengeCooldownSecs}
-           setChallengeCooldown={setChallengeCooldown}
-           isGamePaused={isGamePaused}
-           setGamePaused={setGamePaused}
-           currentBar={currentBar}
-           barCadence={barCadence}
-           chaosMode={chaosMode}
-           maxValidationsPerBar={maxValidationsPerBar}
-           advanceBar={advanceBar}
-           setBarCadenceValue={setBarCadenceValue}
-           setChaosMode={setChaosMode}
-           setMaxValidationsPerBar={setMaxValidationsPerBar}
-         />
-      )}
+      <GameRoom setView={a.setView}>
 
-      {/* 3. LEADERBOARD */}
-      {s.view === AppView.LEADERBOARD && (
-         <Leaderboard
-           onBack={() => a.setView(AppView.GAME)}
-           currentUserId={localStorage.getItem('bingo_user_id') || undefined}
-           currentGameId={s.gameSession?.id}
-           currentScore={s.score}
-           tauntsLeft={s.tauntsLeft}
-           onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
-             await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
-           } : undefined}
-         />
-      )}
+        {/* 1. NICKNAME PAGE */}
+        {s.view === AppView.NICKNAME && (
+          <NicknamePage state={s} actions={a} ui={ui} uiActions={uia} tutorialActions={tut} onCrownClick={handleCrownClick} />
+        )}
 
-      {/* 4 & 5. ONBOARDING — handled inline in NicknamePage via OnboardingCards */}
+        {/* 1b. LOBBY */}
+        {s.view === AppView.LOBBY && (
+          <LobbyPage
+            nickname={s.nickname || ''}
+            avatarId={s.avatarId || ''}
+            onCrownClick={handleCrownClick}
+          />
+        )}
 
-      {/* 6. GAME PAGE (Main View) */}
-      {s.view === AppView.GAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
-        <ErrorBoundary>
-           <GamePage
+        {/* 3. LEADERBOARD */}
+        {s.view === AppView.LEADERBOARD && (
+          <Leaderboard
+            onBack={() => a.setView(AppView.GAME)}
+            currentUserId={localStorage.getItem('bingo_user_id') || undefined}
+            currentGameId={s.gameSession?.id}
+            currentScore={s.score}
+            tauntsLeft={s.tauntsLeft}
+            onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
+              await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
+            } : undefined}
+          />
+        )}
+
+        {/* 4 & 5. ONBOARDING — handled inline in NicknamePage via OnboardingCards */}
+
+        {/* 6. GAME PAGE */}
+        {s.view === AppView.GAME && !(isSessionActive && pregamePhase && s.nickname && !!localStorage.getItem('bingo_user_id')) && (
+          <ErrorBoundary>
+            <GamePage
               state={s}
               actions={a}
               ui={ui}
@@ -478,57 +544,57 @@ const App: React.FC = () => {
               chaosMode={chaosMode}
               currentBar={currentBar}
               barCadence={barCadence}
-           />
-        </ErrorBoundary>
-      )}
+            />
+          </ErrorBoundary>
+        )}
 
-      {/* BAR TRANSITION — Badge B (countdown visible on game screen) */}
-      {s.view === AppView.GAME && isSessionActive && transitionEndsAt && transitionSecondsLeft > 0 && (
-        <div className="fixed top-[72px] left-3 right-3 z-[140] pointer-events-none animate-in slide-in-from-top-2 duration-300">
-          <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_black] transition-all duration-500 ${
-            transitionSecondsLeft <= 60
-              ? 'bg-[#FF2D6A] animate-pulse'
-              : transitionSecondsLeft <= 120
-              ? 'bg-[#FF8C00]'
-              : 'bg-[#FFD700]'
-          }`}>
-            <div className="flex items-center gap-2">
-              <span className="text-lg leading-none">🚶</span>
-              <div className="flex flex-col leading-none">
-                <span className="font-impact text-black uppercase text-[13px] tracking-tight">
-                  {language === 'fr' ? 'On bouge bientôt' : 'Moving soon'}
-                  {nextBarName ? ` — ${nextBarName}` : ''}
-                </span>
-                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
-                  {language === 'fr' ? 'Finis tes défis !' : 'Finish your challenges!'}
+        {/* BAR TRANSITION — countdown badge */}
+        {s.view === AppView.GAME && isSessionActive && transitionEndsAt && transitionSecondsLeft > 0 && (
+          <div className="fixed top-[72px] left-3 right-3 z-[140] pointer-events-none animate-in slide-in-from-top-2 duration-300">
+            <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_black] transition-all duration-500 ${
+              transitionSecondsLeft <= 60
+                ? 'bg-[#FF2D6A] animate-pulse'
+                : transitionSecondsLeft <= 120
+                ? 'bg-[#FF8C00]'
+                : 'bg-[#FFD700]'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-lg leading-none">🚶</span>
+                <div className="flex flex-col leading-none">
+                  <span className="font-impact text-black uppercase text-[13px] tracking-tight">
+                    {language === 'fr' ? 'On bouge bientôt' : 'Moving soon'}
+                    {nextBarName ? ` — ${nextBarName}` : ''}
+                  </span>
+                  <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
+                    {language === 'fr' ? 'Finis tes défis !' : 'Finish your challenges!'}
+                  </span>
+                </div>
+              </div>
+              <div className="bg-black/15 border border-black/20 rounded-xl px-2.5 py-1 shrink-0">
+                <span className="font-impact text-black text-sm tabular-nums">
+                  {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
                 </span>
               </div>
             </div>
-            <div className="bg-black/15 border border-black/20 rounded-xl px-2.5 py-1 shrink-0">
-              <span className="font-impact text-black text-sm tabular-nums">
-                {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
-              </span>
-            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* BAR TRANSITION — Overlay C (full screen at T=0) */}
-      {showTransitionOverlay && (
-        <BarTransitionOverlay
-          nextBarName={nextBarName}
-          language={language as 'fr' | 'en'}
-          onDismiss={async () => {
-            setShowTransitionOverlay(false);
-            await clearBarTransition();
-            a.resetSpotlightCount(); // new bar = reset spotlight quota
-          }}
-        />
-      )}
+        {/* BAR TRANSITION — full screen overlay at T=0 */}
+        {showTransitionOverlay && (
+          <BarTransitionOverlay
+            nextBarName={nextBarName}
+            language={language as 'fr' | 'en'}
+            onDismiss={async () => {
+              setShowTransitionOverlay(false);
+              await clearBarTransition();
+              a.resetSpotlightCount();
+            }}
+          />
+        )}
 
-      {/* 7. MISSION REPORT */}
-      {s.view === AppView.MISSION_REPORT && (
-         <MissionReport
+        {/* 7. MISSION REPORT */}
+        {s.view === AppView.MISSION_REPORT && (
+          <MissionReport
             nickname={s.nickname}
             avatarId={s.avatarId}
             country={s.country}
@@ -538,13 +604,13 @@ const App: React.FC = () => {
             startedAt={s.gameSession?.startedAt || Date.now()}
             onBack={() => a.setView(AppView.GAME)}
             onReset={() => {
-               a.resetGame();
-               a.setView(AppView.NICKNAME);
+              a.resetGame();
+              a.setView(AppView.NICKNAME);
             }}
-         />
-      )}
+          />
+        )}
 
-      </GameRoom>{/* end GameRoom session guard */}
+      </GameRoom>
 
       {/* DEVICE CONFLICT MODAL */}
       {s.deviceConflict && (
@@ -569,6 +635,25 @@ const App: React.FC = () => {
                 Oui, ce téléphone
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEVICE EVICTION OVERLAY */}
+      {s.deviceEvicted && (
+        <div className="fixed inset-0 z-[400] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-[#111C35] border-[3px] border-[#FF2D6A] rounded-3xl p-6 max-w-xs w-full shadow-[8px_8px_0px_black]">
+            <div className="text-4xl mb-3 text-center">📵</div>
+            <h3 className="font-impact uppercase text-[#FF2D6A] text-xl tracking-wide text-center">Session reprise</h3>
+            <p className="text-white/60 text-[12px] font-impact uppercase tracking-wider mt-2 text-center leading-relaxed">
+              Ta session a été reprise sur un autre appareil. Scanne à nouveau le QR pour rejouer ici.
+            </p>
+            <button
+              onClick={a.dismissEviction}
+              className="w-full mt-5 py-3 bg-[#FFD700] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] font-impact uppercase text-black text-[12px] tracking-widest active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
@@ -606,34 +691,46 @@ const App: React.FC = () => {
       {/* HIDDEN MASTER LOGIN (Crown Trigger) */}
       {showHiddenLogin && (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-300">
-           <div className="w-full max-w-sm bg-[#0A1629] border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
-              <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-white/30 hover:text-white"><X className="w-6 h-6" /></button>
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <KeyRound className="w-10 h-10 text-red-500" />
-                </div>
-                <h3 className="text-2xl font-impact text-red-500 uppercase tracking-tighter italic">
-                  {t('master_access_title')}
-                </h3>
-                <p className="text-[10px] text-white/40 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
+          <div className="w-full max-w-sm bg-[#0A1629] border-2 border-red-500 rounded-2xl p-8 relative shadow-[0_0_50px_rgba(239,68,68,0.3)]">
+            <button onClick={() => setShowHiddenLogin(false)} className="absolute top-4 right-4 text-white/30 hover:text-white"><X className="w-6 h-6" /></button>
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <KeyRound className="w-10 h-10 text-red-500" />
               </div>
-              <form onSubmit={handleHiddenLoginSubmit} className="space-y-6">
-                 <input 
-                   type="password" 
-                   value={hiddenCodeInput} 
-                   onChange={(e) => setHiddenCodeInput(e.target.value)} 
-                   placeholder="SECRET KEY" 
-                   className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${hiddenLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`} 
-                   autoFocus 
-                 />
-                 <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
-                   {t('unlock')}
-                 </button>
-              </form>
-           </div>
+              <h3 className="text-2xl font-impact text-red-500 uppercase tracking-tighter italic">
+                {t('master_access_title')}
+              </h3>
+              <p className="text-[10px] text-white/40 font-impact uppercase tracking-widest mt-2">RESTRICTED AREA</p>
+            </div>
+            <form onSubmit={handleHiddenLoginSubmit} className="space-y-6">
+              <input
+                type="password"
+                value={hiddenCodeInput}
+                onChange={(e) => setHiddenCodeInput(e.target.value)}
+                placeholder="SECRET KEY"
+                className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${hiddenLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`}
+                autoFocus
+              />
+              <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
+                {t('unlock')}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </>
+  );
+};
+
+// ─── Root App — BrowserRouter + Routes ───────────────────────────────────────
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/master" element={<MasterApp />} />
+        <Route path="/*" element={<PlayerApp />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
