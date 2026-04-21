@@ -200,6 +200,14 @@ const PlayerApp: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
+  // Poll session every 3s while in LOBBY — ensures countdown_ends_at is picked up
+  // even when Supabase Realtime delivery is delayed or subscription not established yet.
+  useEffect(() => {
+    if (s.view !== AppView.LOBBY) return;
+    const id = setInterval(() => { checkSession().catch(() => {}); }, 3000);
+    return () => clearInterval(id);
+  }, [s.view, checkSession]);
+
   // Countdown timer + trigger overlay at T=0
   useEffect(() => {
     if (!transitionEndsAt) { setTransitionSecondsLeft(0); setShowTransitionOverlay(false); return; }
@@ -224,7 +232,7 @@ const PlayerApp: React.FC = () => {
   const [launchCountdown, setLaunchCountdown] = useState<{ value: number; isGo: boolean } | null>(null);
   useEffect(() => {
     if (!countdownEndsAt) { setLaunchCountdown(null); return; }
-    if (countdownEndsAt - Date.now() < -5000) { setLaunchCountdown(null); return; }
+    if (countdownEndsAt - Date.now() < -30000) { setLaunchCountdown(null); return; }
     let fired = false;
     const update = () => {
       const msLeft = countdownEndsAt - Date.now();

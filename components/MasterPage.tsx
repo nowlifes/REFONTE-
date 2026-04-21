@@ -186,7 +186,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
     if (!triggerCountdown) return;
     setIsLaunchingPhase(true);
     try {
-      await triggerCountdown(5);
+      await triggerCountdown(10);
       setPregamePhase?.(null);
       setGameLaunched(true);
       setTimeout(() => setGameLaunched(false), 4000);
