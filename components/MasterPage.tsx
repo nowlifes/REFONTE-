@@ -102,6 +102,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [dbChallenges, setDbChallenges] = useState<any[]>([]);
   const [showChallenges, setShowChallenges] = useState(false);
   const [isLaunchingPhase, setIsLaunchingPhase] = useState(false);
+  const [gameLaunched, setGameLaunched] = useState(false);
 
   // Player management
   const [showPlayers, setShowPlayers] = useState(false);
@@ -184,8 +185,17 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleLaunchGame = async () => {
     if (!triggerCountdown) return;
     setIsLaunchingPhase(true);
-    try { await triggerCountdown(3); setTimeout(() => setPregamePhase?.(null), 3500); }
-    finally { setIsLaunchingPhase(false); }
+    try {
+      await triggerCountdown(5);
+      setPregamePhase?.(null);
+      setGameLaunched(true);
+      setTimeout(() => setGameLaunched(false), 4000);
+    } catch (e) {
+      console.error('[Master] triggerCountdown failed:', e);
+      alert('Erreur lors du lancement. Vérifiez votre connexion.');
+    } finally {
+      setIsLaunchingPhase(false);
+    }
   };
   const handleTriggerTransition = async () => {
     setIsTriggeringTransition(true);
@@ -255,72 +265,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const qrColor = secureSessionId ? sessionColor(secureSessionId) : '#FFD700';
 
   return (
+    <>
     <div className="fixed inset-0 bg-[#0A1629] overflow-y-auto">
       <BackgroundParticles />
-
-      {/* ── Validations badge flottant ─────────────────────────────────────── */}
-      {isSessionActive && pendingValidations.length > 0 && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[50] w-[calc(100%-2rem)] max-w-sm">
-          <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-black/10">
-              <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center shrink-0">
-                <span className="font-impact text-[#FF2D6A] text-[9px]">{pendingValidations.length}</span>
-              </div>
-              <span className="font-impact text-black uppercase text-[10px] tracking-widest flex-1">
-                {pendingValidations.length} validation{pendingValidations.length > 1 ? 's' : ''} en attente
-              </span>
-            </div>
-            <div className="flex flex-col gap-2 px-3 py-3 max-h-52 overflow-y-auto no-scrollbar">
-              {pendingValidations.map((v: any) => (
-                <div key={v.id} className="bg-black/20 rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-xl leading-none shrink-0">{v.player_emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-impact text-white uppercase text-[12px] tracking-tight">{v.player_nickname}</span>
-                      <p className="font-impact text-white/60 text-[9px] uppercase tracking-wide truncate">{v.challenge_text}</p>
-                    </div>
-                  </div>
-                  {!witnessMode[v.id] ? (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleApproveValidation(v)} disabled={approvingId === v.id}
-                        className="flex-1 py-2 bg-white text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-1">
-                        {approvingId === v.id ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" /> : <><Check size={12} strokeWidth={3} /> OK</>}
-                      </button>
-                      <button onClick={() => setWitnessMode(prev => ({ ...prev, [v.id]: true }))}
-                        className="flex-1 py-2 bg-[#FF8C00] text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1">
-                        <Eye size={12} strokeWidth={3} /> Témoin
-                      </button>
-                      <button onClick={() => handleRejectValidation(v.id)}
-                        className="w-9 h-9 bg-black/30 border border-white/20 rounded-lg flex items-center justify-center active:scale-90 transition-transform shrink-0">
-                        <X size={14} className="text-white/60" strokeWidth={2.5} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <p className="font-impact text-white/70 uppercase text-[9px] tracking-widest">Qui était le témoin ?</p>
-                      <select value={witnessSelectedPlayer[v.id] ?? ''} onChange={e => setWitnessSelectedPlayer(prev => ({ ...prev, [v.id]: e.target.value }))}
-                        className="w-full bg-black/40 border border-white/20 rounded-xl px-3 py-2 font-impact text-white text-[11px] uppercase focus:outline-none">
-                        <option value="">— choisir —</option>
-                        {playersList.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.pseudo}</option>)}
-                      </select>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleSendWitness(v)} disabled={!witnessSelectedPlayer[v.id] || sendingWitnessId === v.id}
-                          className="flex-1 py-2 bg-[#FF8C00] text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1">
-                          {sendingWitnessId === v.id ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" /> : <><Eye size={11} strokeWidth={3} /> Envoyer</>}
-                        </button>
-                        <button onClick={() => setWitnessMode(prev => ({ ...prev, [v.id]: false }))}
-                          className="px-3 py-2 bg-black/30 border border-white/20 rounded-lg font-impact uppercase text-[9px] text-white/60 active:scale-90 transition-transform">
-                          Annuler
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Carte principale blanche ───────────────────────────────────────── */}
       <div
@@ -407,10 +354,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
             {/* Launch */}
             {isSessionActive && triggerCountdown && (
-              <button onClick={handleLaunchGame} disabled={isLaunchingPhase}
-                className="w-full py-4 bg-[#00FF9D] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40">
-                <Play size={17} strokeWidth={3} fill="currentColor" />
-                {isLaunchingPhase ? 'Lancement...' : '🚀 Lancer le Jeu !'}
+              <button onClick={handleLaunchGame} disabled={isLaunchingPhase || gameLaunched}
+                className={`w-full py-4 text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-70 ${gameLaunched ? 'bg-[#FFD700]' : 'bg-[#00FF9D]'}`}>
+                {gameLaunched ? <><Check size={17} strokeWidth={3} /> Lancé ! Countdown 5s...</> : isLaunchingPhase ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> Envoi...</> : <><Play size={17} strokeWidth={3} fill="currentColor" /> 🚀 Lancer le Jeu !</>}
               </button>
             )}
 
@@ -625,8 +571,73 @@ const MasterPage: React.FC<MasterPageProps> = ({
           </div>
         </div>
       </div>
+    </div>
 
-      {/* ══ MODALS ═════════════════════════════════════════════════════════════ */}
+    {/* ── Validations badge flottant — outside scroll container ─────────────── */}
+    {isSessionActive && pendingValidations.length > 0 && (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[50] w-[calc(100%-2rem)] max-w-sm">
+        <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-black/10">
+            <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center shrink-0">
+              <span className="font-impact text-[#FF2D6A] text-[9px]">{pendingValidations.length}</span>
+            </div>
+            <span className="font-impact text-black uppercase text-[10px] tracking-widest flex-1">
+              {pendingValidations.length} validation{pendingValidations.length > 1 ? 's' : ''} en attente
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 px-3 py-3 max-h-52 overflow-y-auto no-scrollbar">
+            {pendingValidations.map((v: any) => (
+              <div key={v.id} className="bg-black/20 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xl leading-none shrink-0">{v.player_emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-impact text-white uppercase text-[12px] tracking-tight">{v.player_nickname}</span>
+                    <p className="font-impact text-white/60 text-[9px] uppercase tracking-wide truncate">{v.challenge_text}</p>
+                  </div>
+                </div>
+                {!witnessMode[v.id] ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApproveValidation(v)} disabled={approvingId === v.id}
+                      className="flex-1 py-2 bg-white text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-1">
+                      {approvingId === v.id ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" /> : <><Check size={12} strokeWidth={3} /> OK</>}
+                    </button>
+                    <button onClick={() => setWitnessMode(prev => ({ ...prev, [v.id]: true }))}
+                      className="flex-1 py-2 bg-[#FF8C00] text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1">
+                      <Eye size={12} strokeWidth={3} /> Témoin
+                    </button>
+                    <button onClick={() => handleRejectValidation(v.id)}
+                      className="w-9 h-9 bg-black/30 border border-white/20 rounded-lg flex items-center justify-center active:scale-90 transition-transform shrink-0">
+                      <X size={14} className="text-white/60" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <p className="font-impact text-white/70 uppercase text-[9px] tracking-widest">Qui était le témoin ?</p>
+                    <select value={witnessSelectedPlayer[v.id] ?? ''} onChange={e => setWitnessSelectedPlayer(prev => ({ ...prev, [v.id]: e.target.value }))}
+                      className="w-full bg-black/40 border border-white/20 rounded-xl px-3 py-2 font-impact text-white text-[11px] uppercase focus:outline-none">
+                      <option value="">— choisir —</option>
+                      {playersList.map(p => <option key={p.id} value={p.id}>{p.emoji} {p.pseudo}</option>)}
+                    </select>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleSendWitness(v)} disabled={!witnessSelectedPlayer[v.id] || sendingWitnessId === v.id}
+                        className="flex-1 py-2 bg-[#FF8C00] text-black rounded-lg font-impact uppercase text-[10px] border-[2px] border-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-1">
+                        {sendingWitnessId === v.id ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" /> : <><Eye size={11} strokeWidth={3} /> Envoyer</>}
+                      </button>
+                      <button onClick={() => setWitnessMode(prev => ({ ...prev, [v.id]: false }))}
+                        className="px-3 py-2 bg-black/30 border border-white/20 rounded-lg font-impact uppercase text-[9px] text-white/60 active:scale-90 transition-transform">
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ══ MODALS — outside scroll container, true fixed to viewport ══════════ */}
 
       {/* RESET */}
       {showResetConfirm && (
@@ -857,7 +868,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 
