@@ -454,26 +454,11 @@ const PlayerApp: React.FC = () => {
       <>
         <NetworkStatus />
         <LockedPage
-          onMasterAccess={() => uia.setShowMasterLogin(true)}
+          onMasterAccess={handleCrownClick}
           onVipBypass={() => setVipBypass(true)}
           onRefresh={checkSession}
           onCrownClick={handleCrownClick}
         />
-        {ui.showMasterLogin && (
-          <div className="fixed inset-0 z-[100] bg-[#0A1629]/95 flex items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
-              <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black/50 active:text-black"><X className="w-6 h-6" strokeWidth={3} /></button>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
-                <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>
-              </div>
-              <form onSubmit={uia.handleMasterLoginSubmit} className="space-y-4">
-                <input type="password" value={ui.masterCodeInput} onChange={(e) => uia.setMasterCodeInput(e.target.value)} placeholder="••••" className={`w-full bg-white border-[3px] rounded-xl p-4 text-center text-black text-2xl font-impact tracking-widest focus:outline-none transition-all ${ui.masterLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-black'}`} autoFocus />
-                <button type="submit" className="w-full bg-black text-[#FFD700] font-impact py-4 rounded-xl uppercase tracking-wider text-lg active:scale-95 transition-all">{t('unlock')}</button>
-              </form>
-            </div>
-          </div>
-        )}
       </>
     );
   }
