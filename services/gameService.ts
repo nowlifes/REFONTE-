@@ -72,6 +72,22 @@ class GameBackendService {
 
   private addToQueue(action: OfflineAction) {
       const queue = this.getQueue();
+      // Deduplicate: skip if an identical action is already pending
+      if (action.type === 'VALIDATE' || action.type === 'JOKER') {
+          const isDuplicate = queue.some(
+              a => a.type === action.type &&
+                   a.gameId === action.gameId &&
+                   a.payload?.cellId === action.payload?.cellId
+          );
+          if (isDuplicate) return;
+      } else if (action.type === 'BADGE') {
+          const isDuplicate = queue.some(
+              a => a.type === 'BADGE' &&
+                   a.playerId === action.playerId &&
+                   a.payload?.badgeType === action.payload?.badgeType
+          );
+          if (isDuplicate) return;
+      }
       queue.push(action);
       localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
   }
@@ -80,11 +96,23 @@ class GameBackendService {
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
   }
 
+  // Returns true if the error is permanent (no point retrying).
+  private isPermanentError(e: any): boolean {
+      if (!e) return false;
+      const code = e?.code ?? e?.error_code ?? '';
+      const msg = (e?.message ?? '').toLowerCase();
+      // Postgres unique violation (cell already validated), row not found, or explicit conflict
+      return code === '23505' || code === 'PGRST116' ||
+             msg.includes('already validated') || msg.includes('not found') ||
+             msg.includes('duplicate') || msg.includes('violates unique');
+  }
+
   public async syncPendingActions() {
       if (this._isSyncing || !navigator.onLine) return;
-      
-      const queue = this.getQueue();
-      if (queue.length === 0) return;
+
+      // Discard actions older than 24 h — the game has long moved on
+      let queue = this.getQueue().filter(a => Date.now() - a.timestamp < EXPIRATION_TIME);
+      if (queue.length === 0) { this.clearQueue(); return; }
 
       this.setSyncing(true);
       console.log(`[Sync] Processing ${queue.length} offline actions...`);
@@ -95,20 +123,20 @@ class GameBackendService {
           try {
               if (action.type === 'VALIDATE') {
                   const { gameId, cellId, proof } = action.payload;
-                  await this.validateCell(gameId, cellId, proof, true); // true = forceNetwork
+                  await this.validateCell(gameId, cellId, proof, true);
               } else if (action.type === 'JOKER') {
                   const { gameId, cellId, newChallenge } = action.payload;
-                  await this.useJoker(gameId, cellId, newChallenge, true); // true = forceNetwork
+                  await this.useJoker(gameId, cellId, newChallenge, true);
               } else if (action.type === 'BADGE') {
                   const { playerId, badgeType } = action.payload;
                   await this.unlockBadge(playerId, badgeType, true);
               }
           } catch (e) {
               console.error("[Sync] Action failed", action, e);
-              // If it's a permanent error (e.g. game not found), we might drop it.
-              // For network errors, we keep it.
-              // For simplicity in this demo, we assume network error and keep it.
-              failedActions.push(action);
+              // Drop permanent errors (conflict, already done, not found); retry network errors
+              if (!this.isPermanentError(e)) {
+                  failedActions.push(action);
+              }
           }
       }
 
@@ -260,7 +288,7 @@ class GameBackendService {
         text_fr: fr.text,
         text_en: en?.text ?? fr.text,
         type: fr.type,
-        is_partner: fr.id >= 1 && fr.id <= 4,
+        is_partner: (fr.id ?? 0) >= 1 && (fr.id ?? 0) <= 4,
         partner_handle: undefined,
       };
     });

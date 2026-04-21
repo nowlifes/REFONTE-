@@ -16,17 +16,17 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#FF2D6A] animate-in fade-in duration-400">
 
-      {/* Animated background dots */}
+      {/* Animated background dots — kept to 8 for performance on weak phones */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
             className="absolute w-3 h-3 bg-white rounded-full animate-bounce"
             style={{
-              left: `${(i * 17 + 5) % 100}%`,
-              top: `${(i * 23 + 10) % 100}%`,
-              animationDelay: `${(i * 0.15) % 1}s`,
-              animationDuration: `${0.8 + (i % 4) * 0.2}s`,
+              left: `${(i * 27 + 5) % 100}%`,
+              top: `${(i * 31 + 10) % 100}%`,
+              animationDelay: `${(i * 0.2) % 1}s`,
+              animationDuration: `${0.9 + (i % 3) * 0.2}s`,
             }}
           />
         ))}

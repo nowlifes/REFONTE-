@@ -24,6 +24,7 @@ export const useBingoGame = () => {
     return id;
   };
   const [deviceConflict, setDeviceConflict] = useState<{ playerId: string; onClaim: () => void; onDecline: () => void } | null>(null);
+  const [deviceEvicted, setDeviceEvicted] = useState(false);
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
@@ -219,6 +220,7 @@ export const useBingoGame = () => {
               if (newDeviceId && newDeviceId !== myDeviceId) {
                 // Don't wipe user_id — let them reclaim on next load
                 localStorage.removeItem('bingo_last_session');
+                setDeviceEvicted(true); // Show eviction overlay before redirecting
                 setView(AppView.NICKNAME);
                 unsubEvict();
               }
@@ -687,7 +689,7 @@ export const useBingoGame = () => {
 
   return {
     state: {
-      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user, deviceConflict,
+      view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user, deviceConflict, deviceEvicted,
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
@@ -697,6 +699,7 @@ export const useBingoGame = () => {
     },
     actions: {
       ...actions,
+      dismissEviction: () => setDeviceEvicted(false),
       grantFortuneTaunt: () => {
         if (!gameSession) return;
         setBonusTauntActive(true);
