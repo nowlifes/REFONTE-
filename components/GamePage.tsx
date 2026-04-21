@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Crown, Settings, Sparkles, Zap, Pencil } from 'lucide-react';
+import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock } from 'lucide-react';
 import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView, BingoCellData, TauntType } from '../types';
