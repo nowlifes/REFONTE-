@@ -46,22 +46,21 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [photoData, setPhotoData] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // Fortune state: null = spinning, true = won, false = missed
-  const [fortuneResult, setFortuneResult] = useState<boolean | null>(null);
   const fortuneRolled = useRef(false);
 
   // Call this AFTER onConfirm has been called.
-  // Shows FORTUNE spinner → result → then closes via onClose.
+  // Rolls the fortune silently. Only shows the FORTUNE screen if the player wins (rare).
   const triggerFortune = () => {
     if (fortuneRolled.current) return;
     fortuneRolled.current = true;
-    setStep('FORTUNE'); // show spinner
-    setTimeout(() => {
-      const won = Math.random() < 0.1;
-      setFortuneResult(won);
-      if (won) onFortuneWon?.();
-      setTimeout(onClose, won ? 2400 : 1600); // onClose = setSelectedCell(null)
-    }, 1100);
+    const won = Math.random() < 0.1;
+    if (won) {
+      setStep('FORTUNE');
+      onFortuneWon?.();
+      setTimeout(onClose, 2400);
+    } else {
+      setTimeout(onClose, 1200);
+    }
   };
 
   // Digital witness state
@@ -162,10 +161,15 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     const x = ('touches' in e) ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left;
     const y = ('touches' in e) ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top;
     ctx.lineTo(x, y); ctx.stroke();
+    // Update signatureData on each stroke so the confirm button enables as soon as drawing starts
+    setSignatureData(canvas.toDataURL());
   };
 
   const stopDrawing = () => {
-    if (isDrawingRef.current && canvasRef.current) { isDrawingRef.current = false; setSignatureData(canvasRef.current.toDataURL()); }
+    if (isDrawingRef.current && canvasRef.current) {
+      isDrawingRef.current = false;
+      setSignatureData(canvasRef.current.toDataURL());
+    }
   };
 
   const isWitness = cell.type === ChallengeType.WITNESS;
@@ -587,46 +591,18 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
           </div>
         )}
 
-        {/* ─── FORTUNE REVEAL ─── */}
+        {/* ─── FORTUNE REVEAL — only shown when player actually wins ─── */}
         {step === 'FORTUNE' && (
-          <div
-            className={`flex-1 flex flex-col items-center justify-center p-10 text-center transition-colors duration-500 ${fortuneResult ? 'bg-[#FFD700]' : 'bg-[#1a1f2e]'}`}
-          >
-            {fortuneResult === null ? (
-              /* Spinning state */
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-24 h-24 rounded-full border-[4px] border-white/20 border-t-[#FFD700] animate-spin" />
-                <p className="font-impact text-white/60 uppercase text-[13px] tracking-widest animate-pulse">
-                  {t('fortune_rolling')}
-                </p>
-              </div>
-            ) : fortuneResult ? (
-              /* WON */
-              <>
-                <div className="w-28 h-28 bg-black rounded-full flex items-center justify-center shadow-[8px_8px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-75 duration-300 mb-6">
-                  <span className="text-5xl">⚡</span>
-                </div>
-                <h2 className="font-impact text-4xl text-black uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
-                  {t('fortune_won_title')}
-                </h2>
-                <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mt-3 animate-in slide-in-from-bottom-2 duration-300 delay-100">
-                  {t('fortune_won_sub')}
-                </p>
-              </>
-            ) : (
-              /* MISSED */
-              <>
-                <div className="w-28 h-28 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-in zoom-in-75 duration-300">
-                  <span className="text-5xl opacity-40">🎲</span>
-                </div>
-                <h2 className="font-impact text-3xl text-white/60 uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
-                  {t('fortune_miss_title')}
-                </h2>
-                <p className="font-impact text-white/30 uppercase text-[11px] tracking-widest mt-3">
-                  {t('fortune_miss_sub')}
-                </p>
-              </>
-            )}
+          <div className="flex-1 flex flex-col items-center justify-center bg-[#FFD700] p-10 text-center">
+            <div className="w-28 h-28 bg-black rounded-full flex items-center justify-center shadow-[8px_8px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-75 duration-300 mb-6">
+              <span className="text-5xl">⚡</span>
+            </div>
+            <h2 className="font-impact text-4xl text-black uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
+              {t('fortune_won_title')}
+            </h2>
+            <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mt-3 animate-in slide-in-from-bottom-2 duration-300 delay-100">
+              {t('fortune_won_sub')}
+            </p>
           </div>
         )}
       </div>

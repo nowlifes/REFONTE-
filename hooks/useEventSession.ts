@@ -85,7 +85,7 @@ export const useEventSession = () => {
     if (checkDebounceRef.current) clearTimeout(checkDebounceRef.current);
     checkDebounceRef.current = setTimeout(() => {
       checkSession();
-    }, 400);
+    }, 150);
   }, [checkSession]);
 
   useEffect(() => {
@@ -141,20 +141,24 @@ export const useEventSession = () => {
 
         // 3. Re-check when phone wakes up or tab regains focus
         const handleVisibility = () => {
-          if (document.visibilityState === 'visible') debouncedCheck();
+          if (document.visibilityState === 'visible') checkSession();
         };
 
         // 4. Re-check when network comes back online
-        const handleOnline = () => debouncedCheck();
+        const handleOnline = () => checkSession();
 
         document.addEventListener('visibilitychange', handleVisibility);
         window.addEventListener('online', handleOnline);
+
+        // 5. Fallback polling every 8 s — catches realtime misses (bar countdown, pause, etc.)
+        const pollInterval = setInterval(() => checkSession(), 8000);
 
         return () => {
           if (checkDebounceRef.current) clearTimeout(checkDebounceRef.current);
           supabase.removeChannel(subscription);
           document.removeEventListener('visibilitychange', handleVisibility);
           window.removeEventListener('online', handleOnline);
+          clearInterval(pollInterval);
         };
     } else {
         setIsLoading(false);

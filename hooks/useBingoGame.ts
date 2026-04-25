@@ -336,7 +336,28 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
         } catch (e) { console.warn('[BingoGame] Failed to reload after remote validation', e); }
       }
     });
-    return unsub;
+
+    // Re-sync game state on visibility change or network reconnect (missed realtime events)
+    const resync = async () => {
+      if (!userIdRef.current) return;
+      try {
+        const updated = await gameService.getActiveSession(userIdRef.current);
+        if (updated) { setCells(updated.grid); setGameSession(updated); }
+      } catch {}
+    };
+    const handleVisibility = () => { if (document.visibilityState === 'visible') resync(); };
+    const handleOnline = () => resync();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', handleOnline);
+    // Fallback poll every 12 s while game is active
+    const pollIv = setInterval(resync, 12000);
+
+    return () => {
+      unsub();
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', handleOnline);
+      clearInterval(pollIv);
+    };
   }, [gameSession?.id]);
 
   // SPOTLIGHT SYSTEM — every 30 min, max 2 per bar, highlight a random empty cell for a bonus taunt

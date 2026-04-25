@@ -587,10 +587,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 const isLocked = !isRowLocked && ((isCorner && isCornersLocked) || (isCenter && isMysteryCellLocked));
                 const isRowUnlocking = unlockingRows.includes(cellRow);
                 const isUnlocking = (isCorner && cornersUnlocking) || (isCenter && mysteryUnlocking) || isRowUnlocking;
-                // Which bar unlocks this row? Find the first separator whose boundary
-                // is strictly AFTER this row (i.e., the first group that includes this row).
+                // Which bar unlocks this row?
+                // afterRow=K means the separator sits between row K-1 and row K.
+                // So the group containing cellRow is the one with the LARGEST afterRow <= cellRow.
                 const rowUnlocksAtBar = isRowLocked
-                  ? rowSeparators.find(sep => sep.afterRow > cellRow)?.barLabel
+                  ? [...rowSeparators].reverse().find(sep => sep.afterRow <= cellRow)?.barLabel
                   : undefined;
                 return (
                   <BingoCell
