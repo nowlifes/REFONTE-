@@ -16,7 +16,7 @@ const GameOverPage: React.FC = () => {
   const handleRetry = () => {
     setIsRetrying(true);
     // Re-add the ?s= param from history if we still have it, or just reload root
-    const stored = localStorage.getItem('bingo_secure_session_id');
+    const stored = localStorage.getItem('bingo_session_token');
     if (stored) {
       window.location.href = `${window.location.pathname}?s=${stored}`;
     } else {

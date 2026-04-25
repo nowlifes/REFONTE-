@@ -1,6 +1,6 @@
 # Bingo Crawl Final
 
-> Repo de référence unique. Toujours travailler dans `/Users/admin/Bingo Crawl Final`.
+> Repo de référence unique. Toujours travailler dans `/Users/futharkiens/Projects/the-bingo-crawl`.
 > Dev server : `bun run dev --port 5174`
 
 ## Stack
@@ -158,4 +158,15 @@ This project has a graphify knowledge graph at graphify-out/.
 Rules:
 - Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- After modifying code files in this session, run `python3 -m graphify update .` to keep the graph current (AST-only, no API cost)
+- Run graphify update at the end of every session that modified code
+
+## Session Memory
+
+At the end of each session (or when work is done), save a summary to `/Users/futharkiens/.claude/projects/-Users-futharkiens/memory/session_last.md` with:
+- What was done
+- What bugs were fixed (with file:line refs)
+- What is still pending / next steps
+- Any decisions made
+
+This saves tokens on the next session — read it first before exploring code.

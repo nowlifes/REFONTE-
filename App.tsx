@@ -165,15 +165,6 @@ const MasterApp: React.FC = () => {
 const PlayerApp: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { state: s, actions: a } = useBingoGame();
-  const aRef = React.useRef(a);
-  aRef.current = a;
-  const sRef = React.useRef(s);
-  sRef.current = s;
-  const { state: ui, actions: uia } = useAppUI(a.setView);
-  const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
-  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
-  const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
   const {
     isSessionActive, setSessionActive,
     resetSession: baseResetSession,
@@ -192,6 +183,15 @@ const PlayerApp: React.FC = () => {
     currentBar, barCadence, chaosMode, maxValidationsPerBar,
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
   } = useEventSession();
+  const { state: s, actions: a } = useBingoGame({ spotlightDisabled });
+  const aRef = React.useRef(a);
+  aRef.current = a;
+  const sRef = React.useRef(s);
+  sRef.current = s;
+  const { state: ui, actions: uia } = useAppUI(a.setView);
+  const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
+  const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
+  const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
   const { language } = useLanguage();
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
@@ -199,6 +199,15 @@ const PlayerApp: React.FC = () => {
     const id = setInterval(() => { gameService.checkConnection().catch(() => {}); }, 4 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Quand la session se ferme pendant le jeu → afficher le rapport avant LockedPage
+  const prevSessionActiveRef = React.useRef(true);
+  useEffect(() => {
+    if (!isSessionActive && prevSessionActiveRef.current && s.view === AppView.GAME) {
+      aRef.current.setView(AppView.MISSION_REPORT);
+    }
+    prevSessionActiveRef.current = isSessionActive;
+  }, [isSessionActive, s.view]);
 
   // Poll session every 3s while in LOBBY — ensures countdown_ends_at is picked up
   // even when Supabase Realtime delivery is delayed or subscription not established yet.
@@ -266,10 +275,15 @@ const PlayerApp: React.FC = () => {
   }, [s.view, s.nickname, s.gameSession, countdownEndsAt]);
 
   const resetSession = async () => {
-    await baseResetSession();
-    a.resetGame();
-    a.setView(AppView.NICKNAME);
-    window.location.reload();
+    try {
+      await baseResetSession();
+      a.resetGame();
+      a.setView(AppView.NICKNAME);
+      window.location.reload();
+    } catch (e) {
+      console.error('[App] resetSession failed', e);
+      alert('Erreur lors du reset. Vérifie ta connexion et réessaie.');
+    }
   };
 
   const createNewSession = async () => {
@@ -502,6 +516,7 @@ const PlayerApp: React.FC = () => {
             nickname={s.nickname || ''}
             avatarId={s.avatarId || ''}
             onCrownClick={handleCrownClick}
+            onLeave={() => { a.resetGame(); a.setView(AppView.NICKNAME); }}
           />
         )}
 

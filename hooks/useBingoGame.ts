@@ -10,7 +10,9 @@ import { gameService } from '../services/gameService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBadges } from './useBadges';
 
-export const useBingoGame = () => {
+export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
+  const spotlightDisabledRef = useRef(opts.spotlightDisabled ?? false);
+  useEffect(() => { spotlightDisabledRef.current = opts.spotlightDisabled ?? false; }, [opts.spotlightDisabled]);
   const { language } = useLanguage();
   
   // DEFAULT VIEW IS NOW NICKNAME
@@ -46,7 +48,23 @@ export const useBingoGame = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const [lastWitnessTime, setLastWitnessTime] = useState(0);
-  const [frozenUntil, setFrozenUntil] = useState<number | undefined>(undefined);
+  const [frozenUntil, setFrozenUntil] = useState<number | undefined>(() => {
+    try {
+      const v = localStorage.getItem('bingo_frozen_until');
+      if (!v) return undefined;
+      const t = Number(v);
+      return t > Date.now() ? t : undefined;
+    } catch { return undefined; }
+  });
+  useEffect(() => {
+    try {
+      if (frozenUntil && frozenUntil > Date.now()) {
+        localStorage.setItem('bingo_frozen_until', String(frozenUntil));
+      } else {
+        localStorage.removeItem('bingo_frozen_until');
+      }
+    } catch {}
+  }, [frozenUntil]);
   const [tauntType, setTauntType] = useState<TauntType>(TauntType.FREEZE);
   const [tauntSenderName, setTauntSenderName] = useState<string | null>(null);
   // --- SPOTLIGHT ---
@@ -267,9 +285,10 @@ export const useBingoGame = () => {
               }
             } catch { /* bad cache, fall through */ }
           }
-          // No usable cache — send to LOBBY not NICKNAME if we have a stored userId.
-          // The user's profile data is gone from memory but their account may still
-          // exist in DB — next successful load will resume from LOBBY.
+          // No usable cache — wipe userId so next load doesn't retry the same broken user
+          // and loop forever. The player will re-enter via NICKNAME on next successful load.
+          localStorage.removeItem('bingo_user_id');
+          localStorage.removeItem('bingo_last_session');
           setView(AppView.LOBBY);
         }
       } else {
@@ -295,6 +314,8 @@ export const useBingoGame = () => {
 
       if (data.frozen_until) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
+      } else {
+        setFrozenUntil(null);
       }
 
       if (data.taunts_sent !== undefined) {
@@ -326,6 +347,7 @@ export const useBingoGame = () => {
   useEffect(() => {
     if (view !== AppView.GAME || cells.length === 0) return;
     const pickSpotlight = () => {
+      if (spotlightDisabledRef.current) return;
       if (spotlightBarCount.current >= SPOTLIGHT_MAX_PER_BAR) return;
       // Use cellsRef (not stale closure) so we pick from currently empty cells.
       const empty = cellsRef.current.filter(c => c.status === CellStatus.EMPTY);
@@ -693,7 +715,7 @@ export const useBingoGame = () => {
       score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
-      tauntsLeft: Math.max(0, 3 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
+      tauntsLeft: Math.max(0, 1 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),
       spotlightCellId, spotlightEndsAt, comboActive, bonusTauntActive,
       lineCompleteEvent, completedLineCount, challengeValidatedEvent
     },

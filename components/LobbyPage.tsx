@@ -19,6 +19,7 @@ interface LobbyPageProps {
   nickname: string;
   avatarId: string;
   onCrownClick?: () => void;
+  onLeave?: () => void;
 }
 
 const RULES_FR = [
@@ -33,7 +34,7 @@ const RULES_EN = [
   { emoji: '🏆', text: 'Complete a row → +1 Joker. Full grid = eternal glory!' },
 ];
 
-const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick }) => {
+const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick, onLeave }) => {
   const { language } = useLanguage();
   const isFr = language === 'fr';
   const rules = isFr ? RULES_FR : RULES_EN;
@@ -117,6 +118,18 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick 
           </div>
 
         </div>
+
+        {/* Escape hatch — if master never starts */}
+        {onLeave && (
+          <div className="shrink-0 flex justify-center pb-2">
+            <button
+              onClick={onLeave}
+              className="text-white/20 font-impact text-[9px] uppercase tracking-widest py-2 px-4 hover:text-white/40 transition-colors"
+            >
+              {isFr ? 'Quitter la session' : 'Leave session'}
+            </button>
+          </div>
+        )}
 
         {/* Logo bas */}
         <div className="shrink-0 flex flex-col items-center gap-2 opacity-20" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 0px) + 16px)' }}>

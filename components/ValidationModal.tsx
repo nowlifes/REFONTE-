@@ -32,7 +32,7 @@ type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SE
 
 const ValidationModal: React.FC<ValidationModalProps> = ({
   cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest,
-  onRequestMasterValidation, playerNickname, playerAvatarId,
+  playerNickname, playerAvatarId,
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
 }) => {
   const { t } = useLanguage();
@@ -44,7 +44,6 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [witnessName, setWitnessName] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
-  const [isSendingToMaster, setIsSendingToMaster] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Fortune state: null = spinning, true = won, false = missed
@@ -58,7 +57,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     fortuneRolled.current = true;
     setStep('FORTUNE'); // show spinner
     setTimeout(() => {
-      const won = Math.random() < 0.3;
+      const won = Math.random() < 0.1;
       setFortuneResult(won);
       if (won) onFortuneWon?.();
       setTimeout(onClose, won ? 2400 : 1600); // onClose = setSelectedCell(null)
@@ -70,6 +69,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [isLoadingWitnesses, setIsLoadingWitnesses] = useState(false);
   const [sendingWitnessTo, setSendingWitnessTo] = useState<string | null>(null);
   const [selectedWitnessName, setSelectedWitnessName] = useState('');
+  const [witnessRequestError, setWitnessRequestError] = useState<string | null>(null);
 
   // Fetch player list when entering player witness select step
   useEffect(() => {
@@ -89,11 +89,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     if (!onRequestPlayerWitness || sendingWitnessTo) return;
     setSendingWitnessTo(witnessId);
     setSelectedWitnessName(witnessName);
+    setWitnessRequestError(null);
     try {
       await onRequestPlayerWitness(witnessId);
       setStep('WITNESS_SENT');
     } catch (e) {
       console.error(e);
+      setWitnessRequestError('Erreur réseau. Réessaie ou utilise la signature.');
     } finally {
       setSendingWitnessTo(null);
     }
@@ -109,7 +111,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const isDrawingRef = useRef(false);
 
   useLayoutEffect(() => {
     if (step === 'WITNESS_MODE' && canvasRef.current && containerRef.current) {
@@ -125,18 +127,27 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     }
   }, [step]);
 
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+
   const handleWitnessConfirm = () => {
     if (!witnessName.trim() || !signatureData) return;
+    setConfirmError(null);
     setStep('SUCCESS');
-    onConfirm({ witnessName, witnessSignature: signatureData }); // validate (modal stays open)
-    setTimeout(triggerFortune, 900); // fortune after SUCCESS flash
+    try {
+      onConfirm({ witnessName, witnessSignature: signatureData });
+    } catch {
+      setStep('INFO');
+      setConfirmError('Erreur lors de la validation. Réessaie.');
+      return;
+    }
+    setTimeout(triggerFortune, 900);
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
-    setIsDrawing(true);
+    isDrawingRef.current = true;
     const rect = canvas.getBoundingClientRect();
     const x = ('touches' in e) ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left;
     const y = ('touches' in e) ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top;
@@ -144,7 +155,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return; e.preventDefault();
+    if (!isDrawingRef.current) return; e.preventDefault();
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
@@ -154,7 +165,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   };
 
   const stopDrawing = () => {
-    if (isDrawing && canvasRef.current) { setIsDrawing(false); setSignatureData(canvasRef.current.toDataURL()); }
+    if (isDrawingRef.current && canvasRef.current) { isDrawingRef.current = false; setSignatureData(canvasRef.current.toDataURL()); }
   };
 
   const isWitness = cell.type === ChallengeType.WITNESS;
@@ -319,6 +330,9 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                 )}
               </div>
 
+              {confirmError && (
+                <p className="text-[#FF2D6A] font-impact text-[11px] uppercase tracking-widest text-center -mt-1">{confirmError}</p>
+              )}
               <button
                 onClick={handleWitnessConfirm}
                 disabled={!witnessName.trim() || !signatureData}
@@ -385,6 +399,9 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
             {/* Fallback to physical signature */}
             <div className="shrink-0 px-4 pt-2 pb-6 flex flex-col gap-2 border-t border-white/5">
+              {witnessRequestError && (
+                <p className="text-[#FF2E63] font-impact text-[10px] uppercase tracking-widest text-center py-1">{witnessRequestError}</p>
+              )}
               <button
                 onClick={() => setStep('WITNESS_MODE')}
                 className="w-full py-2.5 bg-white/5 border border-white/10 text-white/30 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:bg-white/10 transition-all"
@@ -455,41 +472,14 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
             {/* Actions */}
             <div className="flex-1 p-5 flex flex-col gap-3 overflow-y-auto">
-              {/* QR Scan — primary (always available) */}
+              {/* QR Scan — seule option pour valider un défi Master */}
               <button
                 onClick={onScanRequest}
-                className="w-full py-4 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-base flex items-center justify-center gap-3 border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                className="w-full py-5 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-lg flex items-center justify-center gap-3 border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
               >
-                <ScanLine size={20} strokeWidth={2.5} />
-                Scanner le QR du Master
+                <ScanLine size={22} strokeWidth={2.5} />
+                {t('master_scan_btn')}
               </button>
-
-              {/* Remote — secondary (if session connected) */}
-              {onRequestMasterValidation && (
-                <button
-                  onClick={async () => {
-                    if (isSendingToMaster) return;
-                    setIsSendingToMaster(true);
-                    try {
-                      await onRequestMasterValidation();
-                      setStep('MASTER_SENT');
-                    } finally {
-                      setIsSendingToMaster(false);
-                    }
-                  }}
-                  disabled={isSendingToMaster}
-                  className="w-full py-4 bg-white text-black rounded-2xl font-impact uppercase text-base flex items-center justify-center gap-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,0.25)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-60 disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[4px_4px_0px_rgba(0,0,0,0.25)] transition-all"
-                >
-                  {isSendingToMaster ? (
-                    <>
-                      <span className="w-5 h-5 border-[3px] border-black/30 border-t-black rounded-full animate-spin" />
-                      Envoi en cours...
-                    </>
-                  ) : (
-                    <>📱 Demander au Master</>
-                  )}
-                </button>
-              )}
 
               {/* Divider */}
               <div className="flex items-center gap-3 py-1">

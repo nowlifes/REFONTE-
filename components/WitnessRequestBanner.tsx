@@ -16,10 +16,10 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   useEffect(() => {
     if (!playerId) return;
     const unsub = gameService.subscribeWitnessRequests(playerId, (reqs) => {
-      setRequests(reqs.filter(r => !dismissed.has(r.id)));
+      setRequests(reqs);
     });
     return unsub;
-  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playerId]);
 
   const visible = requests.filter(r => !dismissed.has(r.id));
   if (visible.length === 0) return null;
@@ -28,10 +28,12 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
 
   const handleConfirm = async () => {
     if (confirmingId) return;
-    setConfirmingId(current.id);
+    const id = current.id;
+    const req = current;
+    setConfirmingId(id);
     try {
-      await gameService.confirmWitness(current);
-      setDismissed(prev => new Set([...prev, current.id]));
+      await gameService.confirmWitness(req);
+      setDismissed(prev => new Set([...prev, id]));
     } catch (e) {
       console.error(e);
     } finally {
@@ -41,10 +43,11 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
 
   const handleReject = async () => {
     if (rejectingId) return;
-    setRejectingId(current.id);
+    const id = current.id;
+    setRejectingId(id);
     try {
-      await gameService.rejectWitness(current.id);
-      setDismissed(prev => new Set([...prev, current.id]));
+      await gameService.rejectWitness(id);
+      setDismissed(prev => new Set([...prev, id]));
     } catch (e) {
       console.error(e);
     } finally {

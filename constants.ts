@@ -83,7 +83,6 @@ export const CHALLENGES_EN: ChallengeDef[] = [
   { id: 38, text: "Staring contest vs {JOUEUR} — first to blink loses", type: ChallengeType.PVP },
   { id: 39, text: "Challenge {JOUEUR} — heads or tails, call it before the flip", type: ChallengeType.PVP },
 ];
-export const INITIAL_CHALLENGES = CHALLENGES_FR;
 
 export const AVATAR_SEEDS = [
   // — Héros médiévaux (nouveau) —
@@ -193,7 +192,6 @@ export const BADGE_CONFIG: Record<BadgeType, {
   }
 };
 
-export const EVENT_ENTRY_CODE = "EVENT_START_2025";
 export const MASTER_VALID_CODE = "KING";
 export const HIDDEN_MASTER_PASSWORD = "KING";
 export const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1]; 

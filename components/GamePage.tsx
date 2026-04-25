@@ -52,6 +52,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const REVANCHE_DURATION_MS = 5 * 60 * 1000;
   const [revancheExpiresAt, setRevancheExpiresAt] = useState<number | null>(null);
   const [revancheSecondsLeft, setRevancheSecondsLeft] = useState(0);
+  const [showCooldownFlash, setShowCooldownFlash] = useState(false);
   useEffect(() => {
     if (!revancheExpiresAt) { setRevancheSecondsLeft(0); return; }
     const update = () => {
@@ -168,22 +169,27 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   // Cadence cooldown — track last validation time and remaining cooldown
   const [cooldownSecondsLeft, setCooldownSecondsLeft] = useState(0);
-  const lastValidationTimeRef = useRef(0);
+  const [lastValidationTime, setLastValidationTime] = useState(0);
   useEffect(() => {
     if (!challengeCooldownSecs || challengeCooldownSecs <= 0) { setCooldownSecondsLeft(0); return; }
     const update = () => {
-      const elapsed = (Date.now() - lastValidationTimeRef.current) / 1000;
+      const elapsed = (Date.now() - lastValidationTime) / 1000;
       const left = Math.max(0, Math.ceil(challengeCooldownSecs - elapsed));
       setCooldownSecondsLeft(left);
     };
     const iv = setInterval(update, 500);
     update();
     return () => clearInterval(iv);
-  }, [challengeCooldownSecs, s.score]); // re-run on score change to reset cooldown timer
+  }, [challengeCooldownSecs, lastValidationTime]);
 
   const handleValidateCell = (data?: any) => {
-    if (challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) return; // blocked by cooldown
-    lastValidationTimeRef.current = Date.now();
+    if (isGamePaused) return;
+    if (challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) {
+      setShowCooldownFlash(true);
+      setTimeout(() => setShowCooldownFlash(false), 800);
+      return;
+    }
+    setLastValidationTime(Date.now());
     if (data?.proofImage && s.selectedCell) onPhotoProof?.(s.selectedCell.id, data.proofImage);
     // PvP loss → start revenge timer
     if (data?.pvpWon === false) {
@@ -264,6 +270,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const resetIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startResetPress = () => {
+    if (isResetPressing || resetIntervalRef.current) return;
     setIsResetPressing(true);
     setResetProgress(0);
     let p = 0;
@@ -699,7 +706,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* CADENCE COOLDOWN badge + anti-spam gamified message */}
       {challengeCooldownSecs > 0 && cooldownSecondsLeft > 0 && (
         <div className="shrink-0 flex flex-col items-center gap-1 z-40 -mb-1">
-          <div className="flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200">
+          <div className={`flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200 transition-transform ${showCooldownFlash ? 'scale-110' : 'scale-100'}`}>
             <span className="text-sm">⏳</span>
             <div className="flex flex-col leading-none">
               <span className="font-impact text-black uppercase text-[11px] tracking-widest">{t('cooldown_title')}</span>

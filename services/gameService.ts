@@ -474,11 +474,16 @@ class GameBackendService {
     // Partner challenges (ids 1-4) always appear at the 4 corners (indices 0, 4, 20, 24)
     const CORNER_INDICES = [0, 4, 20, 24];
     const partnerPool = shuffleArray(challenges.filter((c: any) => c.is_partner));
+    const nonPartnerPool = shuffleArray(challenges.filter((c: any) => !c.is_partner));
     // Guarantee exactly 4 corner challenges without duplication
     const cornerChallenges = partnerPool.length >= 4
       ? partnerPool.slice(0, 4)
-      : [...partnerPool, ...shuffleArray(challenges.filter((c: any) => !c.is_partner)).slice(0, 4 - partnerPool.length)];
-    const regularChallenges = shuffleArray(challenges.filter((c: any) => !c.is_partner)).slice(0, 21);
+      : [...partnerPool, ...nonPartnerPool.slice(0, 4 - partnerPool.length)];
+    const regularChallenges = nonPartnerPool.slice(0, 21);
+
+    if (regularChallenges.length < 21) {
+      throw new Error(`Not enough challenges to build a grid: need 21 regular, got ${regularChallenges.length}`);
+    }
 
     // Build the 25-cell grid: corners = partner/corner challenges, rest = regular challenges
     const grid: any[] = new Array(25).fill(null);
@@ -1056,13 +1061,13 @@ async resetSession(): Promise<void> {
     if (error) console.warn('[Bonus] award_bonus_taunt failed:', error.message);
   }
 
-  // Duration (ms) each taunt keeps the victim affected
+  // Duration (ms) each taunt keeps the victim affected — minimum 1 minute
   static readonly TAUNT_DURATION_MS: Partial<Record<TauntType, number>> = {
-    [TauntType.FREEZE]:      35_000,
-    [TauntType.ICE_BLOCK]:   35_000,
-    [TauntType.TINY_TARGET]: 35_000,
-    [TauntType.BLOB]:        35_000,
-    [TauntType.FLASHLIGHT]:  45_000,
+    [TauntType.FREEZE]:      60_000,
+    [TauntType.ICE_BLOCK]:   60_000,
+    [TauntType.TINY_TARGET]: 60_000,
+    [TauntType.BLOB]:        60_000,
+    [TauntType.FLASHLIGHT]:  75_000,
   };
 
   async sendTaunt(senderGameId: string, targetPlayerId: string, tauntType: TauntType = TauntType.FREEZE, senderName?: string): Promise<void> {
@@ -1102,8 +1107,8 @@ async resetSession(): Promise<void> {
       .eq('id', targetGame.id);
 
     // Increment sender's taunt count (non-blocking — taunts work even if RPC missing)
-    const rpcPromise = supabase.rpc('increment_taunts_sent', { game_id: senderGameId });
-    Promise.resolve(rpcPromise)
+    // Promise.resolve() converts PromiseLike to Promise so .catch() is available
+    Promise.resolve(supabase.rpc('increment_taunts_sent', { game_id: senderGameId }))
       .then(({ error }: any) => { if (error) console.warn('[Taunt] increment_taunts_sent failed:', error.message); })
       .catch((e: any) => console.warn('[Taunt] increment_taunts_sent exception:', e));
   }

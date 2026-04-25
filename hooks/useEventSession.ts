@@ -105,28 +105,31 @@ export const useEventSession = () => {
             },
             (payload: any) => {
               console.log("[Realtime] Session change detected:", payload.eventType, payload.new);
+              // Always do a full DB refetch — realtime UPDATE payloads are partial without REPLICA IDENTITY FULL.
+              // Apply what we have from payload optimistically, then confirm with checkSession.
               if (payload.new && typeof payload.new === 'object') {
                 const p = payload.new;
-                setIsSessionActive(!!p.is_active);
-                setTransitionEndsAt(p.transition_ends_at ? new Date(p.transition_ends_at).getTime() : null);
-                setNextBarName(p.next_bar_name ?? null);
-                // Only propagate pregame phase when session is active
-                setPregamePhase(p.is_active ? (p.pregame_phase ?? null) : null);
-                setPregameSubjectId(p.is_active ? (p.pregame_subject_id ?? null) : null);
-                setCountdownEndsAt(p.countdown_ends_at ? new Date(p.countdown_ends_at).getTime() : null);
-                setSpotlightDisabled(p.spotlight_disabled ?? false);
-                setChallengeCooldownSecs(p.challenge_cooldown_secs ?? 0);
-                setIsGamePaused(p.is_paused ?? false);
+                if (p.is_active !== undefined) setIsSessionActive(!!p.is_active);
+                if (p.transition_ends_at !== undefined) setTransitionEndsAt(p.transition_ends_at ? new Date(p.transition_ends_at).getTime() : null);
+                if (p.next_bar_name !== undefined) setNextBarName(p.next_bar_name ?? null);
+                if (p.pregame_phase !== undefined) setPregamePhase(p.is_active ? (p.pregame_phase ?? null) : null);
+                if (p.pregame_subject_id !== undefined) setPregameSubjectId(p.is_active ? (p.pregame_subject_id ?? null) : null);
+                if (p.countdown_ends_at !== undefined) setCountdownEndsAt(p.countdown_ends_at ? new Date(p.countdown_ends_at).getTime() : null);
+                if (p.spotlight_disabled !== undefined) setSpotlightDisabled(p.spotlight_disabled ?? false);
+                if (p.challenge_cooldown_secs !== undefined) setChallengeCooldownSecs(p.challenge_cooldown_secs ?? 0);
+                if (p.is_paused !== undefined) setIsGamePaused(p.is_paused ?? false);
                 if (p.current_bar !== undefined) setCurrentBar(p.current_bar ?? 1);
                 if (p.bar_cadence !== undefined) setBarCadence(p.bar_cadence ?? '1,2,2');
                 if (p.chaos_mode !== undefined) setChaosMode(p.chaos_mode ?? false);
                 if (p.max_validations_per_bar !== undefined) setMaxValidationsPerBar(p.max_validations_per_bar ?? 0);
-                if (!p.is_active) {
+                if (p.is_active === false) {
                   setSecureSessionId(null);
                 } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
                   gameService.recoverSecureSessionId().then(id => { if (id) setSecureSessionId(id); });
                 }
               }
+              // Full refetch to catch any field missing from the partial payload
+              debouncedCheck();
             }
           )
           .subscribe((status) => {
@@ -276,6 +279,10 @@ export const useEventSession = () => {
       const newBar = currentBar + 1;
       setCurrentBar(newBar);
       await gameService.advanceBar();
+      if (newBar >= 3) {
+        setChaosMode(true);
+        await gameService.setChaosMode(true);
+      }
     },
     setBarCadenceValue: async (cadence: string) => {
       setBarCadence(cadence);

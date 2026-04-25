@@ -162,14 +162,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
   }, [secureSessionId, isSessionActive]);
 
   useEffect(() => {
-    if (!secureSessionId || !isSessionActive) { setPlayersList([]); return; }
+    if (!secureSessionId) { setPlayersList([]); return; }
     const unsub = gameService.subscribePlayersWithScores(secureSessionId, (list) => {
       setPlayersList(list.sort((a, b) => b.score - a.score));
       setIsLoadingPlayers(false);
     });
     setIsLoadingPlayers(true);
     return unsub;
-  }, [secureSessionId, isSessionActive]);
+  }, [secureSessionId]);
 
   const doubleConnections = React.useMemo(() => {
     const map = new Map<string, typeof playersList>();
@@ -366,6 +366,43 @@ const MasterPage: React.FC<MasterPageProps> = ({
               <Sparkles size={15} strokeWidth={3} /> {t('create_new_session')}
             </button>
 
+            {/* ── PROGRESSION DES BARS ──────────────────────────────────────── */}
+            {isSessionActive && advanceBar && (
+              <Section title="Progression" accent="#FF8C00" defaultOpen={true}>
+                <div className="flex flex-col gap-3">
+                  {/* Bar tracker */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[1, 2, 3].map(b => {
+                      const labels = ['1 ligne', '3 lignes', 'Mode KO'];
+                      const colors = ['#00F5A0', '#FF8C00', '#FF2D6A'];
+                      return (
+                        <div key={b} className={`rounded-xl border-[2px] border-black px-2 py-3 text-center transition-all ${
+                          b === currentBar ? 'bg-black text-white shadow-[2px_2px_0px_black]' : b < currentBar ? 'bg-black/5 opacity-40' : 'bg-white'
+                        }`}>
+                          <div className="font-impact text-[8px] uppercase tracking-widest mb-0.5" style={{ color: b === currentBar ? colors[b-1] : 'rgba(0,0,0,0.3)' }}>Bar {b}</div>
+                          <div className="font-impact text-[11px] leading-tight" style={{ color: b === currentBar ? colors[b-1] : 'rgba(0,0,0,0.25)' }}>{labels[b-1]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Advance or KO active */}
+                  {currentBar < 3 ? (
+                    <button onClick={async () => { await advanceBar(); }}
+                      className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                      <ChevronRight size={18} strokeWidth={3} />
+                      Passer au bar {currentBar + 1}
+                      {currentBar + 1 === 3 && <span className="text-[10px] opacity-70">· Mode KO</span>}
+                    </button>
+                  ) : (
+                    <div className="w-full py-3 bg-[#FF2D6A]/10 border-[2px] border-[#FF2D6A] rounded-xl text-center">
+                      <span className="font-impact uppercase text-[#FF2D6A] text-[12px] tracking-widest">💀 Mode KO actif</span>
+                    </div>
+                  )}
+                </div>
+              </Section>
+            )}
+
             {/* ── RÉGLAGES ──────────────────────────────────────────────────── */}
             {isSessionActive && (
               <Section title="Réglages" accent="#FFD700" defaultOpen={false}>
@@ -406,84 +443,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     </div>
                   )}
 
-                  {/* Bar indicator */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3].map(b => {
-                      const goals = (barCadence || '1,2,2').split(',').map(Number);
-                      const goal = goals[b - 1] ?? 1;
-                      return (
-                        <div key={b} className={`rounded-xl border-[2px] border-black px-2 py-3 text-center transition-all ${
-                          b === currentBar ? 'bg-[#FF8C00]/15 shadow-[2px_2px_0px_black]' : b < currentBar ? 'bg-black/5 opacity-40' : 'bg-white'
-                        }`}>
-                          <div className="font-impact text-[9px] text-black/40 uppercase tracking-widest">Bar {b}</div>
-                          <div className={`font-impact text-[20px] leading-tight ${b === currentBar ? 'text-[#FF8C00]' : 'text-black/25'}`}>{goal}</div>
-                          <div className="font-impact text-[8px] text-black/30 uppercase">lig.</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Advance bar */}
-                  {currentBar < 3 && advanceBar && (() => {
-                    const goals = (barCadence || '1,2,2').split(',').map(Number);
-                    const nextGoal = goals[currentBar] ?? 0;
-                    return (
-                      <button onClick={async () => { await advanceBar(); }}
-                        className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
-                        <ChevronRight size={18} strokeWidth={3} />
-                        Bar {currentBar + 1} (+{nextGoal} ligne{nextGoal > 1 ? 's' : ''})
-                      </button>
-                    );
-                  })()}
-
-                  {/* Format */}
-                  {setBarCadenceValue && (
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {(['1,2,2', '2,2,1', '2,1,2'] as const).map(c => (
-                        <button key={c} onClick={() => setBarCadenceValue(c)}
-                          className={`py-2.5 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
-                            barCadence === c ? 'bg-[#FF8C00] text-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black/50 shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
-                          }`}>
-                          {c.replace(/,/g, '–')}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Anti-spam */}
-                  {setMaxValidationsPerBar && (
-                    <div className="flex gap-1.5">
-                      {[0, 2, 3, 5].map(val => (
-                        <button key={val} onClick={() => setMaxValidationsPerBar(val)}
-                          className={`flex-1 py-2.5 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
-                            maxValidationsPerBar === val ? 'bg-[#00F5A0] text-black shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black/50 shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
-                          }`}>
-                          {val === 0 ? '∞' : val}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
                   {/* Kill switch */}
                   {secureSessionId && (
                     <button onClick={async () => { await Promise.all([setSpotlightDisabled?.(true), gameService.clearAllTaunts(secureSessionId)]); }}
                       className="w-full py-2.5 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2">
                       🔥 Reset effets (spotlight + taunts)
                     </button>
-                  )}
-
-                  {/* Chaos */}
-                  {setChaosMode && (
-                    <div className={`rounded-xl border-[2px] border-black p-3 flex items-center justify-between ${chaosMode ? 'bg-[#FF4500]/10' : 'bg-black/5'}`}>
-                      <div>
-                        <p className="font-impact text-black uppercase text-[12px]">⚡ Chaos Mode</p>
-                        <p className="font-impact text-black/40 uppercase text-[9px] tracking-widest">Bar 3 · sans cooldown</p>
-                      </div>
-                      <button onClick={() => setChaosMode(!chaosMode)}
-                        className={`relative w-12 h-6 rounded-full border-[2px] border-black transition-all shadow-[2px_2px_0px_black] ${chaosMode ? 'bg-[#FF4500]' : 'bg-black/10'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white border-[2px] border-black rounded-full transition-all shadow-[1px_1px_0px_black] ${chaosMode ? 'left-[22px]' : 'left-0.5'}`} />
-                      </button>
-                    </div>
                   )}
                 </div>
               </Section>
