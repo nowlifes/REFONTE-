@@ -102,6 +102,10 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
       audio.preload = 'auto';
       audioRefs.current[key] = audio;
     });
+    return () => {
+      (Object.values(audioRefs.current) as HTMLAudioElement[]).forEach(a => { a.pause(); a.src = ''; });
+      audioRefs.current = {};
+    };
   }, []);
 
   const playSound = useCallback((type: keyof typeof SOUNDS) => {
@@ -202,6 +206,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
                 const doDecline = () => {
                   if (autoClaimTimer) clearTimeout(autoClaimTimer);
                   setDeviceConflict(null);
+                  localStorage.setItem('bingo_user_id_backup', savedUserId);
                   localStorage.removeItem('bingo_user_id');
                   localStorage.removeItem('bingo_last_session');
                   setView(AppView.NICKNAME);
@@ -289,7 +294,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
           // and loop forever. The player will re-enter via NICKNAME on next successful load.
           localStorage.removeItem('bingo_user_id');
           localStorage.removeItem('bingo_last_session');
-          setView(AppView.LOBBY);
+          setView(AppView.NICKNAME);
         }
       } else {
         setView(AppView.NICKNAME);
@@ -345,12 +350,16 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
         if (updated) { setCells(updated.grid); setGameSession(updated); }
       } catch {}
     };
+    let pollIv = setInterval(resync, 30_000);
     const handleVisibility = () => { if (document.visibilityState === 'visible') resync(); };
-    const handleOnline = () => resync();
+    const handleOnline = () => {
+      // When coming back online, resync immediately then reset poll to fast cadence briefly
+      resync();
+      clearInterval(pollIv);
+      pollIv = setInterval(resync, 30_000);
+    };
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('online', handleOnline);
-    // Fallback poll every 12 s while game is active
-    const pollIv = setInterval(resync, 12000);
 
     return () => {
       unsub();

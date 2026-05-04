@@ -407,7 +407,7 @@ class GameBackendService {
 
     // Layer 2 — guard before DB insert: re-validate session is still open
     const sessionUUID = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('s')
+      ? (new URLSearchParams(window.location.search).get('s') || localStorage.getItem('bingo_session_token'))
       : null;
     if (sessionUUID) {
       const valid = await this.validateSecureSession(sessionUUID);
@@ -926,7 +926,7 @@ class GameBackendService {
     if (!supabase) return () => {};
 
     const channel = supabase
-      .channel('activities-channel')
+      .channel(`activities-${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'activities' },

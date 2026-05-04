@@ -136,6 +136,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
     const ch = supabase.channel(`player_count_${secureSessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` },
         () => setPlayerCount(prev => prev + 1))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players' },
+        () => setPlayerCount(prev => Math.max(0, prev - 1)))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [secureSessionId]);

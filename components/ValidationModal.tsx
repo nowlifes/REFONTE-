@@ -76,13 +76,17 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     if (step !== 'PLAYER_WITNESS_SELECT' || !sessionId) return;
     setIsLoadingWitnesses(true);
     gameService.getPlayersWithScores(sessionId).then(list => {
-      setWitnessPlayers(
-        list
-          .filter(p => p.id !== currentPlayerId)
-          .map(p => ({ id: p.id, pseudo: p.pseudo, emoji: p.emoji }))
-      );
+      const others = list.filter(p => p.id !== currentPlayerId);
+      if (others.length === 0) {
+        setStep('WITNESS_MODE');
+      } else {
+        setWitnessPlayers(others.map(p => ({ id: p.id, pseudo: p.pseudo, emoji: p.emoji })));
+      }
       setIsLoadingWitnesses(false);
-    }).catch(() => setIsLoadingWitnesses(false));
+    }).catch(() => {
+      setIsLoadingWitnesses(false);
+      setStep('WITNESS_MODE');
+    });
   }, [step, sessionId, currentPlayerId]);
 
   const handleSelectWitness = async (witnessId: string, witnessName: string) => {

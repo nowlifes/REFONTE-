@@ -88,6 +88,16 @@ export const useEventSession = () => {
     }, 150);
   }, [checkSession]);
 
+  // Track realtime connectivity to adjust poll frequency
+  const isRealtimeConnected = useRef(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const restartPoll = useCallback(() => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    const interval = isRealtimeConnected.current ? 30_000 : 8_000;
+    pollIntervalRef.current = setInterval(() => checkSession(), interval);
+  }, [checkSession]);
+
   useEffect(() => {
     // 1. Fetch initial status (immediate, no debounce needed on first load)
     checkSession();
@@ -95,7 +105,7 @@ export const useEventSession = () => {
     // 2. Subscribe to Realtime updates on table 'event_session'
     if (supabase) {
         const subscription = supabase
-          .channel('session_updates')
+          .channel(`session_updates_${Date.now()}`)
           .on(
             'postgres_changes',
             {
@@ -104,7 +114,6 @@ export const useEventSession = () => {
               table: 'event_session'
             },
             (payload: any) => {
-              console.log("[Realtime] Session change detected:", payload.eventType, payload.new);
               // Always do a full DB refetch — realtime UPDATE payloads are partial without REPLICA IDENTITY FULL.
               // Apply what we have from payload optimistically, then confirm with checkSession.
               if (payload.new && typeof payload.new === 'object') {
@@ -133,37 +142,40 @@ export const useEventSession = () => {
             }
           )
           .subscribe((status) => {
-            console.log("[Realtime] Subscription status:", status);
+            const connected = status === 'SUBSCRIBED';
+            if (isRealtimeConnected.current !== connected) {
+              isRealtimeConnected.current = connected;
+              restartPoll();
+            }
             // Re-check on reconnect — catches events missed while offline.
-            // Debounced: SUBSCRIBED can fire alongside visibility + online.
-            if (status === 'SUBSCRIBED') debouncedCheck();
+            if (connected) debouncedCheck();
           });
 
         // 3. Re-check when phone wakes up or tab regains focus
         const handleVisibility = () => {
-          if (document.visibilityState === 'visible') checkSession();
+          if (document.visibilityState === 'visible') debouncedCheck();
         };
 
         // 4. Re-check when network comes back online
-        const handleOnline = () => checkSession();
+        const handleOnline = () => debouncedCheck();
 
         document.addEventListener('visibilitychange', handleVisibility);
         window.addEventListener('online', handleOnline);
 
-        // 5. Fallback polling every 8 s — catches realtime misses (bar countdown, pause, etc.)
-        const pollInterval = setInterval(() => checkSession(), 8000);
+        // 5. Fallback polling — 8 s when realtime is down, 30 s when connected
+        restartPoll();
 
         return () => {
           if (checkDebounceRef.current) clearTimeout(checkDebounceRef.current);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           supabase.removeChannel(subscription);
           document.removeEventListener('visibilitychange', handleVisibility);
           window.removeEventListener('online', handleOnline);
-          clearInterval(pollInterval);
         };
     } else {
         setIsLoading(false);
     }
-  }, [checkSession, debouncedCheck]);
+  }, [checkSession, debouncedCheck, restartPoll]);
 
   const setSessionActive = async (active: boolean) => {
     const previous = isSessionActive;

@@ -5,7 +5,6 @@ import { Smartphone, X, KeyRound } from 'lucide-react';
 import canvasConfetti from 'canvas-confetti';
 
 import { AppView, CellStatus, TutorialStep, ChallengeType } from './types';
-import { HIDDEN_MASTER_PASSWORD } from './constants';
 import { useBingoGame } from './hooks/useBingoGame';
 import { useAppUI } from './hooks/useAppUI';
 import { useLanguage } from './contexts/LanguageContext';
@@ -52,6 +51,7 @@ const MasterApp: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => import.meta.env.DEV);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [isVerifyingMaster, setIsVerifyingMaster] = useState(false);
 
   const { state: s, actions: a } = useBingoGame();
   const {
@@ -81,15 +81,25 @@ const MasterApp: React.FC = () => {
     a.resetGame();
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === HIDDEN_MASTER_PASSWORD) {
-      setIsAuthenticated(true);
-      setPasswordInput('');
-      setPasswordError(false);
-    } else {
+    if (isVerifyingMaster) return;
+    setIsVerifyingMaster(true);
+    try {
+      const valid = await gameService.verifyMasterCode(passwordInput);
+      if (valid) {
+        setIsAuthenticated(true);
+        setPasswordInput('');
+        setPasswordError(false);
+      } else {
+        setPasswordError(true);
+        setTimeout(() => setPasswordError(false), 500);
+      }
+    } catch {
       setPasswordError(true);
       setTimeout(() => setPasswordError(false), 500);
+    } finally {
+      setIsVerifyingMaster(false);
     }
   };
 
@@ -116,8 +126,8 @@ const MasterApp: React.FC = () => {
               className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${passwordError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`}
               autoFocus
             />
-            <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
-              {t('unlock')}
+            <button type="submit" disabled={isVerifyingMaster} className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
+              {isVerifyingMaster ? '...' : t('unlock')}
             </button>
           </form>
         </div>
@@ -299,6 +309,7 @@ const PlayerApp: React.FC = () => {
   const [showHiddenLogin, setShowHiddenLogin] = useState(false);
   const [hiddenCodeInput, setHiddenCodeInput] = useState('');
   const [hiddenLoginError, setHiddenLoginError] = useState(false);
+  const [isVerifyingHidden, setIsVerifyingHidden] = useState(false);
 
   // Session Start Animation State
   const [showStartAnimation, setShowStartAnimation] = useState(false);
@@ -306,16 +317,26 @@ const PlayerApp: React.FC = () => {
   const isFirstLoad = useRef(true);
   const prevSessionActive = useRef(isSessionActive);
 
-  const handleHiddenLoginSubmit = (e: React.FormEvent) => {
+  const handleHiddenLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (hiddenCodeInput === HIDDEN_MASTER_PASSWORD) {
-      setShowHiddenLogin(false);
-      setHiddenCodeInput('');
-      setHiddenLoginError(false);
-      navigate('/master');
-    } else {
+    if (isVerifyingHidden) return;
+    setIsVerifyingHidden(true);
+    try {
+      const valid = await gameService.verifyMasterCode(hiddenCodeInput);
+      if (valid) {
+        setShowHiddenLogin(false);
+        setHiddenCodeInput('');
+        setHiddenLoginError(false);
+        navigate('/master');
+      } else {
+        setHiddenLoginError(true);
+        setTimeout(() => setHiddenLoginError(false), 500);
+      }
+    } catch {
       setHiddenLoginError(true);
       setTimeout(() => setHiddenLoginError(false), 500);
+    } finally {
+      setIsVerifyingHidden(false);
     }
   };
 
@@ -357,7 +378,7 @@ const PlayerApp: React.FC = () => {
   useEffect(() => {
     if (isSessionLoading) return;
 
-    console.log(`[SessionEffect] Active: ${isSessionActive}, Prev: ${prevSessionActive.current}, View: ${s.view}`);
+    if (import.meta.env.DEV) console.log(`[SessionEffect] Active: ${isSessionActive}, Prev: ${prevSessionActive.current}, View: ${s.view}`);
 
     // 1. KICK LOGIC
     if (!isSessionActive) {
@@ -383,13 +404,15 @@ const PlayerApp: React.FC = () => {
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
       const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-      const interval: any = setInterval(function () {
+      const interval: ReturnType<typeof setInterval> = setInterval(function () {
         const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
+        if (timeLeft <= 0) { clearInterval(interval); return; }
         const particleCount = 50 * (timeLeft / duration);
         canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
         canvasConfetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
       }, 250);
+      const confettiCleanup = () => clearInterval(interval);
+      setTimeout(confettiCleanup, duration + 100);
 
       if (navigator.vibrate) navigator.vibrate([100, 100, 200, 100, 400]);
       setTimeout(() => setShowStartAnimation(false), 3500);
@@ -732,8 +755,8 @@ const PlayerApp: React.FC = () => {
                 className={`w-full bg-white border-2 rounded-xl p-5 text-center text-black text-2xl font-bold tracking-[0.3em] focus:outline-none transition-all ${hiddenLoginError ? 'border-red-500 animate-[shake_0.5s_ease-in-out]' : 'border-red-500/30 focus:border-red-500'}`}
                 autoFocus
               />
-              <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
-                {t('unlock')}
+              <button type="submit" disabled={isVerifyingHidden} className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-60 text-white font-impact uppercase py-4 rounded-xl tracking-widest transition-all shadow-lg active:scale-95">
+                {isVerifyingHidden ? '...' : t('unlock')}
               </button>
             </form>
           </div>
