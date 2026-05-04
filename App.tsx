@@ -674,9 +674,9 @@ const PlayerApp: React.FC = () => {
           </p>
           <div
             key={launchCountdown.isGo ? 'go' : launchCountdown.value}
-            className="font-impact leading-none italic animate-in zoom-in-75 duration-200"
+            className="font-impact leading-none italic animate-in zoom-in-75 duration-200 text-center"
             style={{
-              fontSize: '200px',
+              fontSize: launchCountdown.isGo ? 'clamp(80px, 22vw, 130px)' : 'clamp(140px, 46vw, 200px)',
               color: launchCountdown.isGo ? '#00FF9D' : '#FFD700',
               textShadow: '6px 6px 0px black',
             }}

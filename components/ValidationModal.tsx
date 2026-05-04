@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Check, RefreshCw, ScanLine, Camera, Trash2, ChevronRight } from 'lucide-react';
 import { gameService } from '../services/gameService';
 import { BingoCellData, ChallengeType } from '../types';
@@ -45,6 +45,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [isPvpVictory, setIsPvpVictory] = useState(false);
 
   const fortuneRolled = useRef(false);
 
@@ -112,18 +113,30 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
 
-  useLayoutEffect(() => {
-    if (step === 'WITNESS_MODE' && canvasRef.current && containerRef.current) {
-      const resizeCanvas = () => {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        if (canvas && container) {
-          canvas.width = container.offsetWidth;
-          canvas.height = container.offsetHeight;
-        }
-      };
-      resizeCanvas();
-    }
+  useEffect(() => {
+    if (step !== 'WITNESS_MODE') return;
+    const syncSize = () => {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+    };
+    // Two RAF passes: first ensures layout is committed, second ensures paint
+    let raf1: number, raf2: number;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(syncSize);
+    });
+    const observer = new ResizeObserver(syncSize);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      observer.disconnect();
+    };
   }, [step]);
 
   const [confirmError, setConfirmError] = useState<string | null>(null);
@@ -565,12 +578,14 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               <p className="font-impact text-white/50 uppercase text-[11px] tracking-widest text-center">
                 {t('pvp_result_question')}
               </p>
-              {/* WON — validate + show fortune */}
+              {/* WON — validate + taunt garanti */}
               <button
                 onClick={() => {
-                  setStep('SUCCESS');
+                  setIsPvpVictory(true);
                   onConfirm({ witnessName: '', witnessSignature: '', pvpWon: true });
-                  setTimeout(triggerFortune, 900);
+                  setStep('FORTUNE');
+                  onFortuneWon?.();
+                  setTimeout(onClose, 2400);
                 }}
                 className="w-full py-5 rounded-2xl font-impact uppercase text-2xl bg-[#00F5A0] text-black border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
               >
@@ -591,17 +606,17 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
           </div>
         )}
 
-        {/* ─── FORTUNE REVEAL — only shown when player actually wins ─── */}
+        {/* ─── FORTUNE REVEAL — taunt bonus (fortune aléatoire ou victoire PvP garantie) ─── */}
         {step === 'FORTUNE' && (
           <div className="flex-1 flex flex-col items-center justify-center bg-[#FFD700] p-10 text-center">
             <div className="w-28 h-28 bg-black rounded-full flex items-center justify-center shadow-[8px_8px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-75 duration-300 mb-6">
-              <span className="text-5xl">⚡</span>
+              <span className="text-5xl">{isPvpVictory ? '⚔️' : '⚡'}</span>
             </div>
             <h2 className="font-impact text-4xl text-black uppercase tracking-tighter italic leading-none animate-in slide-in-from-bottom-2 duration-300">
-              {t('fortune_won_title')}
+              {isPvpVictory ? 'TU AS GAGNÉ !' : t('fortune_won_title')}
             </h2>
             <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mt-3 animate-in slide-in-from-bottom-2 duration-300 delay-100">
-              {t('fortune_won_sub')}
+              {isPvpVictory ? 'TAUNT GAGNÉ — ÉCRASE-LES !' : t('fortune_won_sub')}
             </p>
           </div>
         )}

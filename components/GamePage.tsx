@@ -113,26 +113,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     prevUnlockedRowsRef.current = unlockedRows;
   }, [unlockedRows]);
 
-  // Progressive unlock detection
-  // Stage 1 — corners (ids 0,4,20,24) unlock at score 3
-  // Stage 2 — center (id 12) unlocks at score 5
-  const CORNER_IDS = [0, 4, 20, 24];
-  const CORNER_UNLOCK_SCORE = 3;
+  // Progressive unlock detection — only center mystery cell (id 12) locks at score < 5
   const CENTER_UNLOCK_SCORE = 5;
 
   const prevScoreRef = useRef(s.score);
-  const [cornersUnlocking, setCornersUnlocking] = useState(false);
   const [mysteryUnlocking, setMysteryUnlocking] = useState(false);
 
   useEffect(() => {
     const prev = prevScoreRef.current;
-    // Corners just unlocked
-    if (prev < CORNER_UNLOCK_SCORE && s.score >= CORNER_UNLOCK_SCORE) {
-      setCornersUnlocking(true);
-      if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
-      setTimeout(() => setCornersUnlocking(false), 800);
-    }
-    // Center just unlocked
     if (prev < CENTER_UNLOCK_SCORE && s.score >= CENTER_UNLOCK_SCORE) {
       setMysteryUnlocking(true);
       if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
@@ -141,7 +129,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     prevScoreRef.current = s.score;
   }, [s.score]);
 
-  const isCornersLocked = s.score < CORNER_UNLOCK_SCORE;
   const isMysteryCellLocked = s.score < CENTER_UNLOCK_SCORE;
 
   useEffect(() => {
@@ -264,6 +251,18 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     setLanguage(language === 'en' ? 'fr' : 'en');
   };
 
+  // Chaos mode announcement — fires once when chaos becomes active
+  const prevChaosRef = useRef(chaosMode);
+  const [showChaosAnnounce, setShowChaosAnnounce] = useState(false);
+  useEffect(() => {
+    if (!prevChaosRef.current && chaosMode) {
+      setShowChaosAnnounce(true);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
+      setTimeout(() => setShowChaosAnnounce(false), 3200);
+    }
+    prevChaosRef.current = chaosMode;
+  }, [chaosMode]);
+
   const [isResetPressing, setIsResetPressing] = useState(false);
   const [resetProgress, setResetProgress] = useState(0);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -317,11 +316,46 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           </div>
         </div>
       )}
-      {/* ⚡ CHAOS MODE banner — sticky top strip */}
+      {/* ⚡ CHAOS MODE — full-screen announcement (shows once on activation) */}
+      {showChaosAnnounce && (
+        <div className="fixed inset-0 z-[260] flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-[#FF4500]" />
+          {/* Brutalist noise dots */}
+          <div className="absolute inset-0 pointer-events-none opacity-15">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="absolute rounded-full bg-black"
+                style={{ width: 6 + (i % 4) * 4, height: 6 + (i % 4) * 4, left: `${(i * 19 + 3) % 95}%`, top: `${(i * 23 + 7) % 90}%` }} />
+            ))}
+          </div>
+          <div className="relative z-10 flex flex-col items-center text-center px-6 gap-4">
+            <div className="font-impact uppercase italic leading-none text-black animate-in zoom-in-75 duration-300"
+              style={{ fontSize: 'clamp(56px, 18vw, 80px)', textShadow: '4px 4px 0px rgba(0,0,0,0.25)' }}>
+              ⚡ CHAOS ⚡
+            </div>
+            <div className="font-impact uppercase italic text-black/70 text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100">
+              MODE ACTIVÉ !
+            </div>
+            <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-90 duration-300 delay-200">
+              <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(18px, 5vw, 24px)' }}>
+                TOUT LE MONDE A UN TAUNT !
+              </div>
+              <div className="font-impact uppercase text-white/50 text-[10px] tracking-widest mt-1">
+                Grille entière débloquée · Fonce !
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ CHAOS MODE banner — persistent top strip while active */}
       {chaosMode && (
         <div className="fixed top-0 inset-x-0 z-[160] pointer-events-none">
-          <div className="bg-gradient-to-r from-[#FF4500] via-[#FF8C00] to-[#FF4500] bg-[length:200%_100%] animate-[shimmer_1.5s_linear_infinite] py-1.5 text-center">
-            <span className="font-impact uppercase text-black text-[11px] tracking-[0.35em]">⚡ MODE CHAOS — FONCE ⚡</span>
+          <div className="bg-[#FF4500] border-b-[3px] border-black py-2 flex items-center justify-center gap-2">
+            <span className="font-impact uppercase text-black text-[10px] tracking-[0.25em]">⚡ CHAOS</span>
+            <div className="w-1 h-1 rounded-full bg-black/50" />
+            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">TOUT LE MONDE A UN TAUNT</span>
+            <div className="w-1 h-1 rounded-full bg-black/50" />
+            <span className="font-impact uppercase text-black text-[10px]">⚡</span>
           </div>
         </div>
       )}
@@ -582,11 +616,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               {s.cells.map((cell: BingoCellData) => {
                 const cellRow = Math.floor(cell.id / 5);
                 const isRowLocked = !chaosMode && cellRow >= unlockedRows;
-                const isCorner = CORNER_IDS.includes(cell.id);
                 const isCenter = cell.id === 12;
-                const isLocked = !isRowLocked && ((isCorner && isCornersLocked) || (isCenter && isMysteryCellLocked));
+                const isLocked = !isRowLocked && isCenter && isMysteryCellLocked;
                 const isRowUnlocking = unlockingRows.includes(cellRow);
-                const isUnlocking = (isCorner && cornersUnlocking) || (isCenter && mysteryUnlocking) || isRowUnlocking;
+                const isUnlocking = (isCenter && mysteryUnlocking) || isRowUnlocking;
                 // Which bar unlocks this row?
                 // afterRow=K means the separator sits between row K-1 and row K.
                 // So the group containing cellRow is the one with the LARGEST afterRow <= cellRow.
@@ -672,34 +705,20 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           })}
         </div>
 
-        {/* Progressive unlock progress hint */}
-        {(isCornersLocked || isMysteryCellLocked) && (
-          <div className="mt-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
-            {isCornersLocked ? (
-              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
-                <span className="text-xs">🔒</span>
-                <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
-                  Coins à {CORNER_UNLOCK_SCORE}/25
-                </span>
-                <div className="flex gap-0.5">
-                  {Array.from({length: CORNER_UNLOCK_SCORE}).map((_, i) => (
-                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
-                  ))}
-                </div>
+        {/* Mystery cell unlock hint */}
+        {isMysteryCellLocked && (
+          <div className="mt-2 flex items-center justify-center animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
+              <span className="text-xs">🔒</span>
+              <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
+                Mystère à {CENTER_UNLOCK_SCORE}/25
+              </span>
+              <div className="flex gap-0.5">
+                {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
+                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
+                ))}
               </div>
-            ) : isMysteryCellLocked ? (
-              <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
-                <span className="text-xs">🔒</span>
-                <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
-                  Mystère à {CENTER_UNLOCK_SCORE}/25
-                </span>
-                <div className="flex gap-0.5">
-                  {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
-                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            </div>
           </div>
         )}
       </main>
