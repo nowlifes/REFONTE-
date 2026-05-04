@@ -120,3 +120,14 @@
 .separator-glow {
   animation: separator-pulse 2s ease-in-out infinite;
 }
+
+/* CHAOS MODE — cells wiggle to signal all-out frenzy */
+@keyframes chaos-drift {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1); }
+  20%  { transform: translateX(-2px) rotate(-1.5deg) scale(1.02); }
+  50%  { transform: translateX(2px)  rotate(1deg)   scale(0.98); }
+  80%  { transform: translateX(-1px) rotate(-0.5deg) scale(1.01); }
+}
+.chaos-drift {
+  animation: chaos-drift 0.85s ease-in-out infinite;
+}

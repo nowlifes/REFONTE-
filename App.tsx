@@ -668,27 +668,40 @@ const PlayerApp: React.FC = () => {
 
       {/* 3-2-1 LAUNCH COUNTDOWN OVERLAY */}
       {launchCountdown !== null && (
-        <div className="fixed inset-0 z-[350] bg-[#0A1629]/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <p className="font-impact text-white/40 uppercase text-[13px] tracking-[0.4em] mb-4">
+        <div className="fixed inset-0 z-[350] bg-[#0A1629]/95 flex flex-col items-center justify-center gap-8 animate-in fade-in duration-300">
+          <p className="font-impact text-white/40 uppercase text-[13px] tracking-[0.4em]">
             {launchCountdown.isGo ? 'PARTEZ !' : 'Prépare-toi...'}
           </p>
+          {/* Bounded box — le chiffre ne peut jamais déborder */}
           <div
             key={launchCountdown.isGo ? 'go' : launchCountdown.value}
-            className="font-impact leading-none italic animate-in zoom-in-75 duration-200 text-center"
+            className="flex items-center justify-center animate-in zoom-in-75 duration-200"
             style={{
-              fontSize: launchCountdown.isGo ? 'clamp(80px, 22vw, 130px)' : 'clamp(140px, 46vw, 200px)',
-              color: launchCountdown.isGo ? '#00FF9D' : '#FFD700',
-              textShadow: '6px 6px 0px black',
+              width: 'min(260px, 68vw)',
+              height: 'min(260px, 68vw)',
+              backgroundColor: launchCountdown.isGo ? '#00F5A0' : '#FFD700',
+              border: '6px solid black',
+              borderRadius: '28px',
+              boxShadow: '10px 10px 0px black',
+              flexShrink: 0,
             }}
           >
-            {launchCountdown.isGo ? 'GO!' : launchCountdown.value}
+            <span
+              className="font-impact leading-none italic"
+              style={{
+                fontSize: launchCountdown.isGo ? 'min(88px, 22vw)' : 'min(148px, 38vw)',
+                color: '#000',
+              }}
+            >
+              {launchCountdown.isGo ? 'GO!' : launchCountdown.value}
+            </span>
           </div>
           {!launchCountdown.isGo && (
-            <div className="flex gap-2 mt-8">
+            <div className="flex gap-3">
               {[3, 2, 1].map(n => (
                 <div
                   key={n}
-                  className={`w-3 h-3 rounded-full border-[2px] border-black transition-all ${n >= launchCountdown.value ? 'bg-[#FFD700]' : 'bg-white/20'}`}
+                  className={`w-3 h-3 rounded-full border-[2px] border-black transition-all duration-300 ${n >= launchCountdown.value ? 'bg-[#FFD700]' : 'bg-white/20'}`}
                 />
               ))}
             </div>

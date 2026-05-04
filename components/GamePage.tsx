@@ -329,18 +329,19 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           </div>
           <div className="relative z-10 flex flex-col items-center text-center px-6 gap-4">
             <div className="font-impact uppercase italic leading-none text-black animate-in zoom-in-75 duration-300"
-              style={{ fontSize: 'clamp(56px, 18vw, 80px)', textShadow: '4px 4px 0px rgba(0,0,0,0.25)' }}>
+              style={{ fontSize: 'clamp(56px, 18vw, 80px)', textShadow: '4px 4px 0px rgba(0,0,0,0.35)' }}>
               ⚡ CHAOS ⚡
             </div>
-            <div className="font-impact uppercase italic text-black/70 text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100">
-              MODE ACTIVÉ !
+            <div className="font-impact uppercase italic text-black text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100"
+              style={{ fontSize: 'clamp(20px, 6vw, 28px)', textShadow: '2px 2px 0px rgba(0,0,0,0.25)' }}>
+              ATTAQUE AVANT D'ÊTRE ATTAQUÉ !
             </div>
-            <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.3)] animate-in zoom-in-90 duration-300 delay-200">
-              <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(18px, 5vw, 24px)' }}>
-                TOUT LE MONDE A UN TAUNT !
+            <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
+              <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
+                CHAQUE DÉFI = UN TAUNT GRATUIT
               </div>
-              <div className="font-impact uppercase text-white/50 text-[10px] tracking-widest mt-1">
-                Grille entière débloquée · Fonce !
+              <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
+                ⚡ GRILLE ENTIÈRE DÉBLOQUÉE · FONCE OU DISPARAIS ⚡
               </div>
             </div>
           </div>
@@ -662,6 +663,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                     avatarEmoji={playerEmojiChar}
                     rowLocked={isRowLocked}
                     rowUnlocksAtBar={rowUnlocksAtBar}
+                    chaosMode={chaosMode}
                   />
                 );
               })}

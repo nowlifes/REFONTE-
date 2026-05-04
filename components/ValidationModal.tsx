@@ -113,6 +113,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const isDrawingRef = useRef(false);
 
+  // Canvas sizing — after DOM paint
   useEffect(() => {
     if (step !== 'WITNESS_MODE') return;
     const syncSize = () => {
@@ -125,17 +126,69 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
         canvas.height = rect.height;
       }
     };
-    // Two RAF passes: first ensures layout is committed, second ensures paint
     let raf1: number, raf2: number;
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(syncSize);
-    });
+    raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(syncSize); });
     const observer = new ResizeObserver(syncSize);
     if (containerRef.current) observer.observe(containerRef.current);
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); observer.disconnect(); };
+  }, [step]);
+
+  // Native touch/mouse listeners — required for {passive: false} to work on mobile
+  useEffect(() => {
+    if (step !== 'WITNESS_MODE') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getXY = (e: TouchEvent | MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      if ('touches' in e && e.touches.length > 0) {
+        return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+      }
+      return { x: ((e as MouseEvent).clientX - rect.left) * scaleX, y: ((e as MouseEvent).clientY - rect.top) * scaleY };
+    };
+
+    const onStart = (e: TouchEvent | MouseEvent) => {
+      e.preventDefault();
+      const ctx = canvas.getContext('2d'); if (!ctx) return;
+      isDrawingRef.current = true;
+      const { x, y } = getXY(e);
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.strokeStyle = '#FF2E63'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    };
+
+    const onMove = (e: TouchEvent | MouseEvent) => {
+      if (!isDrawingRef.current) return;
+      e.preventDefault();
+      const ctx = canvas.getContext('2d'); if (!ctx) return;
+      const { x, y } = getXY(e);
+      ctx.lineTo(x, y); ctx.stroke();
+      setSignatureData(canvas.toDataURL());
+    };
+
+    const onEnd = () => {
+      if (!isDrawingRef.current) return;
+      isDrawingRef.current = false;
+      setSignatureData(canvas.toDataURL());
+    };
+
+    canvas.addEventListener('mousedown', onStart);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('mouseleave', onEnd);
+    canvas.addEventListener('touchstart', onStart, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onEnd);
+
     return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      observer.disconnect();
+      canvas.removeEventListener('mousedown', onStart);
+      canvas.removeEventListener('mousemove', onMove);
+      canvas.removeEventListener('mouseup', onEnd);
+      canvas.removeEventListener('mouseleave', onEnd);
+      canvas.removeEventListener('touchstart', onStart);
+      canvas.removeEventListener('touchmove', onMove);
+      canvas.removeEventListener('touchend', onEnd);
     };
   }, [step]);
 
@@ -153,36 +206,6 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
       return;
     }
     setTimeout(triggerFortune, 900);
-  };
-
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d'); if (!ctx) return;
-    isDrawingRef.current = true;
-    const rect = canvas.getBoundingClientRect();
-    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left;
-    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top;
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = '#FF2E63'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  };
-
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawingRef.current) return; e.preventDefault();
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d'); if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left;
-    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : (e as React.MouseEvent).clientY - rect.top;
-    ctx.lineTo(x, y); ctx.stroke();
-    // Update signatureData on each stroke so the confirm button enables as soon as drawing starts
-    setSignatureData(canvas.toDataURL());
-  };
-
-  const stopDrawing = () => {
-    if (isDrawingRef.current && canvasRef.current) {
-      isDrawingRef.current = false;
-      setSignatureData(canvasRef.current.toDataURL());
-    }
   };
 
   const isWitness = cell.type === ChallengeType.WITNESS;
@@ -314,20 +337,25 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               />
 
               {/* Signature canvas */}
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <span className="text-[9px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/70">✍️ SIGNATURE OBLIGATOIRE</span>
+                {signatureData && <span className="text-[9px] font-impact uppercase tracking-widest text-[#00F5A0]">✓ SIGNÉ</span>}
+              </div>
               <div
                 ref={containerRef}
-                className={`flex-1 border-[2px] rounded-2xl bg-black/50 relative touch-none overflow-hidden transition-all ${signatureData ? 'border-[#FF2E63]/60' : 'border-white/10'}`}
+                className={`flex-1 border-[3px] rounded-2xl relative touch-none overflow-hidden transition-all min-h-[110px] ${signatureData ? 'border-[#FF2E63] bg-black/70' : 'border-[#FF2E63]/40 bg-[#110812]'}`}
+                style={signatureData ? { boxShadow: '0 0 24px rgba(255,46,99,0.25), inset 0 0 30px rgba(255,46,99,0.05)' } : { boxShadow: 'inset 0 0 24px rgba(255,46,99,0.04)' }}
               >
                 <canvas
                   ref={canvasRef}
-                  onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
-                  className="absolute inset-0 w-full h-full"
+                  className="absolute inset-0 w-full h-full cursor-crosshair"
                 />
                 {!signatureData && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2">
-                    <span className="text-2xl opacity-20">✍️</span>
-                    <span className="text-[9px] font-impact uppercase tracking-widest text-white/20">{t('signature_area')}</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-3">
+                    <div className="w-14 h-14 rounded-full bg-[#FF2E63]/10 border-[2px] border-[#FF2E63]/25 flex items-center justify-center">
+                      <span className="text-3xl" style={{ filter: 'drop-shadow(0 0 8px rgba(255,46,99,0.5))' }}>✍️</span>
+                    </div>
+                    <span className="text-[10px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/45">DESSINE TA SIGNATURE ICI</span>
                   </div>
                 )}
                 {/* Clear signature */}

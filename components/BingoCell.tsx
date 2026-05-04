@@ -18,10 +18,12 @@ interface BingoCellProps {
   rowLocked?: boolean;
   /** Which bar number unlocks this row — shown on the cell */
   rowUnlocksAtBar?: number;
+  /** Chaos mode — cells wiggle to signal all-out frenzy */
+  chaosMode?: boolean;
 }
 
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
-  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, avatarEmoji, rowLocked, rowUnlocksAtBar,
+  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, avatarEmoji, rowLocked, rowUnlocksAtBar, chaosMode,
 }) => {
   const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
@@ -139,9 +141,9 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
             ${isFeverTarget && !isLocked ? 'ring-2 ring-white animate-pulse' : ''}
             ${isSpotlight ? 'ring-[3px] ring-white ring-offset-[2px] ring-offset-black animate-pulse' : ''}
             ${isLocked ? 'animate-pulse' : ''}
-            ${isWinning ? 'cell-winning' : ''}
+            ${isWinning ? 'cell-winning' : chaosMode && !isValidated ? 'chaos-drift' : ''}
           `}
-          style={isWinning ? { animationDelay: winDelay } : undefined}
+          style={isWinning ? { animationDelay: winDelay } : chaosMode && !isValidated ? { animationDelay: `${(id % 7) * 110}ms` } : undefined}
         >
           {isLocked ? (
             <div className="flex flex-col items-center gap-0.5">
