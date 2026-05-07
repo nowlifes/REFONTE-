@@ -386,8 +386,12 @@ const PlayerApp: React.FC = () => {
       if (prevSessionActive.current && !isFirstLoad.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
         setShowEndOverlay(true);
       }
-      if (!showEndOverlay && s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
-        aRef.current.setView(AppView.NICKNAME);
+      // Always reset game state on session close, regardless of overlay state,
+      // to prevent returning to GAME view after dismissing the end overlay.
+      if (s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
+        if (!showEndOverlay) {
+          aRef.current.setView(AppView.NICKNAME);
+        }
         aRef.current.resetGame();
       }
     }
