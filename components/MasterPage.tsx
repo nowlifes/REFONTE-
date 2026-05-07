@@ -205,7 +205,10 @@ const MasterPage: React.FC<MasterPageProps> = ({
       await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined);
       setBarNameInput('');
     }
-    catch (e) { console.error(e); }
+    catch (e) {
+      console.error(e);
+      alert('Erreur lors du changement de bar. Vérifiez votre connexion.');
+    }
     finally { setIsTriggeringTransition(false); }
   };
 
@@ -217,7 +220,10 @@ const MasterPage: React.FC<MasterPageProps> = ({
       if (advanceBar) await advanceBar();
       setBarNameInput('');
     }
-    catch (e) { console.error(e); }
+    catch (e) {
+      console.error(e);
+      alert('Erreur lors du changement de bar. Vérifiez votre connexion.');
+    }
     finally { setIsTriggeringTransition(false); }
   };
   const handleApproveValidation = async (v: any) => {
