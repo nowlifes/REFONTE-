@@ -200,8 +200,14 @@ export const useEventSession = () => {
   };
 
   const resetSession = async () => {
-    setIsSessionActive(false);
-    await gameService.resetSession();
+    const previous = isSessionActive;
+    try {
+      setIsSessionActive(false);
+      await gameService.resetSession();
+    } catch (e) {
+      setIsSessionActive(previous); // rollback optimistic update
+      throw e; // let caller show UI feedback
+    }
   };
 
   const createNewSession = async () => {

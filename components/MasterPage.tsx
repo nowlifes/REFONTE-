@@ -257,7 +257,10 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleReset = async () => {
     setIsResetting(true);
     try { await resetSession(); setShowResetConfirm(false); }
-    catch (e) { console.error(e); }
+    catch (e) {
+      console.error(e);
+      alert('Erreur lors du reset. Vérifiez votre connexion.');
+    }
     finally { setIsResetting(false); }
   };
   const handleCreateNew = async () => {
