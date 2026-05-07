@@ -202,13 +202,8 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     if (!witnessName.trim() || !signatureData) return;
     setConfirmError(null);
     setStep('SUCCESS');
-    try {
-      onConfirm({ witnessName, witnessSignature: signatureData });
-    } catch {
-      setStep('INFO');
-      setConfirmError('Erreur lors de la validation. Réessaie.');
-      return;
-    }
+    onConfirm({ witnessName, witnessSignature: signatureData });
+    // Parent (useBingoGame.validateCell) handles async errors with its own rollback + alert
     setTimeout(triggerFortune, 900);
   };
 
