@@ -697,6 +697,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
            if (!navigator.onLine) return;
            setCells(oldCells);
            setJokers(oldJokers);
+           alert('Erreur lors du swap. Réessaie.');
         }
       }
     },
