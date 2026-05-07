@@ -347,7 +347,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               </div>
               <div
                 ref={containerRef}
-                className={`flex-1 border-[3px] rounded-2xl relative touch-none overflow-hidden transition-all min-h-[110px] ${signatureData ? 'border-[#FF2E63] bg-black/70' : 'border-[#FF2E63]/40 bg-[#110812]'}`}
+                className={`flex-1 border-[3px] rounded-2xl relative touch-none overflow-hidden transition-all min-h-[200px] ${signatureData ? 'border-[#FF2E63] bg-black/70' : 'border-[#FF2E63]/40 bg-[#110812]'}`}
                 style={signatureData ? { boxShadow: '0 0 24px rgba(255,46,99,0.25), inset 0 0 30px rgba(255,46,99,0.05)' } : { boxShadow: 'inset 0 0 24px rgba(255,46,99,0.04)' }}
               >
                 <canvas

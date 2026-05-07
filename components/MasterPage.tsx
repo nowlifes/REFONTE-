@@ -201,7 +201,22 @@ const MasterPage: React.FC<MasterPageProps> = ({
   };
   const handleTriggerTransition = async () => {
     setIsTriggeringTransition(true);
-    try { await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined); setBarNameInput(''); }
+    try {
+      await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined);
+      setBarNameInput('');
+    }
+    catch (e) { console.error(e); }
+    finally { setIsTriggeringTransition(false); }
+  };
+
+  const handleAdvanceBarWithTransition = async () => {
+    setIsTriggeringTransition(true);
+    try {
+      // Advance bar (unlock rows) + start countdown in one atomic UX action
+      await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined);
+      if (advanceBar) await advanceBar();
+      setBarNameInput('');
+    }
     catch (e) { console.error(e); }
     finally { setIsTriggeringTransition(false); }
   };
@@ -370,12 +385,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
             {/* ── PROGRESSION DES BARS ──────────────────────────────────────── */}
             {isSessionActive && advanceBar && (
-              <Section title="Progression" accent="#FF8C00" defaultOpen={true}>
+              <Section title="Progression des bars" accent="#FF8C00" defaultOpen={true}>
                 <div className="flex flex-col gap-3">
                   {/* Bar tracker */}
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3].map(b => {
-                      const labels = ['1 ligne', '3 lignes', 'Mode KO'];
+                      const labels = ['1 ligne', '3 lignes', '⚡ Chaos'];
                       const colors = ['#00F5A0', '#FF8C00', '#FF2D6A'];
                       return (
                         <div key={b} className={`rounded-xl border-[2px] border-black px-2 py-3 text-center transition-all ${
@@ -388,17 +403,49 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     })}
                   </div>
 
-                  {/* Advance or KO active */}
                   {currentBar < 3 ? (
-                    <button onClick={async () => { await advanceBar(); }}
-                      className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
-                      <ChevronRight size={18} strokeWidth={3} />
-                      Passer au bar {currentBar + 1}
-                      {currentBar + 1 === 3 && <span className="text-[10px] opacity-70">· Mode KO</span>}
-                    </button>
+                    transitionEndsAt ? (
+                      /* Transition active — show countdown + cancel */
+                      <div className="bg-[#FF8C00] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                        <div>
+                          {nextBarName && <p className="font-impact text-black/60 uppercase text-[9px]">{nextBarName}</p>}
+                          <p className="font-impact text-black text-2xl italic">
+                            {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                          </p>
+                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">Bar {currentBar} → {currentBar + 1} · Lignes débloquées ✓</p>
+                        </div>
+                        <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                          <XCircle size={20} className="text-[#FF8C00]" strokeWidth={3} />
+                        </button>
+                      </div>
+                    ) : (
+                      /* No active transition — show combined action */
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-1.5">
+                          {[2, 5, 10, 15].map(d => (
+                            <button key={d} onClick={() => setSelectedDuration(d)}
+                              className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
+                                selectedDuration === d ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                              }`}>
+                              {d}min
+                            </button>
+                          ))}
+                        </div>
+                        <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
+                          placeholder="Nom du prochain bar (optionnel)"
+                          className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
+                        <button onClick={handleAdvanceBarWithTransition} disabled={isTriggeringTransition}
+                          className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
+                          {isTriggeringTransition
+                            ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> Envoi...</>
+                            : <><ChevronRight size={17} strokeWidth={3} /> Passer au bar {currentBar + 1} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
+                          }
+                        </button>
+                      </div>
+                    )
                   ) : (
                     <div className="w-full py-3 bg-[#FF2D6A]/10 border-[2px] border-[#FF2D6A] rounded-xl text-center">
-                      <span className="font-impact uppercase text-[#FF2D6A] text-[12px] tracking-widest">💀 Mode KO actif</span>
+                      <span className="font-impact uppercase text-[#FF2D6A] text-[12px] tracking-widest">⚡ Mode Chaos actif</span>
                     </div>
                   )}
                 </div>
@@ -456,50 +503,52 @@ const MasterPage: React.FC<MasterPageProps> = ({
               </Section>
             )}
 
-            {/* ── BAR CHANGE ────────────────────────────────────────────────── */}
-            <Section
-              title={language === 'fr' ? 'Changement de bar' : 'Bar Change'}
-              accent="#FF2D6A"
-              defaultOpen={!!transitionEndsAt}
-              badge={transitionEndsAt ? (
-                <span className="ml-2 bg-[#FF2D6A] border-[2px] border-black rounded-lg px-2 py-0.5 font-impact text-[9px] text-white uppercase shadow-[2px_2px_0px_black]">ACTIF</span>
-              ) : undefined}
-            >
-              {transitionEndsAt ? (
-                <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
-                  <div>
-                    {nextBarName && <p className="font-impact text-white/70 uppercase text-[9px]">{nextBarName}</p>}
-                    <p className="font-impact text-white text-2xl italic">
-                      {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
-                    </p>
+            {/* ── BAR CHANGE (fallback — only shown if Progression section isn't available) */}
+            {isSessionActive && !advanceBar && (
+              <Section
+                title={language === 'fr' ? 'Changement de bar' : 'Bar Change'}
+                accent="#FF2D6A"
+                defaultOpen={!!transitionEndsAt}
+                badge={transitionEndsAt ? (
+                  <span className="ml-2 bg-[#FF2D6A] border-[2px] border-black rounded-lg px-2 py-0.5 font-impact text-[9px] text-white uppercase shadow-[2px_2px_0px_black]">ACTIF</span>
+                ) : undefined}
+              >
+                {transitionEndsAt ? (
+                  <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                    <div>
+                      {nextBarName && <p className="font-impact text-white/70 uppercase text-[9px]">{nextBarName}</p>}
+                      <p className="font-impact text-white text-2xl italic">
+                        {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                      </p>
+                    </div>
+                    <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                      <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={3} />
+                    </button>
                   </div>
-                  <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
-                    <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={3} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-1.5">
-                    {[2, 5, 10, 15].map(d => (
-                      <button key={d} onClick={() => setSelectedDuration(d)}
-                        className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
-                          selectedDuration === d ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
-                        }`}>
-                        {d}min
-                      </button>
-                    ))}
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-1.5">
+                      {[2, 5, 10, 15].map(d => (
+                        <button key={d} onClick={() => setSelectedDuration(d)}
+                          className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
+                            selectedDuration === d ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                          }`}>
+                          {d}min
+                        </button>
+                      ))}
+                    </div>
+                    <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
+                      placeholder="Nom du bar (optionnel)"
+                      className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
+                    <button onClick={handleTriggerTransition} disabled={isTriggeringTransition}
+                      className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
+                      <Clock size={14} strokeWidth={3} />
+                      {isTriggeringTransition ? 'Envoi...' : `Countdown (${selectedDuration} min)`}
+                    </button>
                   </div>
-                  <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
-                    placeholder="Nom du bar (optionnel)"
-                    className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
-                  <button onClick={handleTriggerTransition} disabled={isTriggeringTransition}
-                    className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
-                    <Clock size={14} strokeWidth={3} />
-                    {isTriggeringTransition ? 'Envoi...' : `Countdown (${selectedDuration} min)`}
-                  </button>
-                </div>
-              )}
-            </Section>
+                )}
+              </Section>
+            )}
 
             {/* ── ACTIONS ───────────────────────────────────────────────────── */}
             <Section title="Actions" accent="#93C5FD" defaultOpen={false}>

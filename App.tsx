@@ -575,6 +575,7 @@ const PlayerApp: React.FC = () => {
               chaosMode={chaosMode}
               currentBar={currentBar}
               barCadence={barCadence}
+              barTransitionActive={!!transitionEndsAt && transitionSecondsLeft > 0}
             />
           </ErrorBoundary>
         )}
@@ -712,7 +713,7 @@ const PlayerApp: React.FC = () => {
             <span
               className="font-impact leading-none italic"
               style={{
-                fontSize: launchCountdown.isGo ? 'min(88px, 22vw)' : 'min(148px, 38vw)',
+                fontSize: launchCountdown.isGo ? 'min(88px, 22vw)' : launchCountdown.value >= 10 ? 'min(104px, 27vw)' : 'min(148px, 38vw)',
                 color: '#000',
               }}
             >

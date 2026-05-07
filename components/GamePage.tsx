@@ -37,9 +37,10 @@ interface GamePageProps {
   chaosMode?: boolean;
   currentBar?: number;
   barCadence?: string;
+  barTransitionActive?: boolean;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2' }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false }) => {
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
@@ -425,10 +426,13 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* SPOTLIGHT banner — compact, near avatar top-left */}
+      {/* SPOTLIGHT banner — right side, clear of bar-transition badge & chaos strip */}
       {s.spotlightCellId !== null && spotlightSecondsLeft > 0 && (
-        <div className="fixed top-[68px] left-4 z-[155] pointer-events-none">
-          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-left-2 duration-300">
+        <div
+          className="fixed right-3 z-[155] pointer-events-none"
+          style={{ top: `max(68px, calc(env(safe-area-inset-top, 0px) + ${chaosMode ? 76 : barTransitionActive ? 114 : 56}px))` }}
+        >
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
             <span className="text-base">⚡</span>
             <div className="flex flex-col leading-none">
               <span className="font-impact text-black uppercase text-[11px] tracking-tight">SPOTLIGHT</span>

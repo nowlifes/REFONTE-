@@ -3,6 +3,18 @@
 > Repo de référence unique. Toujours travailler dans `/Users/futharkiens/Projects/the-bingo-crawl`.
 > Dev server : `bun run dev --port 5174`
 
+## Wiki-Brain (session start obligatoire)
+
+Avant toute chose, charger le contexte wiki — évite de relire le codebase brut :
+
+1. Lire `wiki/index.md` — catalogue de tout ce qu'on sait
+2. Lire `wiki/log.md` (10 dernières entrées) — activité récente
+3. Lire `wiki/pages/synthesis/lessons.md` — règles apprises des erreurs passées
+4. Question archi → `graphify-out/GRAPH_REPORT.md` section "God Nodes"
+
+**Skill :** `/wiki-brain` pour charger tout le contexte d'un coup.
+**Wiki :** `wiki/CLAUDE.md` pour le protocole complet.
+
 ## Stack
 
 - React 19 + TypeScript + Vite 6
