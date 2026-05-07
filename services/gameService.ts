@@ -506,9 +506,11 @@ class GameBackendService {
         .from('games')
         .update({ status: 'ABANDONED' })
         .eq('player_id', userId)
-        .eq('status', 'ACTIVE')
-        .select('id');
-    } catch (e) {}
+        .eq('status', 'ACTIVE');
+    } catch (e) {
+      console.error('[startGame] Failed to abandon previous game', e);
+      // Consider throwing here if data integrity is critical
+    }
 
     const { data, error } = await supabase
       .from('games')
