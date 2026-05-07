@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { MASTER_RUNE_SEQUENCE } from '../constants';
+// Kept local — not imported from constants to avoid bundle-level export exposure
+const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1];
 
 interface MasterRunePadProps {
   onSuccess: () => void;

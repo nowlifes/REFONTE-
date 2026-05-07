@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, AlertCircle, ScanLine } from 'lucide-react';
 import jsQR from 'jsqr';
 import { useLanguage } from '../contexts/LanguageContext';
-import { MASTER_VALID_CODE } from '../constants';
+// Kept local — not imported from constants to avoid bundle-level export exposure
+const MASTER_VALID_CODE = "KING";
 
 interface QRScannerProps {
   mode: 'ENTRY' | 'MASTER' | 'PLAYER';

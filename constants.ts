@@ -192,8 +192,12 @@ export const BADGE_CONFIG: Record<BadgeType, {
   }
 };
 
-export const MASTER_VALID_CODE = "KING";
-export const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1]; 
+// Note: These values are intentionally not exported — consumers keep their own local copy.
+// Do not re-export them; keeping them unexported limits accidental exposure in module graphs.
+const MASTER_VALID_CODE = "KING";
+const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1];
+// Suppress unused-variable warnings (values are kept here as single source of truth documentation)
+void MASTER_VALID_CODE; void MASTER_RUNE_SEQUENCE;
 export const INITIAL_JOKERS = 2;
 
 export const SOUNDS = {

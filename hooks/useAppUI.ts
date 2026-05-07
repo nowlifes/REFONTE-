@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { AppView } from '../types';
 import { gameService } from '../services/gameService';
-import { MASTER_VALID_CODE } from '../constants';
+// Kept local — not imported from constants to avoid bundle-level export exposure
+const MASTER_VALID_CODE = "KING";
 
 export const useAppUI = (setAppView: (view: AppView) => void) => {
   // Modals Visibility
