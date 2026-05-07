@@ -664,6 +664,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
           if (!navigator.onLine) return; // Keep optimistic if offline
           setCells(oldCells);
           console.error("Validation failed", e);
+          alert('Erreur lors de la validation. Réessaie.');
         }
       }
     },
