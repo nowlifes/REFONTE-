@@ -38,4 +38,4 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 
 ## License
 
-Copyright © 2026. All rights reserved. See [LICENSE](./LICENSE).
+Copyright © 2025 Alexandre Leroux. All rights reserved. See [LICENSE](./LICENSE).

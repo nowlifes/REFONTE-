@@ -33,3 +33,6 @@ migrated_prompt_history/
 continue:/
 .gstack/
 package-lock.json
+
+# Zip de dépôt INPI (généré localement, ne pas versionner)
+DEPOT/*.zip
