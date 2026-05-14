@@ -27,3 +27,9 @@ dist-ssr
 # Claude Code + graphify (runtime state, not source)
 .claude/
 graphify-out/
+
+# Development artifacts (AI Studio, QA reports, dev notes)
+migrated_prompt_history/
+continue:/
+.gstack/
+package-lock.json

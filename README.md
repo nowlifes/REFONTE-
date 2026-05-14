@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# The Bingo Crawl
 
-# Run and deploy your AI Studio app
+**The Bingo Crawl** is a real-time multiplayer bingo game designed for bar crawls and social events.
 
-This contains everything you need to run your app locally.
+Players complete live challenges on a bingo grid while a **Bingo Master** orchestrates the session — managing bar transitions, validating completions, and triggering special events.
 
-View your app in AI Studio: https://ai.studio/apps/2769758c-ef63-409c-804e-bf016ba91b5a
+## Features
 
-## Run Locally
+- **Real-time multiplayer** — live game state synced across all players via Supabase
+- **Bingo grid** — 25 challenges per player, including a mystery cell unlocked by score
+- **Witness system** — players designate a witness to validate their challenge completion
+- **Joker system** — skip a challenge when you're stuck
+- **Bar transitions** — master triggers timed countdowns when moving to the next bar
+- **Badges & leaderboard** — earn badges, compete on the live scoreboard
+- **Session security** — QR code-based session access with expiration
+- **Offline support** — action queue that syncs when reconnected
+- **i18n** — English and French
 
-**Prerequisites:**  Node.js
+## Stack
 
+- React 19 + TypeScript + Vite 6
+- Tailwind CSS v4
+- Supabase (PostgreSQL + RLS + Realtime)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Getting Started
+
+```bash
+bun install
+bun run dev
+```
+
+Requires a `.env.local` with:
+
+```
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+```
+
+## License
+
+Copyright © 2026. All rights reserved. See [LICENSE](./LICENSE).

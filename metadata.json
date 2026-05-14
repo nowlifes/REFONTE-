@@ -1,6 +1,6 @@
 {
-  "name": "Copy of Copy of VFinal Refonte V1.1",
-  "description": "A medieval-themed festive Bingo quest. Complete challenges, seek the Bingo Master, and claim glory!",
+  "name": "The Bingo Crawl",
+  "description": "A real-time multiplayer bingo game for bar crawls. Complete challenges, get validated by witnesses, and claim glory.",
   "requestFramePermissions": [
     "camera"
   ]
