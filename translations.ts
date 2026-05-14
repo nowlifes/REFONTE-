@@ -417,7 +417,7 @@ export const TRANSLATIONS = {
     no_players: "Personne encore. Sois le premier !",
 
     // Locked Page
-    closed: "Pas encore ouvert",
+    closed: "Fermé",
     closed_desc: "C'est pas encore lancé. Patience.",
     waiting_master: "Le Game Master arrive...",
     refresh_status: "Actualiser",

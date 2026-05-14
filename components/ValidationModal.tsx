@@ -221,7 +221,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
         {step !== 'SUCCESS' && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2.5 z-20 text-white/30 hover:text-white/70 active:scale-90 transition-all rounded-xl hover:bg-white/5"
+            className="absolute top-3 right-3 p-3 z-20 text-white/30 hover:text-white/70 active:scale-90 transition-all rounded-xl hover:bg-white/5"
             aria-label="Fermer"
           >
             <X size={22} strokeWidth={2.5} />
@@ -263,7 +263,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                       <img src={photoData} alt="proof" className="w-full h-full object-cover" />
                       <button
                         onClick={() => setPhotoData(null)}
-                        className="absolute top-2 right-2 w-8 h-8 bg-black/70 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                        className="absolute top-2 right-2 w-11 h-11 bg-black/70 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                       >
                         <Trash2 className="w-4 h-4 text-white" strokeWidth={2.5} />
                       </button>
@@ -367,7 +367,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                         ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
                       }
                     }}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                    className="absolute top-2 right-2 w-11 h-11 bg-black/60 border border-white/20 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-white/60" strokeWidth={2.5} />
                   </button>

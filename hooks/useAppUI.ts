@@ -5,7 +5,7 @@ import { gameService } from '../services/gameService';
 // Kept local — not imported from constants to avoid bundle-level export exposure
 const MASTER_VALID_CODE = "KING";
 
-export const useAppUI = (setAppView: (view: AppView) => void) => {
+export const useAppUI = (setAppView: (view: AppView) => void, onMasterSuccess?: () => void) => {
   // Modals Visibility
   const [showTutorial, setShowTutorial] = useState(false); // Used for Rewards
   const [showLegends, setShowLegends] = useState(false);   // New: Used for Rules/Legends
@@ -37,7 +37,8 @@ export const useAppUI = (setAppView: (view: AppView) => void) => {
       if (isValid || isUnifiedValid) {
         setShowMasterLogin(false);
         setMasterCodeInput('');
-        setAppView(AppView.MASTER_DASHBOARD);
+        if (onMasterSuccess) onMasterSuccess();
+        else setAppView(AppView.MASTER_DASHBOARD);
       } else {
         setMasterLoginError(true);
         // Haptic feedback for error
@@ -48,7 +49,8 @@ export const useAppUI = (setAppView: (view: AppView) => void) => {
       if (masterCodeInput === MASTER_VALID_CODE) {
         setShowMasterLogin(false);
         setMasterCodeInput('');
-        setAppView(AppView.MASTER_DASHBOARD);
+        if (onMasterSuccess) onMasterSuccess();
+        else setAppView(AppView.MASTER_DASHBOARD);
       } else {
         setMasterLoginError(true);
       }
@@ -75,6 +77,7 @@ export const useAppUI = (setAppView: (view: AppView) => void) => {
       setIsAvatarSelectorOpen,
       setShowMasterLogin,
       setMasterCodeInput,
+      setMasterLoginError,
       handleMasterLoginSubmit
     }
   };

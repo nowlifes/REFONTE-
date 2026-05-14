@@ -241,7 +241,7 @@ const NicknamePage: React.FC<NicknamePageProps> = ({ state: s, actions: a, ui, u
          {ui.showMasterLogin && (
            <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-6 animate-in fade-in duration-200">
               <div className="w-full max-w-sm bg-[#FFD700] border-[4px] border-black rounded-2xl p-8 relative shadow-[8px_8px_0px_black]">
-                 <button onClick={() => uia.setShowMasterLogin(false)} className="absolute top-4 right-4 text-black"><X className="w-6 h-6" strokeWidth={5} /></button>
+                 <button onClick={() => { uia.setShowMasterLogin(false); uia.setMasterLoginError(false); }} className="absolute top-4 right-4 text-black"><X className="w-6 h-6" strokeWidth={5} /></button>
                  <div className="text-center mb-6">
                    <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4"><KeyRound className="w-8 h-8 text-[#FFD700]" /></div>
                    <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic">{t('master_access_title')}</h3>

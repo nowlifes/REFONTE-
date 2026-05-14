@@ -198,7 +198,7 @@ const PlayerApp: React.FC = () => {
   aRef.current = a;
   const sRef = React.useRef(s);
   sRef.current = s;
-  const { state: ui, actions: uia } = useAppUI(a.setView);
+  const { state: ui, actions: uia } = useAppUI(a.setView, () => navigate('/master'));
   const [photoProofs, setPhotoProofs] = useState<Record<number, string>>({});
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);

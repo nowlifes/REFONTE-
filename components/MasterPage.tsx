@@ -583,7 +583,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   {isSimulating ? 'Déploiement...' : 'Simuler 5 joueurs'}
                 </button>
                 <button onClick={() => setShowResetConfirm(true)}
-                  className="w-full py-2 bg-red-50 text-red-500 border-2 border-red-200 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:bg-red-100 transition-all">
+                  className="w-full py-2 bg-[#FF2D6A]/10 text-[#FF2D6A] border-2 border-[#FF2D6A]/30 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:bg-[#FF2D6A]/20 transition-all">
                   <Trash2 size={12} strokeWidth={2.5} /> {t('reset_session')}
                 </button>
               </div>
@@ -670,7 +670,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
           <div className="w-full max-w-sm bg-white border-[4px] border-black rounded-2xl p-8 relative shadow-[10px_10px_0px_#FF2E63] animate-in zoom-in duration-300">
             <button onClick={() => setShowResetConfirm(false)} className="absolute top-4 right-4 text-black/20 hover:text-black"><X size={22} strokeWidth={2.5} /></button>
             <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={24} className="text-red-600" /></div>
+              <div className="w-14 h-14 bg-[#FF2D6A]/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={24} className="text-[#FF2D6A]" /></div>
               <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic mb-2">{t('reset_session')}</h3>
               <p className="text-sm text-black/50 leading-tight">{t('reset_session_confirm')}</p>
             </div>
@@ -764,10 +764,10 @@ const MasterPage: React.FC<MasterPageProps> = ({
                             <input type="text" value={renameValue} onChange={e => setRenameValue(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter') handleSaveRename(player.id); if (e.key === 'Escape') setRenamingPlayerId(null); }}
                               autoFocus className="flex-1 bg-black/5 border-[2px] border-black/20 rounded-lg px-2 py-1.5 font-impact text-black text-[11px] uppercase focus:outline-none min-w-0" />
-                            <button onClick={() => handleSaveRename(player.id)} disabled={isSavingRename} className="w-8 h-8 bg-[#00FF9D] border-[2px] border-black rounded-lg flex items-center justify-center active:scale-90 shrink-0 disabled:opacity-50">
+                            <button onClick={() => handleSaveRename(player.id)} disabled={isSavingRename} className="w-10 h-10 bg-[#00FF9D] border-[2px] border-black rounded-lg flex items-center justify-center active:scale-90 shrink-0 disabled:opacity-50">
                               {isSavingRename ? <span className="w-3 h-3 border border-black/30 border-t-black rounded-full animate-spin" /> : <Check size={14} className="text-black" strokeWidth={3} />}
                             </button>
-                            <button onClick={() => setRenamingPlayerId(null)} className="w-8 h-8 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
+                            <button onClick={() => setRenamingPlayerId(null)} className="w-10 h-10 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
                               <X size={14} className="text-black/40" strokeWidth={2.5} />
                             </button>
                           </div>
@@ -797,14 +797,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
                                 </div>
                               </div>
                             )}
-                            <button onClick={() => { setRenamingPlayerId(player.id); setRenameValue(player.pseudo); }} className="w-7 h-7 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
+                            <button onClick={() => { setRenamingPlayerId(player.id); setRenameValue(player.pseudo); }} className="w-9 h-9 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
                               <Pencil size={11} className="text-black/30" strokeWidth={2.5} />
                             </button>
                             <button onClick={async () => {
                               setRecoveryQR({ playerId: player.id, token: null, loading: true });
                               try { const token = await gameService.generateRecoveryToken(player.id); setRecoveryQR({ playerId: player.id, token, loading: false }); }
                               catch { setRecoveryQR(null); }
-                            }} className="w-7 h-7 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
+                            }} className="w-9 h-9 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
                               <QrCode size={11} className="text-black/30" strokeWidth={2.5} />
                             </button>
                           </>
@@ -833,7 +833,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                               <RefreshCw size={11} strokeWidth={2.5} />
                               <span className="font-impact uppercase text-[8px]">Reset</span>
                             </button>
-                            <button onClick={() => setKickConfirmId(player.id)} className="flex-1 py-1.5 flex items-center justify-center gap-1 text-red-400/60 hover:text-red-400 hover:bg-red-50 transition-all">
+                            <button onClick={() => setKickConfirmId(player.id)} className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#FF2D6A]/60 hover:text-[#FF2D6A] hover:bg-[#FF2D6A]/5 transition-all">
                               <UserX size={11} strokeWidth={2.5} />
                               <span className="font-impact uppercase text-[8px]">Kick</span>
                             </button>
