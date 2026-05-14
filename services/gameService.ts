@@ -25,10 +25,12 @@ interface OfflineAction {
 }
 
 class GameBackendService {
-  
+
   // Singleton State
   private _isSyncing = false;
   private _syncListeners: ((isSyncing: boolean) => void)[] = [];
+  private _validatingCells = new Set<string>(); // per-cell lock to prevent double-tap lost update
+  private _isCreatingSession = false;           // guard against double-click createNewSession
 
   constructor() {
       // Listen to window online event to trigger sync
@@ -102,9 +104,10 @@ class GameBackendService {
       const code = e?.code ?? e?.error_code ?? '';
       const msg = (e?.message ?? '').toLowerCase();
       // Postgres unique violation (cell already validated), row not found, or explicit conflict
-      return code === '23505' || code === 'PGRST116' ||
+      return code === '23505' || code === 'PGRST116' || code === 'GAME_INACTIVE' ||
              msg.includes('already validated') || msg.includes('not found') ||
-             msg.includes('duplicate') || msg.includes('violates unique');
+             msg.includes('duplicate') || msg.includes('violates unique') ||
+             msg.includes('no longer active');
   }
 
   public async syncPendingActions() {
@@ -588,6 +591,15 @@ class GameBackendService {
   async validateCell(gameId: string, cellId: number, proofData?: any, forceNetwork = false): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
+    // Per-cell lock: prevent double-tap from firing two concurrent writes on the same cell
+    const cellKey = `${gameId}:${cellId}`;
+    if (this._validatingCells.has(cellKey)) {
+      const cached = localStorage.getItem('bingo_last_session');
+      if (cached) return JSON.parse(cached) as GameSession;
+      throw new Error("Validation already in progress");
+    }
+    this._validatingCells.add(cellKey);
+
     // Helper to return optimistic result based on current cache
     const returnOptimistic = () => {
         const cached = localStorage.getItem('bingo_last_session');
@@ -622,11 +634,12 @@ class GameBackendService {
     try {
         const { data: game, error: fetchError } = await supabase
         .from('games')
-        .select('id, validated_cells')
+        .select('id, validated_cells, status')
         .eq('id', gameId)
         .single();
-        
+
         if (fetchError || !game) throw new Error("Game not found");
+        if (game.status !== 'ACTIVE') throw Object.assign(new Error("Game is no longer active"), { code: 'GAME_INACTIVE' });
 
         const currentValidated = game.validated_cells || [];
         if (currentValidated.find((v: any) => v.id === cellId)) {
@@ -674,6 +687,8 @@ class GameBackendService {
             return returnOptimistic();
         }
         throw e;
+    } finally {
+        this._validatingCells.delete(cellKey);
     }
   }
 
@@ -957,6 +972,8 @@ class GameBackendService {
 
   async createNewSession(): Promise<string> {
     if (!supabase) return '';
+    if (this._isCreatingSession) return '';
+    this._isCreatingSession = true;
     try {
       console.log("[GameService] Creating new session...");
 
@@ -986,6 +1003,8 @@ class GameBackendService {
     } catch (e) {
       console.error("[GameService] Failed to create new session", e);
       throw e;
+    } finally {
+      this._isCreatingSession = false;
     }
   }
 
@@ -1433,13 +1452,24 @@ async resetSession(): Promise<void> {
   subscribeMasterValidations(sessionId: string, callback: (validations: any[]) => void) {
     if (!supabase) return () => {};
     this.getPendingMasterValidations(sessionId).then(callback);
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const refetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        this.getPendingMasterValidations(sessionId).then(callback);
+      }, 300);
+    };
+
     const ch = supabase
       .channel(`mv_${sessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'master_validations',
-        filter: `session_id=eq.${sessionId}` },
-        () => this.getPendingMasterValidations(sessionId).then(callback))
+        filter: `session_id=eq.${sessionId}` }, refetch)
       .subscribe();
-    return () => supabase.removeChannel(ch);
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(ch);
+    };
   }
 
   // ─── SPOTLIGHT CONTROL ────────────────────────────────────────────────────────

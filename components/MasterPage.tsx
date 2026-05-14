@@ -19,6 +19,19 @@ function sessionColor(uuid: string): string {
   return SESSION_COLORS[idx];
 }
 
+// Isolated countdown — only this tiny component re-renders every second, not MasterPage
+const CountdownTimer: React.FC<{ endsAt: number | null; className?: string }> = ({ endsAt, className }) => {
+  const [secs, setSecs] = useState(() => endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : 0);
+  useEffect(() => {
+    if (!endsAt) { setSecs(0); return; }
+    const update = () => setSecs(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [endsAt]);
+  return <span className={className}>{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</span>;
+};
+
 interface MasterPageProps {
   isSessionActive: boolean;
   setSessionActive: (active: boolean) => void;
@@ -146,14 +159,6 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [selectedDuration, setSelectedDuration] = useState<number>(5);
   const [barNameInput, setBarNameInput] = useState('');
   const [isTriggeringTransition, setIsTriggeringTransition] = useState(false);
-  const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
-  useEffect(() => {
-    if (!transitionEndsAt) { setTransitionSecondsLeft(0); return; }
-    const update = () => setTransitionSecondsLeft(Math.max(0, Math.ceil((transitionEndsAt - Date.now()) / 1000)));
-    update();
-    const iv = setInterval(update, 1000);
-    return () => clearInterval(iv);
-  }, [transitionEndsAt]);
 
   useEffect(() => { gameService.getChallenges().then(setDbChallenges); }, []);
 
@@ -419,7 +424,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         <div>
                           {nextBarName && <p className="font-impact text-black/60 uppercase text-[9px]">{nextBarName}</p>}
                           <p className="font-impact text-black text-2xl italic">
-                            {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                            <CountdownTimer endsAt={transitionEndsAt} />
                           </p>
                           <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">Bar {currentBar} → {currentBar + 1} · Lignes débloquées ✓</p>
                         </div>
@@ -527,7 +532,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     <div>
                       {nextBarName && <p className="font-impact text-white/70 uppercase text-[9px]">{nextBarName}</p>}
                       <p className="font-impact text-white text-2xl italic">
-                        {Math.floor(transitionSecondsLeft / 60)}:{String(transitionSecondsLeft % 60).padStart(2, '0')}
+                        <CountdownTimer endsAt={transitionEndsAt} />
                       </p>
                     </div>
                     <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
