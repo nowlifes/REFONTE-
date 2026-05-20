@@ -245,7 +245,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       setTimeout(() => setShowCooldownFlash(false), 800);
       return;
     }
-    sounds.playValidate();
     setLastValidationTime(Date.now());
     if (data?.proofImage && s.selectedCell) onPhotoProof?.(s.selectedCell.id, data.proofImage);
     // PvP loss → start revenge timer

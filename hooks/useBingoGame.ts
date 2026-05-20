@@ -433,7 +433,6 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
       setCompletedLineCount(currentLineCount);
       setWinningIds(uniqueWinningIds);
 
-      playSound('WIN');
       triggerHaptic('success');
 
       const isFullGrid = uniqueWinningIds.length === 25;

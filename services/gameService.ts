@@ -530,7 +530,9 @@ class GameBackendService {
     // Fill with repeated challenges if pool is too small
     if (rows1to4.length < 20) {
       const cyclePool = shuffleArray([...challenges]);
-      while (rows1to4.length < 20) rows1to4.push(cyclePool[rows1to4.length % cyclePool.length]);
+      if (cyclePool.length > 0) {
+        while (rows1to4.length < 20) rows1to4.push(cyclePool[rows1to4.length % cyclePool.length]);
+      }
     }
 
     // Build final 25-cell grid

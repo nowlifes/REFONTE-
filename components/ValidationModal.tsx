@@ -35,7 +35,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   playerNickname, playerAvatarId,
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
 }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const initialStep: ModalStep = cell.type === ChallengeType.MASTER ? 'MASTER_PAD'
     : cell.type === ChallengeType.PVP ? 'PVP_OUTCOME'
     : 'INFO';

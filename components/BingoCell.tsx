@@ -37,20 +37,24 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     }
   };
 
-  // Short label: first 1-2 meaningful words, max 10 chars
+  // Two meaningful words for context — first pass skips stop words
   const STOP_WORDS = new Set(['tu', 'je', 'il', 'de', 'du', 'un', 'une', 'le', 'la', 'les', 'des', 'à', 'au', 'en', 'et', 'ou', 'sur', 'par', 'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'do', 'get', 'your']);
-  const getShortLabel = (): string => {
+  const getDisplayWords = (): string[] => {
     const words = text.split(/\s+/);
-    let label = '';
+    const result: string[] = [];
     for (const w of words) {
-      const clean = w.replace(/[^a-zA-ZÀ-ÿ]/g, '');
+      const clean = w.replace(/[^a-zA-ZÀ-ÿ0-9]/g, '');
       if (clean.length >= 3 && !STOP_WORDS.has(clean.toLowerCase())) {
-        label = clean.toUpperCase();
-        break;
+        const upper = clean.toUpperCase();
+        result.push(upper.length > 9 ? upper.slice(0, 8) + '.' : upper);
+        if (result.length === 2) break;
       }
     }
-    if (!label) label = words[0]?.toUpperCase() || text.slice(0, 8).toUpperCase();
-    return label.length > 10 ? label.slice(0, 9) + '.' : label;
+    if (result.length === 0) {
+      const fallback = (words[0]?.toUpperCase() || text.slice(0, 8).toUpperCase());
+      result.push(fallback.length > 10 ? fallback.slice(0, 9) + '.' : fallback);
+    }
+    return result;
   };
 
   const winDelay = isWinning && winningIndex >= 0 ? `${winningIndex * 80}ms` : '0ms';
@@ -147,11 +151,13 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
         >
           {isLocked ? (
             <div className="flex flex-col items-center gap-0.5">
-              <Lock className="w-4 h-4 text-[#FFD700]/60" strokeWidth={2} />
-              <span className="text-[7px] font-impact uppercase tracking-tight leading-none text-[#FFD700]/50">5 pts</span>
+              <Lock className="w-4 h-4 text-[#FFD700]/80" strokeWidth={2.5} />
+              <div className="flex items-center gap-0.5 bg-[#FFD700]/20 border border-[#FFD700]/50 rounded-[3px] px-1 py-0.5">
+                <span className="text-[10px] font-impact uppercase tracking-tight leading-none text-[#FFD700]">⚡5</span>
+              </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-0.5 pointer-events-none w-full px-1 relative">
+            <div className="flex flex-col items-center justify-center gap-0 pointer-events-none w-full px-1 relative">
               {/* Partner badge — top-right corner */}
               {isPartner && (
                 <div className="absolute -top-[3px] -right-[3px] w-4 h-4 bg-[#FFD700] border border-black rounded-bl-md rounded-tr-[6px] flex items-center justify-center">
@@ -161,12 +167,19 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               {isSpotlight && (
                 <Zap className="w-3 h-3 mb-0.5 shrink-0" fill="currentColor" strokeWidth={0} style={{ color: type === ChallengeType.AUTO ? '#000' : type === ChallengeType.WITNESS ? '#fff' : '#000' }} />
               )}
-              <span
-                className="font-impact uppercase leading-none text-center w-full"
-                style={{ fontSize: getShortLabel().length > 7 ? '11px' : '14px', letterSpacing: '-0.5px' }}
-              >
-                {getShortLabel()}
-              </span>
+              {getDisplayWords().map((word, i) => (
+                <span
+                  key={i}
+                  className="font-impact uppercase leading-none text-center w-full"
+                  style={{
+                    fontSize: i === 0 ? (getDisplayWords().length > 1 ? '11px' : '13px') : '9px',
+                    letterSpacing: '-0.5px',
+                    opacity: i === 1 ? 0.65 : 1,
+                  }}
+                >
+                  {word}
+                </span>
+              ))}
             </div>
           )}
         </div>

@@ -1,7 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, X } from 'lucide-react';
 import { gameService } from '../services/gameService';
+import { useGameSounds } from '../hooks/useGameSounds';
+import { useGameNotifications } from '../hooks/useGameNotifications';
 
 interface WitnessRequestBannerProps {
   playerId: string;
@@ -12,14 +14,26 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const sounds = useGameSounds();
+  const notifications = useGameNotifications();
 
   useEffect(() => {
     if (!playerId) return;
     const unsub = gameService.subscribeWitnessRequests(playerId, (reqs) => {
       setRequests(reqs);
+      // Fire sound + push notification for NEW requests only
+      reqs.forEach((r: any) => {
+        if (!seenIdsRef.current.has(r.id)) {
+          seenIdsRef.current.add(r.id);
+          sounds.playWitnessRequest();
+          if (navigator.vibrate) navigator.vibrate([100, 80, 200]);
+          notifications.notifyWitness(r.player_nickname ?? '?', r.challenge_text ?? '');
+        }
+      });
     });
     return unsub;
-  }, [playerId]);
+  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = requests.filter(r => !dismissed.has(r.id));
   if (visible.length === 0) return null;
