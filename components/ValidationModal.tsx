@@ -281,24 +281,39 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               )}
 
               {/* Primary CTA */}
-              <button
-                onClick={() => {
-                  if (isWitness) {
-                    if (onRequestPlayerWitness && sessionId) {
-                      setStep('PLAYER_WITNESS_SELECT');
-                    } else {
-                      setStep('WITNESS_MODE');
-                    }
-                  } else {
+              {isWitness ? (
+                <div className="flex flex-col gap-2">
+                  {/* Option 1: choisir un témoin joueur (si session active) */}
+                  {onRequestPlayerWitness && sessionId && (
+                    <button
+                      onClick={() => setStep('PLAYER_WITNESS_SELECT')}
+                      className="w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all bg-[#FF2E63] text-white flex items-center justify-center gap-2"
+                    >
+                      <span>👥</span>
+                      Choisir un témoin
+                    </button>
+                  )}
+                  {/* Option 2: signature manuelle */}
+                  <button
+                    onClick={() => setStep('WITNESS_MODE')}
+                    className={`w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 ${onRequestPlayerWitness && sessionId ? 'bg-white/10 text-white border-white/20 shadow-none' : 'bg-[#FF2E63] text-white shadow-[5px_5px_0px_black]'}`}
+                  >
+                    <span>✍️</span>
+                    Signature
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
                     setStep('SUCCESS');
-                    onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined }); // validate (modal stays open)
+                    onConfirm({ witnessName: '', witnessSignature: '', proofImage: photoData || undefined });
                     setTimeout(triggerFortune, 900);
-                  }
-                }}
-                className={`w-full py-5 rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all ${isWitness ? 'bg-[#FF2E63] text-white' : 'bg-[#00FF9D] text-black'}`}
-              >
-                {t('i_did_it')}
-              </button>
+                  }}
+                  className="w-full py-5 rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all bg-[#00FF9D] text-black"
+                >
+                  {t('i_did_it')}
+                </button>
+              )}
 
               {/* Joker swap */}
               {jokerCount > 0 && (
