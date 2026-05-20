@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock } from 'lucide-react';
 import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AppView, BingoCellData, TauntType } from '../types';
+import { AppView, BingoCellData, CellStatus, TauntType } from '../types';
 import BingoCell from './BingoCell';
 import QRScanner from './QRScanner';
 import ValidationModal from './ValidationModal';
@@ -89,8 +89,15 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const cadenceArray = barCadence.split(',').map(Number);
   const unlockedRows = Math.min(5, cadenceArray.slice(0, currentBar).reduce((a, b) => a + b, 0));
 
+  // Bar 2 wave 1 complete: all 5 cells of row 1 (ids 5-9) are validated
+  const bar2Wave1Complete = currentBar >= 2 &&
+    s.cells.length > 0 &&
+    s.cells
+      .filter((c: BingoCellData) => Math.floor(c.id / 5) === 1)
+      .every((c: BingoCellData) => c.status === CellStatus.VALIDATED);
+
   // Separators: future unlock boundaries still within the grid
-  const rowSeparators: { afterRow: number; barLabel: number; isPrimary: boolean }[] = [];
+  const rowSeparators: { afterRow: number; barLabel: number; isPrimary: boolean; isWave?: boolean }[] = [];
   {
     let cum = 0;
     cadenceArray.forEach((goal, i) => {
@@ -99,6 +106,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         rowSeparators.push({ afterRow: cum, barLabel: i + 2, isPrimary: cum === unlockedRows });
       }
     });
+    // Wave separator: row 2 is wave-locked at bar 2 until wave 1 is done
+    if (currentBar === 2 && !bar2Wave1Complete && unlockedRows >= 3) {
+      rowSeparators.push({ afterRow: 2, barLabel: 2, isPrimary: true, isWave: true });
+    }
   }
 
   // ── Row unlock animation — fires when Master advances the bar ──
@@ -115,6 +126,23 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     }
     prevUnlockedRowsRef.current = unlockedRows;
   }, [unlockedRows]);
+
+  // ── Bar 2 wave system — state & side-effects ─────────────────────
+  const [showWaveCompleteOverlay, setShowWaveCompleteOverlay] = useState(false);
+  const prevBar2Wave1CompleteRef = useRef(false);
+
+  useEffect(() => {
+    if (bar2Wave1Complete && !prevBar2Wave1CompleteRef.current) {
+      setShowWaveCompleteOverlay(true);
+      setUnlockingRows(prev => [...prev, 2]);
+      if (navigator.vibrate) navigator.vibrate([80, 60, 120, 60, 200]);
+      setTimeout(() => {
+        setShowWaveCompleteOverlay(false);
+        setUnlockingRows(prev => prev.filter(r => r !== 2));
+      }, 4000);
+    }
+    prevBar2Wave1CompleteRef.current = bar2Wave1Complete;
+  }, [bar2Wave1Complete]);
 
   // Progressive unlock detection — only center mystery cell (id 12) locks at score < 5
   const CENTER_UNLOCK_SCORE = 5;
@@ -630,7 +658,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           >
               {s.cells.map((cell: BingoCellData) => {
                 const cellRow = Math.floor(cell.id / 5);
-                const isRowLocked = !chaosMode && cellRow >= unlockedRows;
+                const isWaveLocked = !chaosMode && cellRow === 2 && currentBar === 2 && !bar2Wave1Complete;
+                const isRowLocked = !chaosMode && (cellRow >= unlockedRows || isWaveLocked);
                 const isCenter = cell.id === 12;
                 const isLocked = !isRowLocked && isCenter && isMysteryCellLocked;
                 const isRowUnlocking = unlockingRows.includes(cellRow);
@@ -684,13 +713,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           </div>
 
           {/* ── Row-unlock separators ───────────────────────────── */}
-          {rowSeparators.map(({ afterRow, barLabel, isPrimary }) => {
+          {rowSeparators.map((sep) => {
+            const { afterRow, barLabel, isPrimary } = sep;
             // Position: centered in the 4px gap between row (afterRow-1) and row (afterRow)
             // top = outer_padding(16) + grid_padding(4) + afterRow * row_stride(70) - gap_half(2)
             const topPx = 16 + 4 + afterRow * 70 - 2;
             return (
               <div
-                key={barLabel}
+                key={sep.isWave ? `wave-${afterRow}` : barLabel}
                 className="absolute z-20 pointer-events-none flex items-center justify-center"
                 style={{ left: 16, top: topPx - 10, width: 350, height: 20 }}
               >
@@ -698,22 +728,26 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 <div
                   className={`absolute inset-y-[9px] left-0 right-0 h-[1.5px] separator-glow`}
                   style={{
-                    background: isPrimary
-                      ? 'linear-gradient(to right, transparent, #FF8C00CC, transparent)'
-                      : 'linear-gradient(to right, transparent, #ffffff40, transparent)',
+                    background: sep.isWave
+                      ? 'linear-gradient(to right, transparent, #00F5A0CC, transparent)'
+                      : isPrimary
+                        ? 'linear-gradient(to right, transparent, #FF8C00CC, transparent)'
+                        : 'linear-gradient(to right, transparent, #ffffff40, transparent)',
                   }}
                 />
                 {/* Badge */}
                 <div
                   className={`relative flex items-center gap-1 rounded-[6px] border-[2px] border-black shadow-[2px_2px_0px_black] px-[7px] py-[3px]`}
-                  style={{ background: isPrimary ? '#FF8C00' : '#2A3555' }}
+                  style={{ background: sep.isWave ? '#00F5A0' : isPrimary ? '#FF8C00' : '#2A3555' }}
                 >
-                  <Lock size={7} strokeWidth={3} style={{ color: isPrimary ? '#000' : '#ffffff80' }} />
+                  <Lock size={7} strokeWidth={3} style={{ color: '#000' }} />
                   <span
                     className="font-impact uppercase tracking-widest whitespace-nowrap"
-                    style={{ fontSize: '8px', color: isPrimary ? '#000' : '#ffffff70' }}
+                    style={{ fontSize: '8px', color: '#000' }}
                   >
-                    {isPrimary ? `Débloqué au Bar ${barLabel}` : `Bar ${barLabel}`}
+                    {sep.isWave
+                      ? `5 défis à compléter`
+                      : isPrimary ? `Débloqué au Bar ${barLabel}` : `Bar ${barLabel}`}
                   </span>
                 </div>
               </div>
@@ -911,6 +945,17 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           onSave={async (nick, avatarKey) => { await a.updateProfile(nick, avatarKey); }}
           onClose={() => setShowEditProfile(false)}
         />
+      )}
+
+      {/* WAVE COMPLETE OVERLAY — 5/5 défis bar 2 vague 1 */}
+      {showWaveCompleteOverlay && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none animate-in fade-in duration-300">
+          <div className="flex flex-col items-center gap-3 bg-[#00F5A0] border-[4px] border-black shadow-[8px_8px_0px_black] rounded-2xl px-8 py-7 text-center">
+            <div className="text-4xl">🏆</div>
+            <div className="font-impact uppercase text-black text-2xl tracking-tight leading-none">5 / 5 défis !</div>
+            <div className="font-impact uppercase text-black/70 text-sm tracking-widest">5 nouveaux défis débloqués 🔥</div>
+          </div>
+        </div>
       )}
 
       {/* RESET CONFIRMATION */}

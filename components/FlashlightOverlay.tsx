@@ -70,23 +70,22 @@ const FlashlightOverlay: React.FC<FlashlightOverlayProps> = ({ secondsLeft, send
     ? radius * (0.6 + 0.4 * (secondsLeft / 10))
     : radius;
 
-  const gradient = `radial-gradient(circle ${effectiveRadius}px at ${pos.x}px ${pos.y}px,
-    rgba(255,240,180,0.18) 0%,
-    rgba(255,230,150,0.10) ${effectiveRadius * 0.5}px,
-    rgba(0,0,0,0.97) ${effectiveRadius}px,
-    rgba(0,0,0,1) 100%)`;
+  const mask = `radial-gradient(circle ${effectiveRadius}px at ${pos.x}px ${pos.y}px, transparent 0%, transparent ${effectiveRadius * 0.6}px, black ${effectiveRadius}px, black 100%)`;
 
   return (
     <div
       ref={overlayRef}
       className="fixed inset-0 z-[150] select-none"
-      style={{ background: gradient, touchAction: 'none', cursor: 'none' }}
+      style={{ touchAction: 'none', cursor: 'none' }}
     >
-      {/* Vignette supplémentaire pour le bord */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.5) 100%)' }} />
+      {/* Dark overlay with hole — masked separately so UI elements above are not clipped */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'rgba(0,0,0,0.97)',
+        maskImage: mask,
+        WebkitMaskImage: mask,
+      }} />
 
-      {/* Header info — invisible sauf au centre */}
+      {/* Header info — visible always */}
       <div className="absolute top-0 left-0 right-0 pt-12 pb-4 text-center pointer-events-none">
         <p className="font-impact text-white/60 uppercase text-[11px] tracking-widest">
           {senderName

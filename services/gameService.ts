@@ -474,27 +474,41 @@ class GameBackendService {
   async startGame(userId: string, challenges: any[]): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
-    // Partner challenges (ids 1-4) always appear at the 4 corners (indices 0, 4, 20, 24)
-    const CORNER_INDICES = [0, 4, 20, 24];
-    const partnerPool = shuffleArray(challenges.filter((c: any) => c.is_partner));
-    const nonPartnerPool = shuffleArray(challenges.filter((c: any) => !c.is_partner));
-    // Guarantee exactly 4 corner challenges without duplication
-    const cornerChallenges = partnerPool.length >= 4
-      ? partnerPool.slice(0, 4)
-      : [...partnerPool, ...nonPartnerPool.slice(0, 4 - partnerPool.length)];
-    const regularChallenges = nonPartnerPool.slice(0, 21);
+    // Row 0 (bar 1 intro): exactly 1 MASTER + 4 non-MASTER, no "story" challenge
+    // "Story" challenge (id=2) is reserved for bar 2 (rows 1+)
+    const STORY_ID = 2;
+    const masterPool = shuffleArray(challenges.filter((c: any) => c.is_partner && c.id !== STORY_ID));
+    const storyChallenge = challenges.find((c: any) => c.id === STORY_ID);
+    const nonMasterPool = shuffleArray(challenges.filter((c: any) => !c.is_partner && c.type !== 'MASTER'));
+    const extraMasterPool = shuffleArray(challenges.filter((c: any) => !c.is_partner && c.type === 'MASTER'));
 
-    if (regularChallenges.length < 21) {
-      throw new Error(`Not enough challenges to build a grid: need 21 regular, got ${regularChallenges.length}`);
+    // 1 MASTER for row 0 (prefer partner master, fallback to extra master)
+    const row0Master = masterPool.length > 0 ? masterPool[0] : extraMasterPool[0];
+    // 4 non-MASTER for row 0 (AUTO, WITNESS, PVP)
+    const row0Others = nonMasterPool.slice(0, 4);
+    const row0 = shuffleArray([row0Master, ...row0Others].filter(Boolean));
+
+    if (row0.length < 5) {
+      throw new Error(`Not enough non-MASTER challenges for row 0: got ${row0.length}`);
     }
 
-    // Build the 25-cell grid: corners = partner/corner challenges, rest = regular challenges
-    const grid: any[] = new Array(25).fill(null);
-    CORNER_INDICES.forEach((pos, i) => { grid[pos] = cornerChallenges[i]; });
-    let regularIdx = 0;
-    for (let i = 0; i < 25; i++) {
-      if (grid[i] === null) grid[i] = regularChallenges[regularIdx++];
+    // Remaining challenges for rows 1-4 (20 cells), story forced in
+    const usedIds = new Set(row0.map((c: any) => c.id));
+    const rows1to4Pool = shuffleArray(
+      challenges.filter((c: any) => !usedIds.has(c.id))
+    );
+
+    // Ensure story is included (it wasn't in usedIds, so it's already in the pool)
+    // If somehow story is missing (no id=2 in DB), just proceed
+    const rows1to4 = rows1to4Pool.slice(0, 20);
+
+    if (rows1to4.length < 20) {
+      throw new Error(`Not enough challenges for rows 1-4: need 20, got ${rows1to4.length}`);
     }
+
+    // Build final 25-cell grid
+    const grid: any[] = [...row0, ...rows1to4];
+    void storyChallenge; // story is already in rows1to4Pool via usedIds exclusion
 
     const gridChallenges = grid.map((item: any, index: number) => ({
       id: index,
