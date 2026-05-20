@@ -580,7 +580,7 @@ const PlayerApp: React.FC = () => {
               onCrownClick={handleCrownClick}
               onPhotoProof={(cellId: number, url: string) => setPhotoProofs((prev: Record<number, string>) => ({ ...prev, [cellId]: url }))}
               secureSessionId={secureSessionId}
-              challengeCooldownSecs={chaosMode ? 0 : challengeCooldownSecs}
+              challengeCooldownSecs={chaosMode || currentBar >= 3 ? 0 : Math.max(challengeCooldownSecs || 0, 60)}
               isGamePaused={isGamePaused}
               chaosMode={chaosMode}
               currentBar={currentBar}

@@ -4,6 +4,7 @@ import { Check, X } from 'lucide-react';
 import { gameService } from '../services/gameService';
 import { useGameSounds } from '../hooks/useGameSounds';
 import { useGameNotifications } from '../hooks/useGameNotifications';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface WitnessRequestBannerProps {
   playerId: string;
@@ -17,6 +18,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   const seenIdsRef = useRef<Set<string>>(new Set());
   const sounds = useGameSounds();
   const notifications = useGameNotifications();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!playerId) return;
@@ -88,7 +90,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
 
         {/* Badge */}
         <div className="inline-flex items-center gap-1.5 bg-black text-[#FF8C00] px-2.5 py-1 rounded-lg mb-3 w-fit">
-          <span className="font-impact text-[9px] uppercase tracking-widest">Témoin requis</span>
+          <span className="font-impact text-[9px] uppercase tracking-widest">{t('witness_required')}</span>
           {visible.length > 1 && (
             <span className="bg-[#FF8C00] text-black rounded-md px-1.5 py-0.5 font-impact text-[8px]">
               +{visible.length - 1}
@@ -98,7 +100,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
 
         {/* Who's asking */}
         <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-2">
-          {current.player_emoji} {current.player_nickname} a besoin de toi :
+          {current.player_emoji} {current.player_nickname} {t('witness_needs_you')}
         </p>
 
         {/* Challenge text — the hero */}
@@ -109,7 +111,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
         </div>
 
         <p className="mt-4 font-impact text-black/50 uppercase text-[10px] tracking-widest leading-relaxed">
-          Tu as vu cette personne accomplir ce défi ?
+          {t('witness_confirm_question')}
         </p>
       </div>
 
@@ -129,7 +131,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
           ) : (
             <>
               <Check size={22} strokeWidth={3} />
-              Oui, je confirme !
+              {t('witness_confirm_yes')}
             </>
           )}
         </button>
@@ -145,7 +147,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
           ) : (
             <>
               <X size={16} strokeWidth={2.5} />
-              Non, je n'ai pas vu ça
+              {t('witness_confirm_no')}
             </>
           )}
         </button>

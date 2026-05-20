@@ -822,8 +822,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                     style={{ fontSize: '8px', color: '#000' }}
                   >
                     {sep.isWave
-                      ? `5 défis à compléter`
-                      : isPrimary ? `Débloqué au Bar ${barLabel}` : `Bar ${barLabel}`}
+                      ? t('wave_challenges').replace('{n}', '5')
+                      : isPrimary ? t('unlocked_at_bar').replace('{n}', String(barLabel)) : t('bar_label').replace('{n}', String(barLabel))}
                   </span>
                 </div>
               </div>
@@ -838,7 +838,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               <Lock className="w-4 h-4 text-[#FFD700]/70 shrink-0" strokeWidth={2.5} />
               <div className="flex flex-col gap-1">
                 <span className="font-impact text-[#FFD700]/90 uppercase text-[9px] tracking-widest leading-none">
-                  CASE MYSTÈRE · {CENTER_UNLOCK_SCORE - s.score} DÉFIS
+                  {t('mystery_cell_label').replace('{n}', String(CENTER_UNLOCK_SCORE - s.score))}
                 </span>
                 <div className="flex gap-1">
                   {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
@@ -858,7 +858,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <div className="flex items-center gap-3 bg-[#00F5A0]/10 border-[2px] border-[#00F5A0]/30 rounded-2xl px-4 py-2">
               <div className="flex flex-col gap-1">
                 <span className="font-impact text-[#00F5A0]/80 uppercase text-[9px] tracking-widest leading-none">
-                  VAGUE 2 · FINIR LA RANGÉE 1
+                  {t('bar2_wave_label')}
                 </span>
                 <div className="flex gap-1">
                   {s.cells.filter((c: BingoCellData) => Math.floor(c.id / 5) === 1).map((c: BingoCellData, i: number) => (
@@ -1089,7 +1089,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
             {/* Tap hint */}
             <span className="font-impact uppercase text-white/35 text-[9px] tracking-[0.3em] mt-1">
-              {language === 'fr' ? 'Tape pour fermer' : 'Tap to dismiss'}
+              {t('tap_close')}
             </span>
           </div>
         </div>
@@ -1109,7 +1109,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             {/* "POWER UNLOCKED" badge pill */}
             <div className="bg-[#FF2D6A] border-[3px] border-black rounded-lg px-3 py-1 shadow-[3px_3px_0px_black] -mt-12">
               <span className="font-impact uppercase text-white text-[11px] tracking-[0.25em]">
-                {language === 'fr' ? '💥 Pouvoir Débloqué' : '💥 Power Unlocked'}
+                {t('power_unlocked')}
               </span>
             </div>
 
@@ -1121,29 +1121,25 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               className="font-impact uppercase italic text-[#FF2D6A] text-3xl tracking-tight leading-none text-center"
               style={{ textShadow: '3px 3px 0px black' }}
             >
-              {language === 'fr' ? 'TAUNTS DÉBLOQUÉS' : 'TAUNTS UNLOCKED'}
+              {t('taunts_unlocked_title')}
             </div>
 
             {/* Explanation */}
             <p className="font-impact uppercase text-white/80 text-[11px] tracking-widest text-center leading-relaxed max-w-[260px]">
-              {language === 'fr'
-                ? 'Des attaques spéciales contre tes adversaires — gèle-les, floute leur écran, rétrécis leurs défis.'
-                : 'Special attacks on your opponents — freeze them, blur their screen, shrink their challenges.'}
+              {t('taunts_unlocked_desc')}
             </p>
 
             {/* How to earn pill */}
             <div className="flex items-center gap-2 bg-[#FF2D6A] border-[3px] border-black rounded-xl px-4 py-2.5 shadow-[4px_4px_0px_black]">
               <Zap size={14} fill="white" className="text-white shrink-0" />
               <span className="font-impact uppercase text-white text-[11px] tracking-widest leading-tight">
-                {language === 'fr'
-                  ? 'Complète une ligne → +1 Joker → échange contre un taunt'
-                  : 'Complete a line → earn attack powers'}
+                {t('taunts_earn_desc')}
               </span>
             </div>
 
             {/* Tap hint */}
             <span className="font-impact uppercase text-white/35 text-[9px] tracking-[0.3em] mt-1">
-              {language === 'fr' ? 'Tape pour fermer' : 'Tap to dismiss'}
+              {t('tap_close')}
             </span>
           </div>
         </div>
@@ -1154,8 +1150,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none animate-in fade-in duration-300">
           <div className="flex flex-col items-center gap-3 bg-[#00F5A0] border-[4px] border-black shadow-[8px_8px_0px_black] rounded-2xl px-8 py-7 text-center">
             <div className="text-4xl">🏆</div>
-            <div className="font-impact uppercase text-black text-2xl tracking-tight leading-none">5 / 5 défis !</div>
-            <div className="font-impact uppercase text-black/70 text-sm tracking-widest">5 nouveaux défis débloqués 🔥</div>
+            <div className="font-impact uppercase text-black text-2xl tracking-tight leading-none">{t('wave_complete_title')}</div>
+            <div className="font-impact uppercase text-black/70 text-sm tracking-widest">{t('wave_unlocked')}</div>
           </div>
         </div>
       )}
@@ -1165,22 +1161,22 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         <div className="fixed inset-0 z-[350] bg-black/80 flex items-end justify-center animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-[#0A1629] border-t-[4px] border-x-[4px] border-black rounded-t-[28px] shadow-[0_-8px_0px_black] px-5 pt-6 pb-10 animate-in slide-in-from-bottom-4 duration-250">
             <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
-            <h3 className="font-impact uppercase text-white text-xl tracking-tight text-center mb-2">Recommencer ?</h3>
+            <h3 className="font-impact uppercase text-white text-xl tracking-tight text-center mb-2">{t('reset_confirm_title')}</h3>
             <p className="font-impact uppercase text-white/40 text-[10px] tracking-widest text-center leading-relaxed mb-6">
-              Ton profil et ta progression seront effacés.
+              {t('reset_confirm_desc')}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowResetConfirm(false)}
                 className="flex-1 py-4 bg-white/8 border-[2px] border-white/15 rounded-2xl font-impact uppercase text-white/60 text-[13px] tracking-widest active:bg-white/15 transition-all"
               >
-                Annuler
+                {t('reset_confirm_cancel')}
               </button>
               <button
                 onClick={() => { setShowResetConfirm(false); a.resetGame(); a.setView(AppView.NICKNAME); }}
                 className="flex-[2] py-4 bg-[#FF2D6A] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] font-impact uppercase text-white text-[13px] tracking-widest active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
               >
-                Oui, reset
+                {t('reset_confirm_yes')}
               </button>
             </div>
           </div>

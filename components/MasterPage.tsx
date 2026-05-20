@@ -494,24 +494,35 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     </div>
                   )}
 
-                  {/* Cooldown */}
+                  {/* Cooldown / Nice Move */}
                   {setChallengeCooldown && (
                     <div>
-                      <p className="font-impact text-black uppercase text-[11px] tracking-widest mb-2">
-                        Cadence {(challengeCooldownSecs ?? 0) > 0 && <span className="text-[#FF8C00]">· {challengeCooldownSecs}s</span>}
+                      <p className="font-impact text-black uppercase text-[11px] tracking-widest mb-1">
+                        Nice Move
+                        {(currentBar ?? 1) >= 3
+                          ? <span className="text-[#FF2D6A] ml-1">· AUTO OFF (Bar 3 KO)</span>
+                          : (challengeCooldownSecs ?? 0) > 0
+                            ? <span className="text-[#FF8C00] ml-1">· {challengeCooldownSecs}s</span>
+                            : <span className="text-[#00F5A0] ml-1">· 60s par défaut</span>
+                        }
                       </p>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {[0, 30, 60, 120, 300].map(secs => (
-                          <button key={secs} onClick={() => setChallengeCooldown(secs)}
-                            className={`py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
-                              (challengeCooldownSecs ?? 0) === secs
-                                ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]'
-                                : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
-                            }`}>
-                            {secs === 0 ? 'OFF' : secs < 60 ? `${secs}s` : `${secs / 60}m`}
-                          </button>
-                        ))}
-                      </div>
+                      {(currentBar ?? 1) < 3 && (() => {
+                        const effectiveSecs = Math.max(challengeCooldownSecs || 0, 60);
+                        return (
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {[60, 90, 120, 180, 300].map(secs => (
+                              <button key={secs} onClick={() => setChallengeCooldown(secs)}
+                                className={`py-2 rounded-xl font-impact text-[10px] uppercase border-[2px] border-black transition-all ${
+                                  effectiveSecs === secs
+                                    ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]'
+                                    : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
+                                }`}>
+                                {secs === 60 ? '1m' : `${secs / 60}m`}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 

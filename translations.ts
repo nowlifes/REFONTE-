@@ -244,9 +244,10 @@ export const TRANSLATIONS = {
     create_new_session_confirm: "This wipes ALL data and starts fresh. You sure?",
     create_new_session_btn: "START FRESH",
 
-    // Cooldown
+    // Cooldown / Nice Move
     cooldown_title: "🎯 NICE MOVE!",
-    cooldown_sub: "Breathe · next challenge in {n}s",
+    cooldown_sub: "Save challenges for later · {n}s",
+    cooldown_bar3_off: "Bar 3 = KO mode · no cooldown",
 
     // PvP Challenge
     pvp_feat: "PvP Challenge",
@@ -263,7 +264,35 @@ export const TRANSLATIONS = {
 
     // Revenge
     revanche_title: "REMATCH!",
-    revanche_sub: "Find them in {n}min and play again"
+    revanche_sub: "Find them in {n}min and play again",
+
+    // WitnessRequestBanner
+    witness_required: "Witness required",
+    witness_needs_you: "needs you:",
+    witness_confirm_question: "Did you see this person do this challenge?",
+    witness_confirm_yes: "Yes, I confirm!",
+    witness_confirm_no: "Nope, didn't see that",
+
+    // GamePage — separators & progress
+    wave_challenges: "{n} challenges to complete",
+    unlocked_at_bar: "Unlocked at Bar {n}",
+    bar_label: "Bar {n}",
+    mystery_cell_label: "MYSTERY CELL · {n} CHALLENGES",
+    bar2_wave_label: "WAVE 2 · COMPLETE ROW 1",
+    wave_complete_title: "5 / 5 challenges!",
+    wave_unlocked: "5 new challenges unlocked 🔥",
+
+    // GamePage — reset confirm
+    reset_confirm_title: "Start over?",
+    reset_confirm_desc: "Your profile and progress will be deleted.",
+    reset_confirm_cancel: "Cancel",
+    reset_confirm_yes: "Yes, reset",
+
+    // GamePage — taunt discovery overlay
+    power_unlocked: "💥 Power Unlocked",
+    taunts_unlocked_title: "TAUNTS UNLOCKED",
+    taunts_unlocked_desc: "Special attacks on your opponents — freeze them, blur their screen, shrink their challenges.",
+    taunts_earn_desc: "Complete a line → earn attack powers",
   },
   fr: {
     // General
@@ -507,9 +536,10 @@ export const TRANSLATIONS = {
     create_new_session_confirm: "Ça efface TOUT et repart de zéro. T'es sûr ?",
     create_new_session_btn: "REPARTIR À ZÉRO",
 
-    // Cooldown
+    // Cooldown / Nice Move
     cooldown_title: "🎯 BIEN JOUÉ !",
-    cooldown_sub: "Respire · prochain défi dans {n}s",
+    cooldown_sub: "Garde des défis pour la suite · {n}s",
+    cooldown_bar3_off: "Bar 3 = mode KO · sans cooldown",
 
     // PvP Challenge
     pvp_feat: "Défi PvP",
@@ -526,6 +556,34 @@ export const TRANSLATIONS = {
 
     // Revenge
     revanche_title: "REVANCHE !",
-    revanche_sub: "Retrouve-les en {n}min et rejoue"
+    revanche_sub: "Retrouve-les en {n}min et rejoue",
+
+    // WitnessRequestBanner
+    witness_required: "Témoin requis",
+    witness_needs_you: "a besoin de toi :",
+    witness_confirm_question: "Tu as vu cette personne accomplir ce défi ?",
+    witness_confirm_yes: "Oui, je confirme !",
+    witness_confirm_no: "Non, je n'ai pas vu ça",
+
+    // GamePage — separators & progress
+    wave_challenges: "{n} défis à compléter",
+    unlocked_at_bar: "Débloqué au Bar {n}",
+    bar_label: "Bar {n}",
+    mystery_cell_label: "CASE MYSTÈRE · {n} DÉFIS",
+    bar2_wave_label: "VAGUE 2 · FINIR LA RANGÉE 1",
+    wave_complete_title: "5 / 5 défis !",
+    wave_unlocked: "5 nouveaux défis débloqués 🔥",
+
+    // GamePage — reset confirm
+    reset_confirm_title: "Recommencer ?",
+    reset_confirm_desc: "Ton profil et ta progression seront effacés.",
+    reset_confirm_cancel: "Annuler",
+    reset_confirm_yes: "Oui, reset",
+
+    // GamePage — taunt discovery overlay
+    power_unlocked: "💥 Pouvoir Débloqué",
+    taunts_unlocked_title: "TAUNTS DÉBLOQUÉS",
+    taunts_unlocked_desc: "Des attaques spéciales contre tes adversaires — gèle-les, floute leur écran, rétrécis leurs défis.",
+    taunts_earn_desc: "Complète une ligne → +1 Joker → échange contre un taunt",
   }
 };
