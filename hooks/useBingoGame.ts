@@ -41,7 +41,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
   const [winningIds, setWinningIds] = useState<number[]>([]);
   const [feverCells, setFeverCells] = useState<number[]>([]);
   const [completedLineCount, setCompletedLineCount] = useState(0);
-  const [lineCompleteEvent, setLineCompleteEvent] = useState<{ totalLines: number; isFullGrid: boolean } | null>(null);
+  const [lineCompleteEvent, setLineCompleteEvent] = useState<{ totalLines: number; isFullGrid: boolean; reward: 'joker' | 'taunt' } | null>(null);
   
   const [activeScannerMode, setActiveScannerMode] = useState<'ENTRY' | 'MASTER' | null>(null);
   const [selectedCell, setSelectedCell] = useState<BingoCellData | null>(null);
@@ -444,12 +444,18 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
         colors: ['#FFFFFF', '#FDE047', '#00FF9D', '#FF2D6A'],
       });
 
-      // +1 joker per new line (optimistic)
-      setJokers(prev => prev + newLines);
-      if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
+      // +1 joker OR +1 taunt per new line (random, optimistic)
+      const reward: 'joker' | 'taunt' = Math.random() < 0.5 ? 'joker' : 'taunt';
+      if (reward === 'joker') {
+        setJokers(prev => prev + newLines);
+        if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
+      } else {
+        setGameSession(prev => prev ? { ...prev, tauntsBonus: (prev.tauntsBonus ?? 0) + newLines } : prev);
+        if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {});
+      }
 
       // Trigger celebration banner in GamePage
-      setLineCompleteEvent({ totalLines: currentLineCount, isFullGrid });
+      setLineCompleteEvent({ totalLines: currentLineCount, isFullGrid, reward });
 
       if (user) {
         gameService.postActivity(user.id, user.nickname, user.avatarId,

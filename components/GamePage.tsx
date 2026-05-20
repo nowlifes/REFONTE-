@@ -22,6 +22,9 @@ import FlashlightOverlay from './FlashlightOverlay';
 import WitnessRequestBanner from './WitnessRequestBanner';
 import BoostAuctionBanner from './BoostAuctionBanner';
 import EditProfileSheet from './EditProfileSheet';
+import { gameService } from '../services/gameService';
+import { useGameSounds } from '../hooks/useGameSounds';
+import { useGameNotifications } from '../hooks/useGameNotifications';
 
 interface GamePageProps {
   state: any;
@@ -121,6 +124,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       const newRows: number[] = [];
       for (let r = prevUnlockedRowsRef.current; r < unlockedRows; r++) newRows.push(r);
       setUnlockingRows(newRows);
+      sounds.playRowUnlock();
       if (navigator.vibrate) navigator.vibrate([80, 60, 120, 60, 200]);
       setTimeout(() => setUnlockingRows([]), 900);
     }
@@ -135,6 +139,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     if (bar2Wave1Complete && !prevBar2Wave1CompleteRef.current) {
       setShowWaveCompleteOverlay(true);
       setUnlockingRows(prev => [...prev, 2]);
+      sounds.playRowUnlock();
       if (navigator.vibrate) navigator.vibrate([80, 60, 120, 60, 200]);
       setTimeout(() => {
         setShowWaveCompleteOverlay(false);
@@ -154,6 +159,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     const prev = prevScoreRef.current;
     if (prev < CENTER_UNLOCK_SCORE && s.score >= CENTER_UNLOCK_SCORE) {
       setMysteryUnlocking(true);
+      sounds.playMysteryUnlock();
       if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
       setTimeout(() => setMysteryUnlocking(false), 800);
     }
@@ -185,6 +191,38 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
 
+  const sounds = useGameSounds();
+  const notifications = useGameNotifications();
+
+  // ── Live rank — refetch on every activity event ───────────────────
+  const [playerRank, setPlayerRank] = useState<number | null>(null);
+  useEffect(() => {
+    if (!s.user?.id) return;
+    let cancelled = false;
+    const fetchRank = async () => {
+      try {
+        const entries = await gameService.getLeaderboard(s.user.id);
+        if (!cancelled) {
+          const me = entries.find((e: any) => e.isCurrentUser);
+          if (me) setPlayerRank(me.rank);
+        }
+      } catch {}
+    };
+    fetchRank();
+    const unsub = gameService.subscribeToActivities(() => { if (!cancelled) fetchRank(); });
+    return () => { cancelled = true; unsub(); };
+  }, [s.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Taunt received — sound + notification ────────────────────────
+  const prevFrozenRef = useRef(s.isFrozen);
+  useEffect(() => {
+    if (!prevFrozenRef.current && s.isFrozen) {
+      sounds.playTauntReceived();
+      notifications.notifyTaunt();
+    }
+    prevFrozenRef.current = s.isFrozen;
+  }, [s.isFrozen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Cadence cooldown — track last validation time and remaining cooldown
   const [cooldownSecondsLeft, setCooldownSecondsLeft] = useState(0);
   const [lastValidationTime, setLastValidationTime] = useState(0);
@@ -207,6 +245,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       setTimeout(() => setShowCooldownFlash(false), 800);
       return;
     }
+    sounds.playValidate();
     setLastValidationTime(Date.now());
     if (data?.proofImage && s.selectedCell) onPhotoProof?.(s.selectedCell.id, data.proofImage);
     // PvP loss → start revenge timer
@@ -220,6 +259,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const lineEventTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!s.lineCompleteEvent) return;
+    if (s.lineCompleteEvent.isFullGrid) sounds.playBingo();
+    else sounds.playLineComplete();
     if (lineEventTimerRef.current) clearTimeout(lineEventTimerRef.current);
     lineEventTimerRef.current = setTimeout(() => { a.clearLineCompleteEvent(); }, 3000);
     return () => { if (lineEventTimerRef.current) clearTimeout(lineEventTimerRef.current); };
@@ -591,11 +632,15 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             </div>
 
             {/* Bonus pill */}
-            <div className="flex items-center gap-2 bg-[#00FF9D] border-[3px] border-black rounded-2xl px-5 py-2.5 shadow-[4px_4px_0px_black]">
-              <span className="text-xl">🎁</span>
+            <div className={`flex items-center gap-2 border-[3px] border-black rounded-2xl px-5 py-2.5 shadow-[4px_4px_0px_black] ${s.lineCompleteEvent?.reward === 'taunt' ? 'bg-[#FF2D6A]' : 'bg-[#00FF9D]'}`}>
+              <span className="text-xl">{s.lineCompleteEvent?.reward === 'taunt' ? '⚡' : '🎁'}</span>
               <div className="flex flex-col leading-none">
-                <span className="font-impact text-black uppercase text-[14px] tracking-widest">+1 JOKER GAGNÉ!</span>
-                <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
+                <span className={`font-impact uppercase text-[14px] tracking-widest ${s.lineCompleteEvent?.reward === 'taunt' ? 'text-white' : 'text-black'}`}>
+                  {s.lineCompleteEvent?.reward === 'taunt'
+                    ? (language === 'fr' ? '+1 TAUNT GAGNÉ!' : '+1 TAUNT EARNED!')
+                    : (language === 'fr' ? '+1 JOKER GAGNÉ!' : '+1 JOKER EARNED!')}
+                </span>
+                <span className={`font-impact uppercase text-[9px] tracking-widest ${s.lineCompleteEvent?.reward === 'taunt' ? 'text-white/60' : 'text-black/50'}`}>
                   {language === 'fr' ? 'Continue comme ça !' : 'Keep going!'}
                 </span>
               </div>
@@ -649,18 +694,13 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                  </div>
                );
              })()}
-             {/* Mini Language Switcher */}
-             <button
-                onClick={toggleLanguage}
-                className="bg-black/40 border border-white/20 rounded-lg px-2 py-1 flex items-center gap-1.5 active:scale-95 transition-all"
-             >
-                <span className="text-sm leading-none">{language === 'en' ? '🇬🇧' : '🇫🇷'}</span>
-                <span className="text-[9px] font-impact text-white/70">
-                   {language === 'en' ? 'EN' : 'FR'}
-                </span>
-             </button>
-
-             <div 
+             {/* Live rank pill */}
+             {playerRank && (
+               <div className="flex items-center bg-[#FF2D6A]/10 border border-[#FF2D6A]/35 rounded-lg px-2 py-1">
+                 <span className="font-impact text-[#FF2D6A] text-[11px] uppercase italic leading-none">#{playerRank}</span>
+               </div>
+             )}
+             <div
                 className={`bg-[#FFD700] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
                 onMouseDown={startResetPress}
                 onMouseUp={endResetPress}
@@ -792,19 +832,41 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           })}
         </div>
 
-        {/* Mystery cell unlock hint */}
+        {/* Mystery cell progress */}
         {isMysteryCellLocked && (
-          <div className="mt-2 flex items-center justify-center animate-in fade-in duration-300">
-            <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
-              <Lock className="w-3 h-3 text-white/30 shrink-0" strokeWidth={3} />
-              <div className="flex gap-0.5">
-                {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
-                  <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-300 ${i < s.score ? 'bg-[#FFD700] shadow-[0_0_4px_#FFD700]' : 'bg-white/20'}`} />
-                ))}
+          <div className="mt-3 flex items-center justify-center animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 bg-[#FFD700]/10 border-[2px] border-[#FFD700]/40 rounded-2xl px-4 py-2 shadow-[2px_2px_0px_black]">
+              <Lock className="w-4 h-4 text-[#FFD700]/70 shrink-0" strokeWidth={2.5} />
+              <div className="flex flex-col gap-1">
+                <span className="font-impact text-[#FFD700]/90 uppercase text-[9px] tracking-widest leading-none">
+                  CASE MYSTÈRE · {CENTER_UNLOCK_SCORE - s.score} DÉFIS
+                </span>
+                <div className="flex gap-1">
+                  {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
+                    <div key={i} className={`w-4 h-[5px] rounded-full transition-all duration-300 ${i < s.score ? 'bg-[#FFD700] shadow-[0_0_6px_#FFD700]' : 'bg-white/15'}`} />
+                  ))}
+                </div>
               </div>
-              <span className="font-impact text-white/50 uppercase text-[9px] tracking-widest">
+              <span className="font-impact text-[#FFD700] uppercase text-[14px] leading-none">
                 {s.score}/{CENTER_UNLOCK_SCORE}
               </span>
+            </div>
+          </div>
+        )}
+        {/* Bar 2 wave progress */}
+        {currentBar === 2 && !bar2Wave1Complete && !chaosMode && (
+          <div className="mt-2 flex items-center justify-center animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 bg-[#00F5A0]/10 border-[2px] border-[#00F5A0]/30 rounded-2xl px-4 py-2">
+              <div className="flex flex-col gap-1">
+                <span className="font-impact text-[#00F5A0]/80 uppercase text-[9px] tracking-widest leading-none">
+                  VAGUE 2 · FINIR LA RANGÉE 1
+                </span>
+                <div className="flex gap-1">
+                  {s.cells.filter((c: BingoCellData) => Math.floor(c.id / 5) === 1).map((c: BingoCellData, i: number) => (
+                    <div key={i} className={`w-4 h-[5px] rounded-full transition-all duration-300 ${c.status === CellStatus.VALIDATED ? 'bg-[#00F5A0] shadow-[0_0_4px_#00F5A0]' : 'bg-white/15'}`} />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}

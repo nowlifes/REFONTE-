@@ -511,8 +511,10 @@ class GameBackendService {
     const row0Others = nonMasterPool.slice(0, 4);
     const row0 = shuffleArray([row0Master, ...row0Others].filter(Boolean));
 
+    // Fill row0 to 5 cells if not enough unique challenges (cycle through pool)
     if (row0.length < 5) {
-      throw new Error(`Not enough non-MASTER challenges for row 0: got ${row0.length}`);
+      const fallback = shuffleArray([...masterPool, ...nonMasterPool, ...extraMasterPool]);
+      while (row0.length < 5 && fallback.length > 0) row0.push(fallback.shift());
     }
 
     // Remaining challenges for rows 1-4 (20 cells), story forced in
@@ -523,10 +525,12 @@ class GameBackendService {
 
     // Ensure story is included (it wasn't in usedIds, so it's already in the pool)
     // If somehow story is missing (no id=2 in DB), just proceed
-    const rows1to4 = rows1to4Pool.slice(0, 20);
+    let rows1to4 = rows1to4Pool.slice(0, 20);
 
+    // Fill with repeated challenges if pool is too small
     if (rows1to4.length < 20) {
-      throw new Error(`Not enough challenges for rows 1-4: need 20, got ${rows1to4.length}`);
+      const cyclePool = shuffleArray([...challenges]);
+      while (rows1to4.length < 20) rows1to4.push(cyclePool[rows1to4.length % cyclePool.length]);
     }
 
     // Build final 25-cell grid

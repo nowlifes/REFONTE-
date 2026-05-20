@@ -293,7 +293,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               {/* Primary CTA */}
               {isWitness ? (
                 <div className="flex flex-col gap-2">
-                  {/* Option 1: choisir un témoin joueur (si session active) */}
+                  {/* Explication témoin */}
+                  <p className="text-[10px] font-impact uppercase tracking-widest text-white/35 text-center leading-relaxed px-1">
+                    {onRequestPlayerWitness && sessionId
+                      ? 'Choisis un joueur dans la liste — ou signe directement si tu préfères'
+                      : 'Passe ton téléphone au témoin pour qu\'il signe'}
+                  </p>
+                  {/* PRIMARY: choisir un témoin dans la liste (si session active) */}
                   {onRequestPlayerWitness && sessionId && (
                     <button
                       onClick={() => setStep('PLAYER_WITNESS_SELECT')}
@@ -303,13 +309,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                       Choisir un témoin
                     </button>
                   )}
-                  {/* Option 2: signature manuelle */}
+                  {/* SECONDARY: signature directe si pas de session ou fallback */}
                   <button
                     onClick={() => setStep('WITNESS_MODE')}
-                    className={`w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 ${onRequestPlayerWitness && sessionId ? 'bg-white/10 text-white border-white/20 shadow-none' : 'bg-[#FF2E63] text-white shadow-[5px_5px_0px_black]'}`}
+                    className={`w-full py-3 rounded-2xl font-impact uppercase text-[12px] border-[2px] border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2 ${onRequestPlayerWitness && sessionId ? 'bg-white/8 text-white/50 border-white/15 shadow-none' : 'bg-[#FF2E63] text-white shadow-[5px_5px_0px_black]'}`}
                   >
                     <span>✍️</span>
-                    Signature
+                    Signature manuelle
                   </button>
                 </div>
               ) : (
@@ -342,12 +348,12 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
         {/* ─── WITNESS MODE ─── */}
         {step === 'WITNESS_MODE' && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="shrink-0 px-6 pt-6 pb-4 border-b border-white/8">
-              <div className="inline-flex items-center gap-1.5 bg-[#FF2E63] text-white px-2.5 py-1 rounded-lg mb-3">
-                <span className="text-[9px] font-impact uppercase tracking-widest">{t('social_proof')}</span>
-              </div>
-              <p className="font-impact text-white/50 uppercase text-[10px] tracking-widest leading-relaxed">
-                {t('get_friend')}
+            <div className="shrink-0 px-6 pt-5 pb-4 border-b border-white/8">
+              <p className="font-impact text-[26px] text-white uppercase italic leading-none tracking-tight mb-2">
+                📱 PASSE TON<br />TÉLÉPHONE
+              </p>
+              <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest leading-relaxed">
+                Le témoin saisit son nom et signe ci-dessous
               </p>
             </div>
 
@@ -450,16 +456,18 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                     key={p.id}
                     onClick={() => handleSelectWitness(p.id, p.pseudo)}
                     disabled={sendingWitnessTo !== null}
-                    className="flex items-center gap-3 p-3.5 bg-white/5 border border-white/10 rounded-2xl active:bg-white/10 hover:border-[#FF8C00]/50 hover:bg-[#FF8C00]/5 transition-all disabled:opacity-50 group"
+                    className="flex items-center gap-4 px-4 py-4 bg-white/5 border-[2px] border-white/10 rounded-2xl active:bg-[#FF8C00]/15 active:border-[#FF8C00]/60 hover:border-[#FF8C00]/40 hover:bg-[#FF8C00]/5 transition-all disabled:opacity-50 group min-h-[64px]"
                   >
-                    <span className="text-2xl leading-none shrink-0">{p.emoji}</span>
-                    <span className="font-impact text-white uppercase text-[14px] tracking-tight flex-1 text-left truncate">
+                    <span className="text-3xl leading-none shrink-0 w-10 text-center">{p.emoji}</span>
+                    <span className="font-impact text-white uppercase text-[17px] tracking-tight flex-1 text-left truncate leading-none">
                       {p.pseudo}
                     </span>
                     {sendingWitnessTo === p.id ? (
-                      <span className="w-5 h-5 border-2 border-[#FF8C00]/30 border-t-[#FF8C00] rounded-full animate-spin shrink-0" />
+                      <span className="w-6 h-6 border-2 border-[#FF8C00]/30 border-t-[#FF8C00] rounded-full animate-spin shrink-0" />
                     ) : (
-                      <ChevronRight size={16} className="text-white/20 group-hover:text-[#FF8C00]/60 transition-colors shrink-0" strokeWidth={2.5} />
+                      <div className="w-8 h-8 rounded-xl bg-[#FF8C00]/0 group-hover:bg-[#FF8C00]/20 group-active:bg-[#FF8C00]/30 flex items-center justify-center transition-colors shrink-0">
+                        <ChevronRight size={18} className="text-white/25 group-hover:text-[#FF8C00] transition-colors" strokeWidth={2.5} />
+                      </div>
                     )}
                   </button>
                 ))
