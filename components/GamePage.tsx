@@ -294,6 +294,46 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     prevChaosRef.current = chaosMode;
   }, [chaosMode]);
 
+  // ── Joker Discovery — one-time reward moment at score 3 ────────
+  const [showJokerDiscovery, setShowJokerDiscovery] = useState(false);
+  const jokerDiscoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (s.score < 3) return;
+    try {
+      if (localStorage.getItem('bingo_joker_discovery_shown') === '1') return;
+    } catch {}
+    setShowJokerDiscovery(true);
+    try { localStorage.setItem('bingo_joker_discovery_shown', '1'); } catch {}
+    if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+    if (jokerDiscoveryTimerRef.current) clearTimeout(jokerDiscoveryTimerRef.current);
+    jokerDiscoveryTimerRef.current = setTimeout(() => setShowJokerDiscovery(false), 4000);
+    return () => { if (jokerDiscoveryTimerRef.current) clearTimeout(jokerDiscoveryTimerRef.current); };
+  }, [s.score]);
+  const dismissJokerDiscovery = () => {
+    if (jokerDiscoveryTimerRef.current) clearTimeout(jokerDiscoveryTimerRef.current);
+    setShowJokerDiscovery(false);
+  };
+
+  // ── Taunt Discovery — one-time reveal moment when player enters Bar 2 ──
+  const [showTauntDiscovery, setShowTauntDiscovery] = useState(false);
+  const tauntDiscoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (currentBar !== 2) return;
+    try {
+      if (localStorage.getItem('bingo_taunt_discovery_shown') === '1') return;
+    } catch {}
+    setShowTauntDiscovery(true);
+    try { localStorage.setItem('bingo_taunt_discovery_shown', '1'); } catch {}
+    if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]);
+    if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current);
+    tauntDiscoveryTimerRef.current = setTimeout(() => setShowTauntDiscovery(false), 5000);
+    return () => { if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current); };
+  }, [currentBar]);
+  const dismissTauntDiscovery = () => {
+    if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current);
+    setShowTauntDiscovery(false);
+  };
+
   const [isResetPressing, setIsResetPressing] = useState(false);
   const [resetProgress, setResetProgress] = useState(0);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -942,6 +982,110 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           onSave={async (nick, avatarKey) => { await a.updateProfile(nick, avatarKey); }}
           onClose={() => setShowEditProfile(false)}
         />
+      )}
+
+      {/* JOKER DISCOVERY — one-time reward moment when score reaches 3 */}
+      {showJokerDiscovery && (
+        <div
+          className="fixed inset-0 z-[170] flex items-center justify-center animate-in fade-in duration-200"
+          onClick={dismissJokerDiscovery}
+        >
+          <div className="absolute inset-0 bg-[#0A1629]/85" />
+          <div
+            className="relative flex flex-col items-center gap-4 px-7 py-7 bg-[#0A1629] border-[4px] border-[#FFD700] rounded-2xl shadow-[8px_8px_0px_black] max-w-[86vw] animate-in zoom-in-90 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Badge "NEW" pill */}
+            <div className="bg-[#FFD700] border-[3px] border-black rounded-lg px-3 py-1 shadow-[3px_3px_0px_black] -mt-12">
+              <span className="font-impact uppercase text-black text-[11px] tracking-[0.25em]">
+                {language === 'fr' ? '✨ Découverte' : '✨ Unlocked'}
+              </span>
+            </div>
+
+            {/* Big icon */}
+            <div className="text-5xl leading-none">🃏</div>
+
+            {/* Title */}
+            <div className="font-impact uppercase italic text-[#FFD700] text-3xl tracking-tight leading-none text-center"
+                 style={{ textShadow: '3px 3px 0px black' }}>
+              {language === 'fr' ? 'JOKERS DÉBLOQUÉS' : 'JOKERS UNLOCKED'}
+            </div>
+
+            {/* Explanation */}
+            <p className="font-impact uppercase text-white/80 text-[11px] tracking-widest text-center leading-relaxed max-w-[260px]">
+              {language === 'fr'
+                ? "Un défi qui te saoule ? Skippe-le avec un joker."
+                : "Hate a challenge? Skip it with a joker."}
+            </p>
+
+            {/* Joker count pill */}
+            <div className="flex items-center gap-2 bg-[#FFD700] border-[3px] border-black rounded-xl px-4 py-2 shadow-[4px_4px_0px_black]">
+              <Sparkles size={14} className="text-black" />
+              <span className="font-impact uppercase text-black text-sm tracking-widest">
+                {language === 'fr' ? `Tu en as ${s.jokers}` : `You have ${s.jokers}`}
+              </span>
+            </div>
+
+            {/* Tap hint */}
+            <span className="font-impact uppercase text-white/35 text-[9px] tracking-[0.3em] mt-1">
+              {language === 'fr' ? 'Tape pour fermer' : 'Tap to dismiss'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* TAUNT DISCOVERY — one-time power-up reveal when entering Bar 2 */}
+      {showTauntDiscovery && (
+        <div
+          className="fixed inset-0 z-[171] flex items-center justify-center animate-in fade-in duration-200"
+          onClick={dismissTauntDiscovery}
+        >
+          <div className="absolute inset-0 bg-[#0A1629]/88" />
+          <div
+            className="relative flex flex-col items-center gap-4 px-7 py-7 bg-[#0A1629] border-[4px] border-[#FF2D6A] rounded-2xl shadow-[8px_8px_0px_black] max-w-[86vw] animate-in zoom-in-90 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* "POWER UNLOCKED" badge pill */}
+            <div className="bg-[#FF2D6A] border-[3px] border-black rounded-lg px-3 py-1 shadow-[3px_3px_0px_black] -mt-12">
+              <span className="font-impact uppercase text-white text-[11px] tracking-[0.25em]">
+                {language === 'fr' ? '💥 Pouvoir Débloqué' : '💥 Power Unlocked'}
+              </span>
+            </div>
+
+            {/* Big icon */}
+            <div className="text-5xl leading-none">⚡</div>
+
+            {/* Title */}
+            <div
+              className="font-impact uppercase italic text-[#FF2D6A] text-3xl tracking-tight leading-none text-center"
+              style={{ textShadow: '3px 3px 0px black' }}
+            >
+              {language === 'fr' ? 'TAUNTS DÉBLOQUÉS' : 'TAUNTS UNLOCKED'}
+            </div>
+
+            {/* Explanation */}
+            <p className="font-impact uppercase text-white/80 text-[11px] tracking-widest text-center leading-relaxed max-w-[260px]">
+              {language === 'fr'
+                ? 'Des attaques spéciales contre tes adversaires — gèle-les, floute leur écran, rétrécis leurs défis.'
+                : 'Special attacks on your opponents — freeze them, blur their screen, shrink their challenges.'}
+            </p>
+
+            {/* How to earn pill */}
+            <div className="flex items-center gap-2 bg-[#FF2D6A] border-[3px] border-black rounded-xl px-4 py-2.5 shadow-[4px_4px_0px_black]">
+              <Zap size={14} fill="white" className="text-white shrink-0" />
+              <span className="font-impact uppercase text-white text-[11px] tracking-widest leading-tight">
+                {language === 'fr'
+                  ? 'Complète une ligne → +1 Joker → échange contre un taunt'
+                  : 'Complete a line → earn attack powers'}
+              </span>
+            </div>
+
+            {/* Tap hint */}
+            <span className="font-impact uppercase text-white/35 text-[9px] tracking-[0.3em] mt-1">
+              {language === 'fr' ? 'Tape pour fermer' : 'Tap to dismiss'}
+            </span>
+          </div>
+        </div>
       )}
 
       {/* WAVE COMPLETE OVERLAY — 5/5 défis bar 2 vague 1 */}
