@@ -504,10 +504,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* SPOTLIGHT banner — bottom center, does not overlap the grid */}
+      {/* SPOTLIGHT banner — top center, sous le header */}
       {s.spotlightCellId !== null && spotlightSecondsLeft > 0 && (
-        <div className="fixed bottom-24 left-0 right-0 flex justify-center z-[155] pointer-events-none">
-          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed top-[62px] left-0 right-0 flex justify-center z-[155] pointer-events-none">
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
             <span className="text-base">⚡</span>
             <div className="flex flex-col leading-none">
               <span className="font-impact text-black uppercase text-[11px] tracking-tight">SPOTLIGHT</span>
@@ -795,16 +795,16 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         {/* Mystery cell unlock hint */}
         {isMysteryCellLocked && (
           <div className="mt-2 flex items-center justify-center animate-in fade-in duration-300">
-            <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
-              <span className="text-xs">🔒</span>
-              <span className="font-impact text-white/40 uppercase text-[9px] tracking-widest">
-                Mystère à {CENTER_UNLOCK_SCORE}/25
-              </span>
+            <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5">
+              <Lock className="w-3 h-3 text-white/30 shrink-0" strokeWidth={3} />
               <div className="flex gap-0.5">
                 {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
-                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < s.score ? 'bg-[#FFD700]' : 'bg-white/20'}`} />
+                  <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-300 ${i < s.score ? 'bg-[#FFD700] shadow-[0_0_4px_#FFD700]' : 'bg-white/20'}`} />
                 ))}
               </div>
+              <span className="font-impact text-white/50 uppercase text-[9px] tracking-widest">
+                {s.score}/{CENTER_UNLOCK_SCORE}
+              </span>
             </div>
           </div>
         )}

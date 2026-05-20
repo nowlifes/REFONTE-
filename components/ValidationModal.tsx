@@ -71,9 +71,19 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [selectedWitnessName, setSelectedWitnessName] = useState('');
   const [witnessRequestError, setWitnessRequestError] = useState<string | null>(null);
 
-  // Fetch player list when entering player witness select step
+  // Précharge la liste dès l'ouverture de la modal (silencieux, sans spinner)
+  useEffect(() => {
+    if (!sessionId || !onRequestPlayerWitness) return;
+    gameService.getPlayersWithScores(sessionId).then(list => {
+      const others = list.filter(p => p.id !== currentPlayerId);
+      setWitnessPlayers(others.map(p => ({ id: p.id, pseudo: p.pseudo, emoji: p.emoji })));
+    }).catch(() => {});
+  }, [sessionId, currentPlayerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Affiche le spinner seulement si la liste n'est pas encore chargée au moment de l'entrée
   useEffect(() => {
     if (step !== 'PLAYER_WITNESS_SELECT' || !sessionId) return;
+    if (witnessPlayers.length > 0) return; // déjà préchargé
     setIsLoadingWitnesses(true);
     gameService.getPlayersWithScores(sessionId).then(list => {
       const others = list.filter(p => p.id !== currentPlayerId);
@@ -87,7 +97,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
       setIsLoadingWitnesses(false);
       setStep('WITNESS_MODE');
     });
-  }, [step, sessionId, currentPlayerId]);
+  }, [step, sessionId, currentPlayerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectWitness = async (witnessId: string, witnessName: string) => {
     if (!onRequestPlayerWitness || sendingWitnessTo) return;
