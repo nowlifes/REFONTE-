@@ -63,6 +63,9 @@ interface MasterPageProps {
   setBarCadenceValue?: (cadence: string) => Promise<void>;
   setChaosMode?: (chaos: boolean) => Promise<void>;
   setMaxValidationsPerBar?: (max: number) => Promise<void>;
+  boostAuctionEndsAt?: number | null;
+  startBoostAuction?: (durationSecs?: number) => Promise<void>;
+  closeBoostAuction?: () => Promise<void>;
 }
 
 // ─── Collapsible section inside the white card ────────────────────────────────
@@ -102,6 +105,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   isGamePaused, setGamePaused,
   currentBar = 1, barCadence = '1,2,2', chaosMode = false, maxValidationsPerBar = 0,
   advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
+  boostAuctionEndsAt, startBoostAuction, closeBoostAuction,
 }) => {
   const { t, language } = useLanguage();
 
@@ -504,6 +508,33 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {/* Boost auction */}
+                  {startBoostAuction && (
+                    boostAuctionEndsAt && boostAuctionEndsAt > Date.now() ? (
+                      <div className="bg-[#FF8C00] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                        <div>
+                          <p className="font-impact text-black uppercase text-[9px] tracking-widest">Enchère en cours</p>
+                          <p className="font-impact text-black text-lg italic">
+                            <CountdownTimer endsAt={boostAuctionEndsAt} />
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => { if (secureSessionId) { await gameService.closeBoostAuction(secureSessionId); } }}
+                          className="px-3 py-2 bg-black text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                        >
+                          ✓ Confirmer
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startBoostAuction(30)}
+                        className="w-full py-2.5 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2"
+                      >
+                        🏆 Lancer enchère boost (30s)
+                      </button>
+                    )
                   )}
 
                   {/* Kill switch */}

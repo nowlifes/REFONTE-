@@ -160,6 +160,6 @@ export interface Activity {
   player_id: string;
   player_pseudo: string;
   player_emoji: string;
-  type: 'LINE_COMPLETED' | 'GRID_COMPLETED';
+  type: 'LINE_COMPLETED' | 'GRID_COMPLETED' | 'BOOST_WON';
   created_at: string;
 }

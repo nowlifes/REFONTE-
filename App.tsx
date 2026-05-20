@@ -68,6 +68,7 @@ const MasterApp: React.FC = () => {
     isGamePaused, setGamePaused,
     currentBar, barCadence, chaosMode, maxValidationsPerBar,
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
+    boostAuctionEndsAt: masterBoostAuctionEndsAt, startBoostAuction, clearBoostAuction,
   } = useEventSession();
 
   const resetSession = async () => {
@@ -167,6 +168,9 @@ const MasterApp: React.FC = () => {
       setBarCadenceValue={setBarCadenceValue}
       setChaosMode={setChaosMode}
       setMaxValidationsPerBar={setMaxValidationsPerBar}
+      boostAuctionEndsAt={masterBoostAuctionEndsAt}
+      startBoostAuction={startBoostAuction}
+      closeBoostAuction={clearBoostAuction}
     />
   );
 };
@@ -192,6 +196,7 @@ const PlayerApp: React.FC = () => {
     isGamePaused, setGamePaused,
     currentBar, barCadence, chaosMode, maxValidationsPerBar,
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
+    boostAuctionEndsAt,
   } = useEventSession();
   const { state: s, actions: a } = useBingoGame({ spotlightDisabled });
   const aRef = React.useRef(a);
@@ -580,6 +585,7 @@ const PlayerApp: React.FC = () => {
               currentBar={currentBar}
               barCadence={barCadence}
               barTransitionActive={!!transitionEndsAt && transitionSecondsLeft > 0}
+              boostAuctionEndsAt={boostAuctionEndsAt}
             />
           </ErrorBoundary>
         )}

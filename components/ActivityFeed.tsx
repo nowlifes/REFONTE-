@@ -42,12 +42,16 @@ const ActivityFeed: React.FC = () => {
               {activity.player_pseudo}
             </p>
             <p className="text-[9px] font-impact uppercase tracking-widest text-white leading-none">
-              {activity.type === 'LINE_COMPLETED' ? t('line_completed_msg') : t('grid_completed_msg')}
+              {activity.type === 'LINE_COMPLETED' ? t('line_completed_msg')
+                : activity.type === 'BOOST_WON' ? '🏆 A reçu un boost du groupe !'
+                : t('grid_completed_msg')}
             </p>
           </div>
           <div className="shrink-0">
             {activity.type === 'LINE_COMPLETED' ? (
               <Zap className="w-4 h-4 text-[#FFD700] animate-pulse" fill="currentColor" />
+            ) : activity.type === 'BOOST_WON' ? (
+              <span className="text-base animate-bounce">🎁</span>
             ) : (
               <Trophy className="w-4 h-4 text-[#FFD700] animate-bounce" fill="currentColor" />
             )}

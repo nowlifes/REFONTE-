@@ -925,7 +925,7 @@ class GameBackendService {
 
   // --- ACTIVITY FEED ---
 
-  async postActivity(playerId: string, pseudo: string, emoji: string, type: 'LINE_COMPLETED' | 'GRID_COMPLETED'): Promise<void> {
+  async postActivity(playerId: string, pseudo: string, emoji: string, type: 'LINE_COMPLETED' | 'GRID_COMPLETED' | 'BOOST_WON'): Promise<void> {
     if (!supabase) return;
     try {
       await supabase.from('activities').insert({
@@ -1080,6 +1080,65 @@ async resetSession(): Promise<void> {
     if (!supabase) return;
     const { error } = await supabase.rpc('award_bonus_taunt', { game_id: gameId });
     if (error) console.warn('[Bonus] award_bonus_taunt failed:', error.message);
+  }
+
+  // ─── BOOST AUCTION ──────────────────────────────────────────────────────────
+
+  async startBoostAuction(durationSecs: number = 30): Promise<void> {
+    if (!supabase) return;
+    const endsAt = new Date(Date.now() + durationSecs * 1000).toISOString();
+    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (!latest) return;
+    await supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt }).eq('id', latest.id);
+  }
+
+  async clearBoostAuction(): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null }).eq('id', latest.id);
+  }
+
+  async castBoostVote(sessionId: string, voterId: string, candidateId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('boost_votes').upsert(
+      { session_id: sessionId, voter_id: voterId, candidate_id: candidateId },
+      { onConflict: 'session_id,voter_id' }
+    );
+  }
+
+  async getBoostVoteCounts(sessionId: string): Promise<Record<string, number>> {
+    if (!supabase) return {};
+    const { data } = await supabase.from('boost_votes').select('candidate_id').eq('session_id', sessionId);
+    if (!data) return {};
+    const counts: Record<string, number> = {};
+    data.forEach((v: any) => { counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1; });
+    return counts;
+  }
+
+  subscribeBoostVotes(sessionId: string, onUpdate: (counts: Record<string, number>) => void): () => void {
+    if (!supabase) return () => {};
+    this.getBoostVoteCounts(sessionId).then(onUpdate);
+    const ch = supabase.channel(`boost_votes_${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'boost_votes', filter: `session_id=eq.${sessionId}` },
+        () => this.getBoostVoteCounts(sessionId).then(onUpdate))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }
+
+  async closeBoostAuction(sessionId: string): Promise<{ winnerId: string; winnerName: string; winnerEmoji: string } | null> {
+    if (!supabase) return null;
+    const counts = await this.getBoostVoteCounts(sessionId);
+    const entries = Object.entries(counts);
+    if (entries.length === 0) { await this.clearBoostAuction(); return null; }
+    const winnerId = entries.sort((a, b) => b[1] - a[1])[0][0];
+    const activeSession = await this.getActiveSession(winnerId);
+    if (activeSession) await this.awardBonusTaunt(activeSession.id);
+    const { data: player } = await supabase.from('players').select('nickname, avatar_id').eq('id', winnerId).maybeSingle();
+    if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, 'BOOST_WON');
+    await supabase.from('boost_votes').delete().eq('session_id', sessionId);
+    await this.clearBoostAuction();
+    return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲' };
   }
 
   // Duration (ms) each taunt keeps the victim affected — minimum 1 minute

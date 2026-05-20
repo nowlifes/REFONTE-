@@ -308,6 +308,9 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
   const userIdRef = useRef<string | undefined>(undefined);
   useEffect(() => { userIdRef.current = user?.id; }, [user?.id]);
 
+  // Debounce ref: prevents double-tap opening modal twice (bar environment)
+  const lastCellClickRef = useRef<number>(0);
+
   // FREEZE SUBSCRIPTION + remote cell validation (master approvals)
   useEffect(() => {
     if (!gameSession?.id) return;
@@ -582,6 +585,9 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
     },
 
     handleCellClick: (id: number) => {
+      const now = Date.now();
+      if (now - lastCellClickRef.current < 500) return;
+      lastCellClickRef.current = now;
       const cell = cells.find(c => c.id === id);
       if (!cell || cell.status !== CellStatus.EMPTY) return;
       playSound('CLICK');

@@ -20,6 +20,7 @@ import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
 import WitnessRequestBanner from './WitnessRequestBanner';
+import BoostAuctionBanner from './BoostAuctionBanner';
 import EditProfileSheet from './EditProfileSheet';
 
 interface GamePageProps {
@@ -38,9 +39,10 @@ interface GamePageProps {
   currentBar?: number;
   barCadence?: string;
   barTransitionActive?: boolean;
+  boostAuctionEndsAt?: number | null;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt }) => {
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
@@ -366,6 +368,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* Witness request banner — shown when another player designated us as witness */}
       {s.gameSession && (
         <WitnessRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
+      )}
+      {/* Boost auction — master triggered group vote to give a free taunt */}
+      {boostAuctionEndsAt && boostAuctionEndsAt > Date.now() && s.user && secureSessionId && (
+        <BoostAuctionBanner
+          endsAt={boostAuctionEndsAt}
+          sessionId={secureSessionId}
+          currentPlayerId={s.user.id}
+        />
       )}
       <ActivityFeed />
       <BackgroundParticles />
