@@ -13,7 +13,15 @@ CREATE TABLE IF NOT EXISTS boost_votes (
 
 ALTER TABLE boost_votes REPLICA IDENTITY FULL;
 ALTER TABLE boost_votes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "boost_votes_all" ON boost_votes FOR ALL USING (true) WITH CHECK (true);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'boost_votes' AND policyname = 'boost_votes_all'
+  ) THEN
+    CREATE POLICY "boost_votes_all" ON boost_votes FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- Extend activities table to support BOOST_WON type (alter check constraint if exists)
 ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_type_check;
