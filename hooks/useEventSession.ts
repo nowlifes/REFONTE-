@@ -275,7 +275,17 @@ export const useEventSession = () => {
 
   return {
     isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession,
-    transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition, secureSessionId,
+    transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition,
+    triggerBarTransitionAndAdvance: async (durationMinutes: number, barName?: string) => {
+      const newBar = currentBar + 1;
+      const newEndsAt = Date.now() + durationMinutes * 60 * 1000;
+      setTransitionEndsAt(newEndsAt);
+      setNextBarName(barName || null);
+      setCurrentBar(newBar);
+      if (newBar >= 3) setChaosMode(true);
+      await gameService.triggerBarTransitionAndAdvance(durationMinutes, newBar, barName);
+    },
+    secureSessionId,
     pregamePhase, pregameSubjectId, countdownEndsAt,
     setPregamePhase: setPregamePhaseAction,
     triggerCountdown,

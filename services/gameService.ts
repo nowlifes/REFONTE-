@@ -234,6 +234,29 @@ class GameBackendService {
     if (error) throw error;
   }
 
+  async triggerBarTransitionAndAdvance(durationMinutes: number, newBar: number, barName?: string): Promise<void> {
+    if (!supabase) return;
+    const { data: latest } = await supabase
+      .from('event_session')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return;
+    const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+    const updates: Record<string, unknown> = {
+      transition_ends_at: endsAt,
+      next_bar_name: barName || null,
+      current_bar: newBar,
+    };
+    if (newBar >= 3) updates.chaos_mode = true;
+    const [{ error }] = await Promise.all([
+      supabase.from('event_session').update(updates).eq('id', latest.id),
+      supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE'),
+    ]);
+    if (error) throw error;
+  }
+
   async clearBarTransition(): Promise<void> {
     if (!supabase) return;
     const { data: latest } = await supabase

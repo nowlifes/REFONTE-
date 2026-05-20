@@ -464,13 +464,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* SPOTLIGHT banner — right side, clear of bar-transition badge & chaos strip */}
+      {/* SPOTLIGHT banner — bottom center, does not overlap the grid */}
       {s.spotlightCellId !== null && spotlightSecondsLeft > 0 && (
-        <div
-          className="fixed right-3 z-[155] pointer-events-none"
-          style={{ top: `max(68px, calc(env(safe-area-inset-top, 0px) + ${chaosMode ? 76 : barTransitionActive ? 114 : 56}px))` }}
-        >
-          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
+        <div className="fixed bottom-24 left-0 right-0 flex justify-center z-[155] pointer-events-none">
+          <div className="bg-[#FFD700] border-[3px] border-black rounded-2xl px-3 py-2 shadow-[4px_4px_0px_black] flex items-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
             <span className="text-base">⚡</span>
             <div className="flex flex-col leading-none">
               <span className="font-impact text-black uppercase text-[11px] tracking-tight">SPOTLIGHT</span>

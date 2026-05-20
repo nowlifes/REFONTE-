@@ -59,7 +59,7 @@ const MasterApp: React.FC = () => {
     resetSession: baseResetSession,
     createNewSession: baseCreateNewSession,
     transitionEndsAt, nextBarName,
-    triggerBarTransition, clearBarTransition,
+    triggerBarTransition, clearBarTransition, triggerBarTransitionAndAdvance,
     secureSessionId,
     pregamePhase, setPregamePhase,
     triggerCountdown, clearCountdown,
@@ -144,6 +144,7 @@ const MasterApp: React.FC = () => {
       createNewSession={createNewSession}
       onWrapped={async () => { await setSessionActive(false); }}
       triggerBarTransition={triggerBarTransition}
+      triggerBarTransitionAndAdvance={triggerBarTransitionAndAdvance}
       clearBarTransition={clearBarTransition}
       transitionEndsAt={transitionEndsAt}
       nextBarName={nextBarName}
@@ -186,7 +187,7 @@ const PlayerApp: React.FC = () => {
     checkSession,
     isLoading: isSessionLoading,
     transitionEndsAt, nextBarName,
-    triggerBarTransition, clearBarTransition,
+    triggerBarTransition, clearBarTransition, triggerBarTransitionAndAdvance: triggerBarTransitionAndAdvancePlayer,
     secureSessionId,
     pregamePhase, setPregamePhase,
     triggerCountdown, clearCountdown,

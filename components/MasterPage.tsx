@@ -39,6 +39,7 @@ interface MasterPageProps {
   createNewSession: () => Promise<void>;
   onWrapped: () => Promise<void>;
   triggerBarTransition: (durationMinutes: number, barName?: string) => Promise<void>;
+  triggerBarTransitionAndAdvance?: (durationMinutes: number, barName?: string) => Promise<void>;
   clearBarTransition: () => Promise<void>;
   transitionEndsAt: number | null;
   nextBarName: string | null;
@@ -98,7 +99,7 @@ const Section: React.FC<{
 // ─── MasterPage ───────────────────────────────────────────────────────────────
 const MasterPage: React.FC<MasterPageProps> = ({
   isSessionActive, setSessionActive, resetSession, createNewSession, onWrapped,
-  triggerBarTransition, clearBarTransition, transitionEndsAt, nextBarName,
+  triggerBarTransition, triggerBarTransitionAndAdvance, clearBarTransition, transitionEndsAt, nextBarName,
   secureSessionId, state: s, actions: a,
   pregamePhase, setPregamePhase, triggerCountdown, clearCountdown,
   spotlightDisabled, setSpotlightDisabled, challengeCooldownSecs, setChallengeCooldown,
@@ -223,10 +224,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
   const handleAdvanceBarWithTransition = async () => {
     setIsTriggeringTransition(true);
+    const name = barNameInput.trim() || undefined;
     try {
-      // Advance bar (unlock rows) + start countdown in one atomic UX action
-      await triggerBarTransition(selectedDuration, barNameInput.trim() || undefined);
-      if (advanceBar) await advanceBar();
+      if (triggerBarTransitionAndAdvance) {
+        await triggerBarTransitionAndAdvance(selectedDuration, name);
+      } else {
+        await triggerBarTransition(selectedDuration, name);
+        if (advanceBar) await advanceBar();
+      }
       setBarNameInput('');
     }
     catch (e) {
