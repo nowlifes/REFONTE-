@@ -122,6 +122,29 @@ export const TRANSLATIONS = {
     signature_area: "Sign here",
     validated: "Done!",
     master_scan_btn: "Tap to scan the Master's QR code",
+    photo_proof_optional: "Photo proof (optional)",
+    witness_hint_session: "Select a player from the list — or sign directly if you prefer",
+    witness_hint_no_session: "Pass your phone to the witness to sign",
+    choose_witness_btn: "Pick a witness",
+    sign_manually: "Manual signature",
+    pass_phone_title: "PASS YOUR PHONE",
+    pass_phone_sub: "The witness enters their name and signs below",
+    signature_required: "✍️ SIGNATURE REQUIRED",
+    signed_check: "✓ SIGNED",
+    draw_signature_here: "DRAW YOUR SIGNATURE HERE",
+    witness_badge_label: "👁 Witness",
+    who_was_there: "Who was there?",
+    select_player_confirm: "Select the player who will confirm on their phone",
+    no_players_available: "No other players available",
+    use_manual_validation: "Use manual validation",
+    sign_instead: "Manual signature instead",
+    request_sent: "Request sent!",
+    must_confirm_phone: "must confirm on their phone. Your cell validates automatically!",
+    master_challenge_badge: "MASTER CHALLENGE",
+    or_secret_code: "or secret code",
+    master_request_sent: "Request sent!",
+    master_waiting_text: "The Master will see your request.\nYour cell validates automatically!",
+    network_error_witness: "Network error. Try again or use manual signature.",
 
     // Rune Pad
     security_gate: "Master Code",
@@ -222,8 +245,8 @@ export const TRANSLATIONS = {
     create_new_session_btn: "START FRESH",
 
     // Cooldown
-    cooldown_title: "Easy tiger 😏",
-    cooldown_sub: "Go socialise · next challenge in {n}s",
+    cooldown_title: "🎯 NICE MOVE!",
+    cooldown_sub: "Breathe · next challenge in {n}s",
 
     // PvP Challenge
     pvp_feat: "PvP Challenge",
@@ -362,6 +385,29 @@ export const TRANSLATIONS = {
     signature_area: "Signe ici",
     validated: "Validé !",
     master_scan_btn: "Appuie pour scanner le QR du master",
+    photo_proof_optional: "Photo preuve (optionnel)",
+    witness_hint_session: "Choisis un joueur dans la liste — ou signe directement si tu préfères",
+    witness_hint_no_session: "Passe ton téléphone au témoin pour qu'il signe",
+    choose_witness_btn: "Choisir un témoin",
+    sign_manually: "Signature manuelle",
+    pass_phone_title: "PASSE TON TÉLÉPHONE",
+    pass_phone_sub: "Le témoin saisit son nom et signe ci-dessous",
+    signature_required: "✍️ SIGNATURE OBLIGATOIRE",
+    signed_check: "✓ SIGNÉ",
+    draw_signature_here: "DESSINE TA SIGNATURE ICI",
+    witness_badge_label: "👁 Témoin",
+    who_was_there: "Qui était là ?",
+    select_player_confirm: "Sélectionne le joueur qui va confirmer sur son téléphone",
+    no_players_available: "Aucun autre joueur disponible",
+    use_manual_validation: "Utilise la validation manuelle",
+    sign_instead: "Signature manuelle à la place",
+    request_sent: "Demande envoyée !",
+    must_confirm_phone: "doit confirmer sur son téléphone. Ta case se valide automatiquement !",
+    master_challenge_badge: "DÉFI MASTER",
+    or_secret_code: "ou code secret",
+    master_request_sent: "Demande envoyée!",
+    master_waiting_text: "Le Master verra ta demande.\nTa case se valide automatiquement!",
+    network_error_witness: "Erreur réseau. Réessaie ou utilise la signature.",
 
     // Rune Pad
     security_gate: "Code Master",
@@ -462,8 +508,8 @@ export const TRANSLATIONS = {
     create_new_session_btn: "REPARTIR À ZÉRO",
 
     // Cooldown
-    cooldown_title: "Tu es trop fort 😏",
-    cooldown_sub: "Va socialiser · prochain défi dans {n}s",
+    cooldown_title: "🎯 BIEN JOUÉ !",
+    cooldown_sub: "Respire · prochain défi dans {n}s",
 
     // PvP Challenge
     pvp_feat: "Défi PvP",

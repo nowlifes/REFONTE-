@@ -35,7 +35,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   playerNickname, playerAvatarId,
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const initialStep: ModalStep = cell.type === ChallengeType.MASTER ? 'MASTER_PAD'
     : cell.type === ChallengeType.PVP ? 'PVP_OUTCOME'
     : 'INFO';
@@ -109,7 +109,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
       setStep('WITNESS_SENT');
     } catch (e) {
       console.error(e);
-      setWitnessRequestError('Erreur réseau. Réessaie ou utilise la signature.');
+      setWitnessRequestError(t('network_error_witness'));
     } finally {
       setSendingWitnessTo(null);
     }
@@ -232,7 +232,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
           <button
             onClick={onClose}
             className="absolute top-3 right-3 p-3 z-20 text-white/30 hover:text-white/70 active:scale-90 transition-all rounded-xl hover:bg-white/5"
-            aria-label="Fermer"
+            aria-label={t('close')}
           >
             <X size={22} strokeWidth={2.5} />
           </button>
@@ -284,7 +284,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                       className="w-full py-3.5 rounded-2xl border-[2px] border-[#00FF9D]/30 bg-[#00FF9D]/5 text-[#00FF9D]/60 font-impact uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:border-[#00FF9D]/60 hover:text-[#00FF9D]/80 active:scale-98 transition-all mb-1"
                     >
                       <Camera className="w-4 h-4" strokeWidth={2.5} />
-                      Photo preuve (optionnel)
+                      {t('photo_proof_optional')}
                     </button>
                   )}
                 </div>
@@ -296,8 +296,8 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                   {/* Explication témoin */}
                   <p className="text-[10px] font-impact uppercase tracking-widest text-white/35 text-center leading-relaxed px-1">
                     {onRequestPlayerWitness && sessionId
-                      ? 'Choisis un joueur dans la liste — ou signe directement si tu préfères'
-                      : 'Passe ton téléphone au témoin pour qu\'il signe'}
+                      ? t('witness_hint_session')
+                      : t('witness_hint_no_session')}
                   </p>
                   {/* PRIMARY: choisir un témoin dans la liste (si session active) */}
                   {onRequestPlayerWitness && sessionId && (
@@ -306,7 +306,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                       className="w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all bg-[#FF2E63] text-white flex items-center justify-center gap-2"
                     >
                       <span>👥</span>
-                      Choisir un témoin
+                      {t('choose_witness_btn')}
                     </button>
                   )}
                   {/* SECONDARY: signature directe si pas de session ou fallback */}
@@ -315,7 +315,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                     className={`w-full py-3 rounded-2xl font-impact uppercase text-[12px] border-[2px] border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2 ${onRequestPlayerWitness && sessionId ? 'bg-white/8 text-white/50 border-white/15 shadow-none' : 'bg-[#FF2E63] text-white shadow-[5px_5px_0px_black]'}`}
                   >
                     <span>✍️</span>
-                    Signature manuelle
+                    {t('sign_manually')}
                   </button>
                 </div>
               ) : (
@@ -350,10 +350,10 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="shrink-0 px-6 pt-5 pb-4 border-b border-white/8">
               <p className="font-impact text-[26px] text-white uppercase italic leading-none tracking-tight mb-2">
-                📱 PASSE TON<br />TÉLÉPHONE
+                📱 {t('pass_phone_title')}
               </p>
               <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest leading-relaxed">
-                Le témoin saisit son nom et signe ci-dessous
+                {t('pass_phone_sub')}
               </p>
             </div>
 
@@ -368,8 +368,8 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
               {/* Signature canvas */}
               <div className="flex items-center justify-between px-1 shrink-0">
-                <span className="text-[9px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/70">✍️ SIGNATURE OBLIGATOIRE</span>
-                {signatureData && <span className="text-[9px] font-impact uppercase tracking-widest text-[#00F5A0]">✓ SIGNÉ</span>}
+                <span className="text-[9px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/70">{t('signature_required')}</span>
+                {signatureData && <span className="text-[9px] font-impact uppercase tracking-widest text-[#00F5A0]">{t('signed_check')}</span>}
               </div>
               <div
                 ref={containerRef}
@@ -385,7 +385,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                     <div className="w-14 h-14 rounded-full bg-[#FF2E63]/10 border-[2px] border-[#FF2E63]/25 flex items-center justify-center">
                       <span className="text-3xl" style={{ filter: 'drop-shadow(0 0 8px rgba(255,46,99,0.5))' }}>✍️</span>
                     </div>
-                    <span className="text-[10px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/45">DESSINE TA SIGNATURE ICI</span>
+                    <span className="text-[10px] font-impact uppercase tracking-[0.2em] text-[#FF2E63]/45">{t('draw_signature_here')}</span>
                   </div>
                 )}
                 {/* Clear signature */}
@@ -425,13 +425,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             {/* Header */}
             <div className="shrink-0 px-6 pt-6 pb-4 border-b border-white/8">
               <div className="inline-flex items-center gap-1.5 bg-[#FF8C00] text-black px-2.5 py-1 rounded-lg mb-3">
-                <span className="text-[9px] font-impact uppercase tracking-widest">👁 Témoin</span>
+                <span className="text-[9px] font-impact uppercase tracking-widest">{t('witness_badge_label')}</span>
               </div>
               <p className="font-impact text-white text-xl uppercase leading-tight italic tracking-tight mb-1">
-                Qui était là ?
+                {t('who_was_there')}
               </p>
               <p className="font-impact text-white/40 uppercase text-[10px] tracking-widest leading-relaxed">
-                Sélectionne le joueur qui va confirmer sur son téléphone
+                {t('select_player_confirm')}
               </p>
             </div>
 
@@ -444,10 +444,10 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               ) : witnessPlayers.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="font-impact text-white/30 uppercase text-[11px] tracking-widest">
-                    Aucun autre joueur disponible
+                    {t('no_players_available')}
                   </p>
                   <p className="font-impact text-white/20 uppercase text-[9px] tracking-widest mt-2">
-                    Utilise la validation manuelle
+                    {t('use_manual_validation')}
                   </p>
                 </div>
               ) : (
@@ -483,13 +483,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                 onClick={() => setStep('WITNESS_MODE')}
                 className="w-full py-2.5 bg-white/5 border border-white/10 text-white/30 rounded-xl font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1.5 active:bg-white/10 transition-all"
               >
-                Signature manuelle à la place
+                {t('sign_instead')}
               </button>
               <button
                 onClick={() => setStep('INFO')}
                 className="w-full py-2.5 text-white/20 font-impact uppercase text-[9px] tracking-widest flex items-center justify-center gap-1 active:text-white/40 transition-all"
               >
-                ← Retour
+                ← {t('back')}
               </button>
             </div>
           </div>
@@ -508,13 +508,13 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             </div>
 
             <h2 className="font-impact text-3xl text-black uppercase tracking-tighter italic leading-none mb-2">
-              Demande envoyée !
+              {t('request_sent')}
             </h2>
             <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-2">
               {selectedWitnessName}
             </p>
             <p className="font-impact text-black/50 uppercase text-[10px] tracking-widest mb-10 leading-loose max-w-[220px]">
-              doit confirmer sur son téléphone. Ta case se valide automatiquement !
+              {t('must_confirm_phone')}
             </p>
 
             <div className="flex gap-2 mb-10">
@@ -528,7 +528,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               onClick={onClose}
               className="w-full py-4 bg-black text-[#FF8C00] rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
             >
-              Fermer
+              {t('close')}
             </button>
           </div>
         )}
@@ -540,7 +540,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             <div className="shrink-0 px-6 pt-6 pb-4 border-b-[3px] border-black/15">
               <div className="inline-flex items-center gap-1.5 bg-black text-[#FFD700] px-2.5 py-1 rounded-lg mb-3">
                 <ScanLine size={10} strokeWidth={3} />
-                <span className="text-[8px] font-impact uppercase tracking-widest">DÉFI MASTER</span>
+                <span className="text-[8px] font-impact uppercase tracking-widest">{t('master_challenge_badge')}</span>
               </div>
               <p className="font-impact text-black text-xl uppercase leading-tight italic tracking-tight">
                 "{cell.text}"
@@ -561,7 +561,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               {/* Divider */}
               <div className="flex items-center gap-3 py-1">
                 <div className="flex-1 h-px bg-black/15" />
-                <span className="text-[8px] font-impact uppercase tracking-widest text-black/35">ou code secret</span>
+                <span className="text-[8px] font-impact uppercase tracking-widest text-black/35">{t('or_secret_code')}</span>
                 <div className="flex-1 h-px bg-black/15" />
               </div>
 
@@ -585,10 +585,10 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             </div>
 
             <h2 className="font-impact text-3xl text-black uppercase tracking-tighter italic leading-none mb-3">
-              Demande envoyée!
+              {t('master_request_sent')}
             </h2>
             <p className="font-impact text-black/55 uppercase text-[10px] tracking-widest mb-10 leading-loose max-w-[220px]">
-              Le Master verra ta demande.{'\n'}Ta case se valide automatiquement!
+              {t('master_waiting_text').split('\n').map((l,i) => <React.Fragment key={i}>{l}{i===0&&<br/>}</React.Fragment>)}
             </p>
 
             {/* Progress dots — visual waiting indicator */}
@@ -606,7 +606,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               onClick={onClose}
               className="w-full py-4 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.3)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
             >
-              Fermer
+              {t('close')}
             </button>
           </div>
         )}
