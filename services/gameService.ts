@@ -1133,13 +1133,13 @@ async resetSession(): Promise<void> {
     const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
     if (!latest) return;
     await supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type }).eq('id', latest.id);
+    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type, boost_auction_winner: null }).eq('id', latest.id);
   }
 
   async clearBoostAuction(): Promise<void> {
     if (!supabase) return;
     const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost' }).eq('id', latest.id);
+    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: null }).eq('id', latest.id);
   }
 
   private async applyGroupSabotage(winnerId: string): Promise<void> {
@@ -1202,7 +1202,12 @@ async resetSession(): Promise<void> {
     const activityType = auctionType === 'boost' ? 'BOOST_WON' : 'SABOTAGE_WON';
     if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, activityType);
     await supabase.from('boost_votes').delete().eq('session_id', sessionId);
-    await this.clearBoostAuction();
+    // Persist winner for reveal overlay on all clients, then clear auction state
+    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (latest) {
+      const winnerPayload = { name: player?.nickname ?? '?', emoji: player?.avatar_id ?? '🎲', type: auctionType };
+      await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: winnerPayload }).eq('id', latest.id);
+    }
     return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲', type: auctionType };
   }
 

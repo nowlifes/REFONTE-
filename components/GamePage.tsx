@@ -21,6 +21,7 @@ import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
 import WitnessRequestBanner from './WitnessRequestBanner';
 import BoostAuctionBanner from './BoostAuctionBanner';
+import BoostRevealOverlay from './BoostRevealOverlay';
 import EditProfileSheet from './EditProfileSheet';
 import { gameService } from '../services/gameService';
 import { useGameSounds } from '../hooks/useGameSounds';
@@ -44,9 +45,11 @@ interface GamePageProps {
   barTransitionActive?: boolean;
   boostAuctionEndsAt?: number | null;
   boostAuctionType?: 'boost' | 'sabotage';
+  boostAuctionWinner?: { name: string; emoji: string; type: 'boost' | 'sabotage' } | null;
+  onBoostAuctionWinnerDone?: () => void;
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt, boostAuctionType = 'boost' }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt, boostAuctionType = 'boost', boostAuctionWinner, onBoostAuctionWinnerDone }) => {
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
@@ -545,6 +548,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           currentPlayerId={s.user.id}
           auctionType={boostAuctionType}
         />
+      )}
+      {boostAuctionWinner && onBoostAuctionWinnerDone && (
+        <BoostRevealOverlay winner={boostAuctionWinner} onDone={onBoostAuctionWinnerDone} />
       )}
       <ActivityFeed />
       <BackgroundParticles />
