@@ -288,6 +288,10 @@ export const TRANSLATIONS = {
     reset_confirm_cancel: "Cancel",
     reset_confirm_yes: "Yes, reset",
 
+    // GamePage — pause overlay
+    game_paused_title: "Game paused",
+    game_paused_desc: "The game master paused the game. Wait for it to resume.",
+
     // GamePage — sabotage discovery overlay
     power_unlocked: "💥 Power Unlocked",
     taunts_unlocked_title: "SABOTAGE UNLOCKED",
@@ -592,6 +596,10 @@ export const TRANSLATIONS = {
     reset_confirm_desc: "Ton profil et ta progression seront effacés.",
     reset_confirm_cancel: "Annuler",
     reset_confirm_yes: "Oui, reset",
+
+    // GamePage — pause overlay
+    game_paused_title: "Jeu en pause",
+    game_paused_desc: "Le master a mis la partie en pause. Attends qu'elle reprenne.",
 
     // GamePage — sabotage discovery overlay
     power_unlocked: "💥 Pouvoir Débloqué",

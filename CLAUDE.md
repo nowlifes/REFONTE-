@@ -182,3 +182,27 @@ At the end of each session (or when work is done), save a summary to `/Users/fut
 - Any decisions made
 
 This saves tokens on the next session — read it first before exploring code.
+
+
+## État actuel
+_Mis à jour : 2026-05-21 13:27 — branche : main_
+
+### Derniers commits
+- ba63f55 ✨ ux: erreurs visibles, timer urgence, haptic, lisibilité bar
+
+### Fichiers récemment modifiés
+- components/BoostAuctionBanner.tsx
+- components/Leaderboard.tsx
+- components/LegendsModal.tsx
+- hooks/useGameNotifications.ts
+- translations.ts
+
+### Non commité
+```
+ M CLAUDE.md
+ M components/GamePage.tsx
+ M components/MasterPage.tsx
+ M components/ValidationModal.tsx
+ M translations.ts
+```
+

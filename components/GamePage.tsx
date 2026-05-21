@@ -59,6 +59,27 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [revancheExpiresAt, setRevancheExpiresAt] = useState<number | null>(null);
   const [revancheSecondsLeft, setRevancheSecondsLeft] = useState(0);
   const [showCooldownFlash, setShowCooldownFlash] = useState(false);
+
+  // Flash animate-pulse only when joker/taunt count changes (not permanently)
+  const [jokerFlash, setJokerFlash] = useState(false);
+  const [tauntFlash, setTauntFlash] = useState(false);
+  const prevJokersRef = useRef(s.jokers);
+  const prevTauntsRef = useRef(s.tauntsLeft);
+  useEffect(() => {
+    if (s.jokers !== prevJokersRef.current) {
+      prevJokersRef.current = s.jokers;
+      setJokerFlash(true);
+      setTimeout(() => setJokerFlash(false), 1500);
+    }
+  }, [s.jokers]);
+  useEffect(() => {
+    if (s.tauntsLeft !== prevTauntsRef.current) {
+      prevTauntsRef.current = s.tauntsLeft;
+      setTauntFlash(true);
+      setTimeout(() => setTauntFlash(false), 1500);
+    }
+  }, [s.tauntsLeft]);
+
   useEffect(() => {
     if (!revancheExpiresAt) { setRevancheSecondsLeft(0); return; }
     const update = () => {
@@ -115,6 +136,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     }
   }
 
+  const sounds = useGameSounds();
+  const notifications = useGameNotifications();
+
   // ── Row unlock animation — fires when Master advances the bar ──
   const prevUnlockedRowsRef = useRef(unlockedRows);
   const [unlockingRows, setUnlockingRows] = useState<number[]>([]);
@@ -129,7 +153,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       setTimeout(() => setUnlockingRows([]), 900);
     }
     prevUnlockedRowsRef.current = unlockedRows;
-  }, [unlockedRows]);
+  }, [unlockedRows, sounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Bar 2 wave system — state & side-effects ─────────────────────
   const [showWaveCompleteOverlay, setShowWaveCompleteOverlay] = useState(false);
@@ -147,7 +171,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       }, 4000);
     }
     prevBar2Wave1CompleteRef.current = bar2Wave1Complete;
-  }, [bar2Wave1Complete]);
+  }, [bar2Wave1Complete, sounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Progressive unlock detection — only center mystery cell (id 12) locks at score < 5
   const CENTER_UNLOCK_SCORE = 5;
@@ -164,7 +188,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       setTimeout(() => setMysteryUnlocking(false), 800);
     }
     prevScoreRef.current = s.score;
-  }, [s.score]);
+  }, [s.score, sounds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isMysteryCellLocked = s.score < CENTER_UNLOCK_SCORE;
 
@@ -191,14 +215,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const { t, language, setLanguage } = useLanguage();
   const isFever = s.feverCells.length > 0;
 
-  const sounds = useGameSounds();
-  const notifications = useGameNotifications();
-
-  // ── Live rank — refetch on every activity event ───────────────────
+  // ── Live rank — debounced refetch on activity events (5s) ──────────
   const [playerRank, setPlayerRank] = useState<number | null>(null);
   useEffect(() => {
     if (!s.user?.id) return;
     let cancelled = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const fetchRank = async () => {
       try {
         const entries = await gameService.getLeaderboard(s.user.id);
@@ -208,9 +230,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         }
       } catch {}
     };
+    const debouncedFetch = () => {
+      if (cancelled) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fetchRank, 5000);
+    };
     fetchRank();
-    const unsub = gameService.subscribeToActivities(() => { if (!cancelled) fetchRank(); });
-    return () => { cancelled = true; unsub(); };
+    const unsub = gameService.subscribeToActivities(debouncedFetch);
+    return () => { cancelled = true; if (debounceTimer) clearTimeout(debounceTimer); unsub(); };
   }, [s.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Taunt received — sound + notification ────────────────────────
@@ -417,8 +444,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <div className="w-16 h-16 rounded-full bg-[#FFD700]/15 border-[3px] border-[#FFD700] flex items-center justify-center">
               <span className="text-3xl">⏸</span>
             </div>
-            <h2 className="font-impact uppercase text-[#FFD700] text-2xl tracking-wider">Jeu en pause</h2>
-            <p className="text-white/60 text-sm leading-relaxed">Le master a mis la partie en pause. Attends qu'elle reprenne.</p>
+            <h2 className="font-impact uppercase text-[#FFD700] text-2xl tracking-wider">{t('game_paused_title')}</h2>
+            <p className="text-white/60 text-sm leading-relaxed">{t('game_paused_desc')}</p>
             <div className="flex gap-1.5 mt-2">
               {[0, 1, 2].map(i => (
                 <div key={i} className="w-2 h-2 rounded-full bg-[#FFD700] animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
@@ -449,7 +476,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             </div>
             <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
               <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
-                CHAQUE DÉFI = UN TAUNT GRATUIT
+                CHAQUE DÉFI = UN SABOTAGE GRATUIT
               </div>
               <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
                 ⚡ GRILLE ENTIÈRE DÉBLOQUÉE · FONCE OU DISPARAIS ⚡
@@ -465,7 +492,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <div className="bg-[#FF4500] border-b-[3px] border-black py-2 flex items-center justify-center gap-2">
             <span className="font-impact uppercase text-black text-[10px] tracking-[0.25em]">⚡ CHAOS</span>
             <div className="w-1 h-1 rounded-full bg-black/50" />
-            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">TOUT LE MONDE A UN TAUNT</span>
+            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">TOUT LE MONDE A UN SABOTAGE</span>
             <div className="w-1 h-1 rounded-full bg-black/50" />
             <span className="font-impact uppercase text-black text-[10px]">⚡</span>
           </div>
@@ -537,7 +564,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl px-4 py-2.5 shadow-[6px_6px_0px_black] flex items-center gap-2">
             <span className="text-xl">💥</span>
             <div className="flex flex-col leading-none">
-              <span className="font-impact text-white uppercase text-lg tracking-tight">+1 TAUNT !</span>
+              <span className="font-impact text-white uppercase text-lg tracking-tight">+1 SABOTAGE !</span>
               <span className="font-impact text-white/60 uppercase text-[9px] tracking-widest">{language === 'fr' ? 'Défi spotlight validé' : 'Spotlight challenge cleared'}</span>
             </div>
           </div>
@@ -552,7 +579,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <div className="flex flex-col leading-none">
               <span className="font-impact text-black uppercase text-[11px] tracking-tight">SPOTLIGHT</span>
               <span className="font-impact text-black/50 uppercase text-[8px] tracking-widest">
-                {language === 'fr' ? 'Valide → +1 taunt' : 'Clear → +1 taunt'}
+                {language === 'fr' ? 'Valide → +1 sabotage' : 'Clear → +1 sabotage'}
               </span>
             </div>
             <div className="bg-black/15 rounded-lg px-2 py-0.5 ml-1">
@@ -581,7 +608,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 <div className="bg-[#FF2E63] border-[4px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] text-center max-w-xs w-full mx-6">
                   <Zap className="w-16 h-16 text-white mx-auto mb-4 animate-bounce" fill="currentColor" />
                   <h2 className="text-4xl font-impact uppercase italic text-white tracking-tighter leading-none mb-2">
-                    {language === 'fr' ? 'TAUNTED!' : 'TAUNTÉ !'}
+                    {language === 'fr' ? 'SABOTÉ !' : 'SABOTAGED!'}
                   </h2>
                   <p className="text-white/70 font-impact uppercase text-[11px] tracking-widest mb-6">
                     {s.tauntSenderName
@@ -636,7 +663,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               <div className="flex flex-col leading-none">
                 <span className={`font-impact uppercase text-[14px] tracking-widest ${s.lineCompleteEvent?.reward === 'taunt' ? 'text-white' : 'text-black'}`}>
                   {s.lineCompleteEvent?.reward === 'taunt'
-                    ? (language === 'fr' ? '+1 TAUNT GAGNÉ!' : '+1 TAUNT EARNED!')
+                    ? (language === 'fr' ? '+1 SABOTAGE GAGNÉ!' : '+1 SABOTAGE EARNED!')
                     : (language === 'fr' ? '+1 JOKER GAGNÉ!' : '+1 JOKER EARNED!')}
                 </span>
                 <span className={`font-impact uppercase text-[9px] tracking-widest ${s.lineCompleteEvent?.reward === 'taunt' ? 'text-white/60' : 'text-black/50'}`}>
@@ -700,7 +727,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                </div>
              )}
              <div
-                className={`bg-[#FFD700] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
+                className={`bg-[#FFD700] px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_black] flex flex-col items-center transition-all duration-300 cursor-pointer select-none ${isResetPressing ? 'scale-110 bg-red-500' : ''}`}
                 onMouseDown={startResetPress}
                 onMouseUp={endResetPress}
                 onMouseLeave={endResetPress}
@@ -757,8 +784,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                       setRevealedCell(clicked);
                       if (clicked.text.includes('{JOUEUR}')) {
                         try {
-                          const { gameService: gs } = await import('../services/gameService');
-                          const entries = await gs.getLeaderboard(s.user?.id);
+                          const entries = await gameService.getLeaderboard(s.user?.id);
                           const others = entries.filter((e: any) => e.pseudo !== s.nickname && e.userId !== s.user?.id);
                           if (others.length > 0) {
                             const pick = others[Math.floor(Math.random() * others.length)];
@@ -905,7 +931,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       <div className="shrink-0 py-2 flex justify-center gap-3 z-40">
         {/* Swap jokers */}
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.jokers > 0 ? 'bg-black/60 border-[#00F5A0]/40 text-[#00F5A0]' : 'bg-black/80 border-white/5 text-white/10'}`}>
-          <Sparkles size={11} className={s.jokers > 0 ? 'animate-pulse' : ''} />
+          <Sparkles size={11} className={jokerFlash ? 'animate-pulse' : ''} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">{t('jokers')} : {s.jokers}</span>
         </div>
         {/* Taunt credits — tap to go to leaderboard */}
@@ -913,9 +939,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           onClick={() => a.setView(AppView.LEADERBOARD)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all active:scale-95 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63]' : 'bg-black/80 border-white/5 text-white/10'}`}
         >
-          <Zap size={11} fill="currentColor" className={s.tauntsLeft > 0 ? 'animate-pulse' : 'opacity-30'} />
+          <Zap size={11} fill="currentColor" className={tauntFlash ? 'animate-pulse' : s.tauntsLeft === 0 ? 'opacity-30' : ''} />
           <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
-            TAUNTS : {s.tauntsLeft}
+            SABOTAGES : {s.tauntsLeft}
           </span>
         </button>
       </div>
@@ -993,8 +1019,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               onRequestMasterValidation={
                 s.selectedCell && s.gameSession && secureSessionId
                   ? async () => {
-                      const { gameService: gs } = await import('../services/gameService');
-                      await gs.requestMasterValidation(
+                      await gameService.requestMasterValidation(
                         s.gameSession!.id,
                         s.selectedCell!.id,
                         s.selectedCell!.text,
@@ -1010,8 +1035,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               onRequestPlayerWitness={
                 s.selectedCell && s.gameSession && secureSessionId
                   ? async (witnessPlayerId: string) => {
-                      const { gameService: gs } = await import('../services/gameService');
-                      await gs.requestPlayerWitness(
+                      await gameService.requestPlayerWitness(
                         s.gameSession!.id,
                         s.selectedCell!.id,
                         s.selectedCell!.text,

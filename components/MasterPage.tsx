@@ -154,7 +154,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
     const ch = supabase.channel(`player_count_${secureSessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` },
         () => setPlayerCount(prev => prev + 1))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players' },
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` },
         () => setPlayerCount(prev => Math.max(0, prev - 1)))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -243,16 +243,19 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleApproveValidation = async (v: any) => {
     setApprovingId(v.id);
     try { await gameService.approveMasterValidation(v); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors de la validation. Vérifiez votre connexion.'); }
     finally { setApprovingId(null); }
   };
-  const handleRejectValidation = async (id: string) => { await gameService.rejectMasterValidation(id); };
+  const handleRejectValidation = async (id: string) => {
+    try { await gameService.rejectMasterValidation(id); }
+    catch (e) { console.error(e); alert('Erreur lors du refus. Vérifiez votre connexion.'); }
+  };
   const handleSendWitness = async (v: any) => {
     const wId = witnessSelectedPlayer[v.id];
     if (!wId) return;
     setSendingWitnessId(v.id);
     try { await gameService.requestWitnessConfirmation(v.id, wId); setWitnessMode(prev => ({ ...prev, [v.id]: false })); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors de l\'envoi du témoin. Vérifiez votre connexion.'); }
     finally { setSendingWitnessId(null); }
   };
   const handleKickPlayer = async (pid: string) => {
@@ -286,7 +289,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleCreateNew = async () => {
     setIsCreatingNew(true);
     try { await createNewSession(); setShowNewSessionConfirm(false); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors de la création de session. Vérifiez votre connexion.'); }
     finally { setIsCreatingNew(false); }
   };
   const handleWrapped = async () => {
@@ -557,7 +560,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   {secureSessionId && (
                     <button onClick={async () => { await Promise.all([setSpotlightDisabled?.(true), gameService.clearAllTaunts(secureSessionId)]); }}
                       className="w-full py-2.5 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2">
-                      🔥 Reset effets (spotlight + taunts)
+                      🔥 Reset effets (spotlight + sabotages)
                     </button>
                   )}
                 </div>

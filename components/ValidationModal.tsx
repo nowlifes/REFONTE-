@@ -551,7 +551,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             <div className="flex-1 p-5 flex flex-col gap-3 overflow-y-auto">
               {/* QR Scan — seule option pour valider un défi Master */}
               <button
-                onClick={onScanRequest}
+                onClick={() => onScanRequest?.()}
                 className="w-full py-5 bg-black text-[#FFD700] rounded-2xl font-impact uppercase text-lg flex items-center justify-center gap-3 border-[3px] border-black shadow-[5px_5px_0px_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
               >
                 <ScanLine size={22} strokeWidth={2.5} />
@@ -676,7 +676,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               {isPvpVictory ? 'TU AS GAGNÉ !' : t('fortune_won_title')}
             </h2>
             <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mt-3 animate-in slide-in-from-bottom-2 duration-300 delay-100">
-              {isPvpVictory ? 'TAUNT GAGNÉ — ÉCRASE-LES !' : t('fortune_won_sub')}
+              {isPvpVictory ? 'SABOTAGE GAGNÉ — ÉCRASE-LES !' : t('fortune_won_sub')}
             </p>
           </div>
         )}
