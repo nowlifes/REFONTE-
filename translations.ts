@@ -96,9 +96,9 @@ export const TRANSLATIONS = {
     share: "SHARE",
     invite_friends: "INVITE YOUR CREW",
 
-    // Taunts / Tones
-    taunts_section_title: "TAUNTS",
-    taunts_section_desc: "2 taunts per session. Pick a tone from the leaderboard and send it.",
+    // Sabotages
+    taunts_section_title: "SABOTAGES",
+    taunts_section_desc: "2 sabotages per session. Pick one from the leaderboard and send it.",
     taunt_freeze_title: "Freeze",
     taunt_freeze_desc: "Target is locked out for 1 minute. Can't validate anything.",
     taunt_ice_title: "Ice Block",
@@ -258,7 +258,7 @@ export const TRANSLATIONS = {
     // Fortune reveal
     fortune_rolling: "FORTUNE...",
     fortune_won_title: "POWER-UP!",
-    fortune_won_sub: "+1 TAUNT ready to fire",
+    fortune_won_sub: "+1 SABOTAGE ready to fire",
     fortune_miss_title: "No luck...",
     fortune_miss_sub: "Validate anyway",
 
@@ -288,11 +288,24 @@ export const TRANSLATIONS = {
     reset_confirm_cancel: "Cancel",
     reset_confirm_yes: "Yes, reset",
 
-    // GamePage — taunt discovery overlay
+    // GamePage — sabotage discovery overlay
     power_unlocked: "💥 Power Unlocked",
-    taunts_unlocked_title: "TAUNTS UNLOCKED",
+    taunts_unlocked_title: "SABOTAGE UNLOCKED",
     taunts_unlocked_desc: "Special attacks on your opponents — freeze them, blur their screen, shrink their challenges.",
-    taunts_earn_desc: "Complete a line → earn attack powers",
+    taunts_earn_desc: "Complete a line → earn a sabotage",
+
+    // Boost Auction
+    vote_error: "Vote not registered — try again",
+
+    // Leaderboard
+    leaderboard_load_error: "Could not load scores",
+    leaderboard_updated_at: "Updated at {t}",
+
+    // Notifications
+    notify_witness_title: "needs you!",
+    notify_witness_body: "Did they do it? Confirm?",
+    notify_taunt_title: "SABOTAGE INCOMING!",
+    notify_taunt_body: "Someone just hit you. Check your screen!",
   },
   fr: {
     // General
@@ -388,9 +401,9 @@ export const TRANSLATIONS = {
     share: "PARTAGER",
     invite_friends: "INVITE TES POTES",
 
-    // Taunts / Tones
-    taunts_section_title: "TAUNTS",
-    taunts_section_desc: "2 taunts par session. Choisis un type dans le classement et envoie-le.",
+    // Sabotages
+    taunts_section_title: "SABOTAGES",
+    taunts_section_desc: "2 sabotages par session. Choisis un type dans le classement et envoie-le.",
     taunt_freeze_title: "Freeze",
     taunt_freeze_desc: "La cible est bloquée 1 minute. Elle ne peut rien valider.",
     taunt_ice_title: "Ice Block",
@@ -550,7 +563,7 @@ export const TRANSLATIONS = {
     // Fortune reveal
     fortune_rolling: "FORTUNE...",
     fortune_won_title: "POWER-UP !",
-    fortune_won_sub: "+1 TAUNT prêt à l'emploi",
+    fortune_won_sub: "+1 SABOTAGE prêt à l'emploi",
     fortune_miss_title: "Pas de chance...",
     fortune_miss_sub: "Tu valides quand même",
 
@@ -580,10 +593,23 @@ export const TRANSLATIONS = {
     reset_confirm_cancel: "Annuler",
     reset_confirm_yes: "Oui, reset",
 
-    // GamePage — taunt discovery overlay
+    // GamePage — sabotage discovery overlay
     power_unlocked: "💥 Pouvoir Débloqué",
-    taunts_unlocked_title: "TAUNTS DÉBLOQUÉS",
+    taunts_unlocked_title: "SABOTAGE DÉBLOQUÉ",
     taunts_unlocked_desc: "Des attaques spéciales contre tes adversaires — gèle-les, floute leur écran, rétrécis leurs défis.",
-    taunts_earn_desc: "Complète une ligne → +1 Joker → échange contre un taunt",
+    taunts_earn_desc: "Complète une ligne → gagne un sabotage",
+
+    // Boost Auction
+    vote_error: "Vote non enregistré — réessaie",
+
+    // Leaderboard
+    leaderboard_load_error: "Impossible de charger les scores",
+    leaderboard_updated_at: "Mis à jour à {t}",
+
+    // Notifications
+    notify_witness_title: "a besoin de toi !",
+    notify_witness_body: "Tu confirmes qu'ils l'ont fait ?",
+    notify_taunt_title: "SABOTAGE REÇU !",
+    notify_taunt_body: "Quelqu'un t'a attaqué. Regarde ton écran !",
   }
 };

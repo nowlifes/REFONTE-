@@ -11,7 +11,7 @@ const RULES_FR = [
   { emoji: '🎯', title: 'Accomplis des défis', desc: 'Tape sur une case pour voir ton défi. Valide-le une fois accompli.' },
   { emoji: '👥', title: 'Solo, Témoin ou Master', desc: 'SOLO = tu te débrouilles. TÉMOIN = un joueur signe. MASTER = le maestro valide en direct.' },
   { emoji: '🏆', title: 'Fais des lignes', desc: 'Complète une ligne (horizontal, vertical ou diagonal) pour gagner un joker.' },
-  { emoji: '⚡', title: 'Lance des taunts', desc: 'Utilise tes jokers pour envoyer des effets à tes adversaires et les ralentir.' },
+  { emoji: '⚡', title: 'Lance des sabotages', desc: 'Utilise tes jokers pour envoyer des effets à tes adversaires et les ralentir.' },
   { emoji: '👑', title: 'Obéis au Master', desc: 'Le Master mène la soirée. Certains défis nécessitent son accord direct.' },
 ];
 
@@ -19,7 +19,7 @@ const RULES_EN = [
   { emoji: '🎯', title: 'Complete challenges', desc: 'Tap a cell to reveal your challenge. Validate it once done.' },
   { emoji: '👥', title: 'Solo, Witness or Master', desc: 'SOLO = do it yourself. WITNESS = get a player to sign. MASTER = the host validates live.' },
   { emoji: '🏆', title: 'Make lines', desc: 'Complete a line (horizontal, vertical or diagonal) to earn a joker.' },
-  { emoji: '⚡', title: 'Send taunts', desc: 'Use your jokers to send effects to rivals and slow them down.' },
+  { emoji: '⚡', title: 'Send sabotages', desc: 'Use your jokers to send effects to rivals and slow them down.' },
   { emoji: '👑', title: 'Obey the Master', desc: 'The Master runs the night. Some challenges need their live approval.' },
 ];
 
@@ -79,7 +79,7 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
               <span className="text-2xl shrink-0 leading-none mt-0.5">{rule.emoji}</span>
               <div className="min-w-0">
                 <div className="font-impact uppercase text-white text-[13px] tracking-wide">{rule.title}</div>
-                <div className="font-impact text-white/45 uppercase text-[9px] tracking-widest leading-relaxed mt-0.5">{rule.desc}</div>
+                <div className="font-impact text-white/45 uppercase text-[10px] tracking-widest leading-relaxed mt-0.5">{rule.desc}</div>
               </div>
             </div>
           ))}
@@ -90,7 +90,7 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
             className="w-full flex items-center justify-between px-4 py-3 bg-white/3 border border-white/8 rounded-2xl text-white/40 hover:text-white/60 transition-all active:bg-white/8"
           >
             <span className="font-impact uppercase text-[10px] tracking-widest">
-              {isFr ? '⚡ Détails des taunts' : '⚡ Taunt details'}
+              {isFr ? '⚡ Détails des sabotages' : '⚡ Sabotage details'}
             </span>
             {showExtra ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} strokeWidth={2.5} />}
           </button>
@@ -101,7 +101,7 @@ const LegendsModal: React.FC<LegendsModalProps> = ({ onClose }) => {
                 <div key={i} className="bg-white/5 border border-white/8 rounded-2xl p-3">
                   <span className="text-xl block mb-1.5">{t.emoji}</span>
                   <div className="font-impact text-white uppercase text-[11px] italic leading-none">{t.title}</div>
-                  <div className="font-impact text-white/40 uppercase text-[8px] tracking-widest leading-relaxed mt-1">{t.desc}</div>
+                  <div className="font-impact text-white/40 uppercase text-[9px] tracking-widest leading-relaxed mt-1">{t.desc}</div>
                 </div>
               ))}
             </div>

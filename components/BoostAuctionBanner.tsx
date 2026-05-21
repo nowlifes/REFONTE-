@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { gameService } from '../services/gameService';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface BoostAuctionBannerProps {
   endsAt: number;
@@ -19,11 +20,13 @@ const getEmoji = (avatarId: string) => EMOJI_MAP[avatarId] ?? avatarId ?? '🎲'
 const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
   endsAt, sessionId, currentPlayerId, onExpired,
 }) => {
+  const { language } = useLanguage();
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
   const [players, setPlayers] = useState<Array<{ id: string; pseudo: string; emoji: string }>>([]);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
   const [myVote, setMyVote] = useState<string | null>(null);
   const [isVoting, setIsVoting] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const expiredFired = useRef(false);
 
@@ -66,8 +69,12 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
     setMyVote(candidateId);
     try {
       await gameService.castBoostVote(sessionId, currentPlayerId, candidateId);
+      navigator.vibrate?.(15);
     } catch (e) {
       console.error('[Boost] castBoostVote failed', e);
+      setMyVote(null);
+      setVoteError(true);
+      setTimeout(() => setVoteError(false), 2500);
     } finally {
       setIsVoting(null);
     }
@@ -77,9 +84,19 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
 
   const totalVotes = (Object.values(voteCounts) as number[]).reduce((a: number, b: number) => a + b, 0);
   const topCandidateId = (Object.entries(voteCounts) as [string, number][]).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const isUrgent = secondsLeft <= 5;
 
   return (
     <div className="fixed inset-0 z-[250] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+      {/* Vote error toast */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[300] transition-all duration-300 pointer-events-none ${voteError ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+        <div className="bg-black border-[3px] border-[#FF2E63] rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2 whitespace-nowrap">
+          <span className="font-impact text-[#FF2E63] uppercase text-sm tracking-tight">
+            {language === 'fr' ? 'Vote non enregistré — réessaie' : 'Vote not registered — try again'}
+          </span>
+        </div>
+      </div>
 
       {/* Top zone — orange */}
       <div
@@ -88,8 +105,8 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
       >
         {/* Timer ring */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-14 h-14 bg-black/20 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_black]">
-            <span className="font-impact text-black text-xl">{secondsLeft}</span>
+          <div className={`w-14 h-14 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_black] transition-colors duration-300 ${isUrgent ? 'bg-[#FF2E63] animate-pulse' : 'bg-black/20'}`}>
+            <span className={`font-impact text-xl transition-colors duration-300 ${isUrgent ? 'text-white' : 'text-black'}`}>{secondsLeft}</span>
           </div>
           <div>
             <div className="inline-flex items-center gap-1.5 bg-black text-[#FF8C00] px-2.5 py-1 rounded-lg mb-1 w-fit">
@@ -102,7 +119,7 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
         </div>
 
         <p className="font-impact text-black text-[22px] uppercase leading-tight italic tracking-tight mb-1">
-          Qui mérite un taunt gratuit ?
+          Qui mérite un sabotage gratuit ?
         </p>
         <p className="font-impact text-black/50 text-[11px] uppercase tracking-widest">
           Vote pour un joueur — le groupe décide qui reçoit le boost

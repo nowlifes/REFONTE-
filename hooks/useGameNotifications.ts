@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function useGameNotifications() {
+  const { language } = useLanguage();
   const permRef = useRef<NotificationPermission>('default');
 
   useEffect(() => {
@@ -9,7 +11,6 @@ export function useGameNotifications() {
       permRef.current = 'granted';
       return;
     }
-    // Ask on first meaningful interaction (called from a user gesture context upstream)
     if (Notification.permission !== 'denied') {
       Notification.requestPermission().then(p => { permRef.current = p; });
     }
@@ -26,12 +27,20 @@ export function useGameNotifications() {
   }, []);
 
   const notifyWitness = useCallback((playerName: string, challenge: string) => {
-    push(`👁 ${playerName} a besoin de toi !`, `"${challenge}" — Confirme-le ?`);
-  }, [push]);
+    const isFr = language === 'fr';
+    push(
+      `👁 ${playerName} ${isFr ? 'a besoin de toi !' : 'needs you!'}`,
+      `"${challenge}" — ${isFr ? 'Tu confirmes ?' : 'Can you confirm?'}`,
+    );
+  }, [push, language]);
 
   const notifyTaunt = useCallback((msg?: string) => {
-    push('⚡ TAUNT REÇU !', msg ?? 'Quelqu\'un t\'a envoyé un taunt. Regarde ton écran !');
-  }, [push]);
+    const isFr = language === 'fr';
+    push(
+      `⚡ ${isFr ? 'SABOTAGE REÇU !' : 'SABOTAGE INCOMING!'}`,
+      msg ?? (isFr ? 'Quelqu\'un t\'a attaqué. Regarde ton écran !' : 'Someone just hit you. Check your screen!'),
+    );
+  }, [push, language]);
 
   return { notifyWitness, notifyTaunt };
 }

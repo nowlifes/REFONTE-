@@ -305,7 +305,7 @@ const TauntSheet: React.FC<TauntSheetProps> = ({ entry, tauntsLeft, language, ga
                 </span>
                 <span className="w-1 h-1 rounded-full bg-white/20 shrink-0" />
                 <span className={`font-impact text-[9px] uppercase tracking-widest shrink-0 ${tauntsLeft > 0 ? 'text-[#FF2E63]' : 'text-white/20'}`}>
-                  {tauntsLeft} taunt{tauntsLeft > 1 ? 's' : ''}
+                  {tauntsLeft} sabotage{tauntsLeft > 1 ? 's' : ''}
                 </span>
               </div>
             </div>
@@ -316,7 +316,7 @@ const TauntSheet: React.FC<TauntSheetProps> = ({ entry, tauntsLeft, language, ga
             <div className="flex items-center gap-2.5 bg-[#FFD700]/8 border border-[#FFD700]/25 rounded-xl px-3.5 py-2.5 mb-5">
               <Clock className="w-3.5 h-3.5 text-[#FFD700] shrink-0" strokeWidth={2.5} />
               <span className="font-impact text-[#FFD700]/70 text-[9px] uppercase tracking-widest flex-1">
-                {language === 'fr' ? 'Nouveau taunt dans' : 'Next taunt in'}
+                {language === 'fr' ? 'Nouveau sabotage dans' : 'Next sabotage in'}
               </span>
               <span className="font-impact text-[#FFD700] text-[13px] tabular-nums">
                 {fmtMs(nextUnlockMs)}
@@ -397,6 +397,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   const [entries, setEntries]           = useState<LeaderboardEntry[]>([]);
   const [nationEntries, setNationEntries] = useState<NationLeaderboardEntry[]>([]);
   const [loading, setLoading]           = useState(true);
+  const [fetchError, setFetchError]     = useState(false);
+  const [lastFetched, setLastFetched]   = useState<Date | null>(null);
   const [tab, setTab]                   = useState<'PLAYERS' | 'NATIONS'>('PLAYERS');
   const [tauntTarget, setTauntTarget]   = useState<LeaderboardEntry | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -404,13 +406,20 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       if (tab === 'PLAYERS') {
         setEntries(await gameService.getLeaderboard(currentUserId));
       } else {
         setNationEntries(await gameService.getCountryLeaderboard());
       }
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+      setLastFetched(new Date());
+    } catch (e) {
+      console.error(e);
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [currentUserId, tab]);
 
   useEffect(() => {
@@ -423,8 +432,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
     if (!tauntTarget || !onTaunt) return;
     const pseudo = tauntTarget.pseudo;
     await onTaunt(tauntTarget.userId, tauntType);
+    navigator.vibrate?.([10, 30, 10]);
     setTauntTarget(null);
-    setToastMessage(language === 'fr' ? `TAUNT ENVOYÉ À ${pseudo} !` : `TAUNT SENT TO ${pseudo}!`);
+    setToastMessage(language === 'fr' ? `SABOTAGE ENVOYÉ À ${pseudo} !` : `SABOTAGE SENT TO ${pseudo}!`);
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2500);
   };
@@ -461,8 +471,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                 <Zap className="w-3.5 h-3.5" fill="currentColor" />
                 <div className="flex flex-col leading-none">
                   <span className="font-impact text-[11px] uppercase">{tauntsLeft}</span>
-                  <span className={`font-impact text-[7px] uppercase tracking-wider leading-none ${tauntsLeft > 0 ? 'text-white/70' : 'text-black/30'}`}>
-                    {language === 'fr' ? 'ATTAQUER' : 'ATTACK'}
+                  <span className={`font-impact text-[9px] uppercase tracking-wider leading-none ${tauntsLeft > 0 ? 'text-white/70' : 'text-black/30'}`}>
+                    {language === 'fr' ? 'ATT.' : 'ATK'}
                   </span>
                 </div>
               </div>
@@ -474,8 +484,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
         </div>
 
         {canTaunt && (
-          <p className="text-center text-black/40 font-impact text-[9px] uppercase tracking-widest pb-2">
+          <p className="text-center text-black/40 font-impact text-[9px] uppercase tracking-widest pb-1">
             ⚡ {language === 'fr' ? 'Tape ⚡ sur un joueur pour l\'attaquer' : 'Tap ⚡ on a player to strike them'}
+          </p>
+        )}
+        {lastFetched && (
+          <p className="text-center text-black/30 font-impact text-[8px] uppercase tracking-widest pb-2">
+            {language === 'fr' ? `Mis à jour à ${lastFetched.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : `Updated at ${lastFetched.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
           </p>
         )}
 
@@ -512,6 +527,19 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                     onTauntPress={() => setTauntTarget(entry)}
                   />
                 ))}
+              </div>
+            ) : fetchError ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-20 px-8 text-center">
+                <div className="text-5xl">⚠️</div>
+                <p className="font-impact uppercase text-[#FF2E63] text-sm tracking-widest">
+                  {language === 'fr' ? 'Impossible de charger les scores' : 'Could not load scores'}
+                </p>
+                <button
+                  onClick={fetchData}
+                  className="px-5 py-2.5 bg-white text-black border-[3px] border-black rounded-xl font-impact uppercase text-[11px] tracking-widest shadow-[3px_3px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                >
+                  {language === 'fr' ? 'Réessayer' : 'Retry'}
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-4 py-20 px-8 text-center">
