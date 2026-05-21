@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import canvasConfetti from 'canvas-confetti';
 import { BingoCellData, ChallengeType, CellStatus, AppView, UserProfile, GameSession, TauntType } from '../types';
 import { CHALLENGES_EN, CHALLENGES_FR, INITIAL_JOKERS, SOUNDS } from '../constants';
@@ -752,10 +752,12 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
     },
   };
 
+  const score = useMemo(() => cells.filter(c => c.status === CellStatus.VALIDATED).length, [cells]);
+
   return {
     state: {
       view, isLoading, nickname, avatarId, country, cells, jokers, winningIds, feverCells, activeScannerMode, selectedCell, soundEnabled, lastWitnessTime, user, deviceConflict, deviceEvicted,
-      score: cells.filter(c => c.status === CellStatus.VALIDATED).length,
+      score,
       badges, newBadge, gameSession, frozenUntil, tauntType, tauntSenderName,
       isFrozen: !!frozenUntil && Date.now() < frozenUntil,
       tauntsLeft: Math.max(0, 1 + (gameSession?.tauntsBonus ?? 0) - (gameSession?.tauntsSent ?? 0)),

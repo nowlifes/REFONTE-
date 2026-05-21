@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Check, Lock, Zap, Star } from 'lucide-react';
 import { BingoCellData, ChallengeType, CellStatus } from '../types';
+
+const STOP_WORDS = new Set(['tu', 'je', 'il', 'de', 'du', 'un', 'une', 'le', 'la', 'les', 'des', 'à', 'au', 'en', 'et', 'ou', 'sur', 'par', 'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'do', 'get', 'your']);
 
 interface BingoCellProps {
   data: BingoCellData;
@@ -28,18 +30,16 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
   const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
 
-  const getColors = () => {
+  const cellColors = useMemo(() => {
     if (isLocked) return 'bg-[#0D1527] text-white/20 border-2 border-white/10 border-dashed mystery-halo';
     switch (type) {
       case ChallengeType.MASTER:  return 'bg-[#FFD700] text-black';
       case ChallengeType.WITNESS: return 'bg-[#FF2D6A] text-white';
       default:                    return 'bg-[#00F5A0] text-black';
     }
-  };
+  }, [isLocked, type]);
 
-  // Two meaningful words for context — first pass skips stop words
-  const STOP_WORDS = new Set(['tu', 'je', 'il', 'de', 'du', 'un', 'une', 'le', 'la', 'les', 'des', 'à', 'au', 'en', 'et', 'ou', 'sur', 'par', 'the', 'a', 'an', 'of', 'to', 'in', 'on', 'at', 'do', 'get', 'your']);
-  const getDisplayWords = (): string[] => {
+  const displayWords = useMemo((): string[] => {
     const words = text.split(/\s+/);
     const result: string[] = [];
     for (const w of words) {
@@ -55,7 +55,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
       result.push(fallback.length > 10 ? fallback.slice(0, 9) + '.' : fallback);
     }
     return result;
-  };
+  }, [text]);
 
   const winDelay = isWinning && winningIndex >= 0 ? `${winningIndex * 80}ms` : '0ms';
 
@@ -140,7 +140,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
         {/* FRONT */}
         <div
           className={`absolute inset-0 backface-hidden rounded-[8px] flex items-center justify-center text-center p-[3px] overflow-hidden
-            ${getColors()}
+            ${cellColors}
             ${isPartner && !isValidated ? 'ring-[2px] ring-[#FFD700] ring-offset-[1px] ring-offset-black' : ''}
             ${isFeverTarget && !isLocked ? 'ring-2 ring-white animate-pulse' : ''}
             ${isSpotlight ? 'ring-[3px] ring-white ring-offset-[2px] ring-offset-black animate-pulse' : ''}
@@ -167,12 +167,12 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               {isSpotlight && (
                 <Zap className="w-3 h-3 mb-0.5 shrink-0" fill="currentColor" strokeWidth={0} style={{ color: type === ChallengeType.AUTO ? '#000' : type === ChallengeType.WITNESS ? '#fff' : '#000' }} />
               )}
-              {getDisplayWords().map((word, i) => (
+              {displayWords.map((word, i) => (
                 <span
                   key={i}
                   className="font-impact uppercase leading-none text-center w-full"
                   style={{
-                    fontSize: i === 0 ? (getDisplayWords().length > 1 ? '11px' : '13px') : '9px',
+                    fontSize: i === 0 ? (displayWords.length > 1 ? '11px' : '13px') : '9px',
                     letterSpacing: '-0.5px',
                     opacity: i === 1 ? 0.65 : 1,
                   }}

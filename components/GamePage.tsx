@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock } from 'lucide-react';
 import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -109,35 +109,67 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   }, [s.score]);
 
   // ── 1-2-2 Row-based progressive unlock ──────────────────────────
-  // unlockedRows = sum of cadence goals up to (and including) currentBar
-  const cadenceArray = barCadence.split(',').map(Number);
-  const unlockedRows = Math.min(5, cadenceArray.slice(0, currentBar).reduce((a, b) => a + b, 0));
+  const cadenceArray = useMemo((): number[] => barCadence.split(',').map(Number), [barCadence]);
+  const unlockedRows = useMemo(() => Math.min(5, cadenceArray.slice(0, currentBar).reduce((a: number, b: number) => a + b, 0)), [cadenceArray, currentBar]);
 
-  // Bar 2 wave 1 complete: all 5 cells of row 1 (ids 5-9) are validated
-  const bar2Wave1Complete = currentBar >= 2 &&
+  const bar2Wave1Complete = useMemo(() => currentBar >= 2 &&
     s.cells.length > 0 &&
     s.cells
       .filter((c: BingoCellData) => Math.floor(c.id / 5) === 1)
-      .every((c: BingoCellData) => c.status === CellStatus.VALIDATED);
+      .every((c: BingoCellData) => c.status === CellStatus.VALIDATED),
+    [currentBar, s.cells]);
 
-  // Separators: future unlock boundaries still within the grid
-  const rowSeparators: { afterRow: number; barLabel: number; isPrimary: boolean; isWave?: boolean }[] = [];
-  {
+  type RowSeparator = { afterRow: number; barLabel: number; isPrimary: boolean; isWave?: boolean };
+  const rowSeparators = useMemo((): RowSeparator[] => {
+    const result: RowSeparator[] = [];
     let cum = 0;
-    cadenceArray.forEach((goal, i) => {
+    cadenceArray.forEach((goal: number, i: number) => {
       cum += goal;
       if (cum < 5 && cum >= unlockedRows) {
-        rowSeparators.push({ afterRow: cum, barLabel: i + 2, isPrimary: cum === unlockedRows });
+        result.push({ afterRow: cum, barLabel: i + 2, isPrimary: cum === unlockedRows });
       }
     });
-    // Wave separator: row 2 is wave-locked at bar 2 until wave 1 is done
     if (currentBar === 2 && !bar2Wave1Complete && unlockedRows >= 3) {
-      rowSeparators.push({ afterRow: 2, barLabel: 2, isPrimary: true, isWave: true });
+      result.push({ afterRow: 2, barLabel: 2, isPrimary: true, isWave: true });
     }
-  }
+    return result;
+  }, [cadenceArray, unlockedRows, currentBar, bar2Wave1Complete]);
 
   const sounds = useGameSounds();
   const notifications = useGameNotifications();
+
+  // Stable refs for cell onClick — avoids recreating 25 closures per render
+  const frozenRef = useRef(s.isFrozen);
+  const cellsStateRef = useRef(s.cells);
+  const nicknameRef = useRef(s.nickname);
+  const userIdRef = useRef(s.user?.id);
+  useEffect(() => { frozenRef.current = s.isFrozen; }, [s.isFrozen]);
+  useEffect(() => { cellsStateRef.current = s.cells; }, [s.cells]);
+  useEffect(() => { nicknameRef.current = s.nickname; }, [s.nickname]);
+  useEffect(() => { userIdRef.current = s.user?.id; }, [s.user?.id]);
+
+  const handleCellClickStable = useCallback(async (id: number) => {
+    if (frozenRef.current) return;
+    const clicked = cellsStateRef.current.find((c: BingoCellData) => c.id === id);
+    if (!clicked) return;
+    setRevealedCell(clicked);
+    if (clicked.text.includes('{JOUEUR}')) {
+      try {
+        const entries = await gameService.getLeaderboard(userIdRef.current);
+        const others = entries.filter((e: any) => e.pseudo !== nicknameRef.current && e.userId !== userIdRef.current);
+        if (others.length > 0) {
+          const pick = others[Math.floor(Math.random() * others.length)];
+          setAssignedPlayer(pick.pseudo);
+        } else {
+          setAssignedPlayer(null);
+        }
+      } catch {
+        setAssignedPlayer(null);
+      }
+    } else {
+      setAssignedPlayer(null);
+    }
+  }, []); // stable — reads mutable state via refs
 
   // ── Row unlock animation — fires when Master advances the bar ──
   const prevUnlockedRowsRef = useRef(unlockedRows);
@@ -759,59 +791,38 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             className="grid grid-cols-5 gap-[4px] p-[4px] bg-[#1A1A2E] rounded-[12px] shadow-inner"
             style={{ width: '350px', height: '350px' }}
           >
-              {s.cells.map((cell: BingoCellData) => {
-                const cellRow = Math.floor(cell.id / 5);
-                const isWaveLocked = !chaosMode && cellRow === 2 && currentBar === 2 && !bar2Wave1Complete;
-                const isRowLocked = !chaosMode && (cellRow >= unlockedRows || isWaveLocked);
-                const isCenter = cell.id === 12;
-                const isLocked = !isRowLocked && isCenter && isMysteryCellLocked;
-                const isRowUnlocking = unlockingRows.includes(cellRow);
-                const isUnlocking = (isCenter && mysteryUnlocking) || isRowUnlocking;
-                // Which bar unlocks this row?
-                // afterRow=K means the separator sits between row K-1 and row K.
-                // So the group containing cellRow is the one with the LARGEST afterRow <= cellRow.
-                const rowUnlocksAtBar = isRowLocked
-                  ? [...rowSeparators].reverse().find(sep => sep.afterRow <= cellRow)?.barLabel
-                  : undefined;
-                return (
-                  <BingoCell
-                    key={cell.id}
-                    data={cell}
-                    onClick={async (id) => {
-                      if (s.isFrozen) return;
-                      const clicked = s.cells.find((c: BingoCellData) => c.id === id);
-                      if (!clicked) return;
-                      setRevealedCell(clicked);
-                      if (clicked.text.includes('{JOUEUR}')) {
-                        try {
-                          const entries = await gameService.getLeaderboard(s.user?.id);
-                          const others = entries.filter((e: any) => e.pseudo !== s.nickname && e.userId !== s.user?.id);
-                          if (others.length > 0) {
-                            const pick = others[Math.floor(Math.random() * others.length)];
-                            setAssignedPlayer(pick.pseudo);
-                          } else {
-                            setAssignedPlayer(null);
-                          }
-                        } catch {
-                          setAssignedPlayer(null);
-                        }
-                      } else {
-                        setAssignedPlayer(null);
-                      }
-                    }}
-                    isWinning={s.winningIds.includes(cell.id)}
-                    winningIndex={s.winningIds.indexOf(cell.id)}
-                    isFeverTarget={s.feverCells.includes(cell.id)}
-                    isLocked={isLocked}
-                    isUnlocking={isUnlocking}
-                    isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && Date.now() < s.spotlightEndsAt}
-                    avatarEmoji={playerEmojiChar}
-                    rowLocked={isRowLocked}
-                    rowUnlocksAtBar={rowUnlocksAtBar}
-                    chaosMode={chaosMode}
-                  />
-                );
-              })}
+              {(() => {
+                const now = Date.now();
+                return s.cells.map((cell: BingoCellData) => {
+                  const cellRow = Math.floor(cell.id / 5);
+                  const isWaveLocked = !chaosMode && cellRow === 2 && currentBar === 2 && !bar2Wave1Complete;
+                  const isRowLocked = !chaosMode && (cellRow >= unlockedRows || isWaveLocked);
+                  const isCenter = cell.id === 12;
+                  const isLocked = !isRowLocked && isCenter && isMysteryCellLocked;
+                  const isRowUnlocking = unlockingRows.includes(cellRow);
+                  const isUnlocking = (isCenter && mysteryUnlocking) || isRowUnlocking;
+                  const rowUnlocksAtBar = isRowLocked
+                    ? [...rowSeparators].reverse().find((sep: RowSeparator) => sep.afterRow <= cellRow)?.barLabel
+                    : undefined;
+                  return (
+                    <BingoCell
+                      key={cell.id}
+                      data={cell}
+                      onClick={handleCellClickStable}
+                      isWinning={s.winningIds.includes(cell.id)}
+                      winningIndex={s.winningIds.indexOf(cell.id)}
+                      isFeverTarget={s.feverCells.includes(cell.id)}
+                      isLocked={isLocked}
+                      isUnlocking={isUnlocking}
+                      isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && now < s.spotlightEndsAt}
+                      avatarEmoji={playerEmojiChar}
+                      rowLocked={isRowLocked}
+                      rowUnlocksAtBar={rowUnlocksAtBar}
+                      chaosMode={chaosMode}
+                    />
+                  );
+                });
+              })()}
           </div>
 
           {/* ── Row-unlock separators ───────────────────────────── */}
