@@ -20,6 +20,7 @@ export const useEventSession = () => {
   const [chaosMode, setChaosMode] = useState(false);
   const [maxValidationsPerBar, setMaxValidationsPerBar] = useState(0);
   const [boostAuctionEndsAt, setBoostAuctionEndsAt] = useState<number | null>(null);
+  const [boostAuctionType, setBoostAuctionType] = useState<'boost' | 'sabotage'>('boost');
   // Track whether we've ever successfully loaded session state.
   // Used by checkSession to fail-open (don't kick players on network errors).
   const hasLoadedOnce = useRef(false);
@@ -35,7 +36,7 @@ export const useEventSession = () => {
         gameService.getTransitionState(),
         supabase
           .from('event_session')
-          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused, current_bar, bar_cadence, chaos_mode, max_validations_per_bar, boost_auction_ends_at')
+          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused, current_bar, bar_cadence, chaos_mode, max_validations_per_bar, boost_auction_ends_at, boost_auction_type')
           .order('id', { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -56,6 +57,7 @@ export const useEventSession = () => {
       setChaosMode(fullRow?.chaos_mode ?? false);
       setMaxValidationsPerBar(fullRow?.max_validations_per_bar ?? 0);
       setBoostAuctionEndsAt(fullRow?.boost_auction_ends_at ? new Date(fullRow.boost_auction_ends_at).getTime() : null);
+      setBoostAuctionType((fullRow?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
 
       // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
       if (status) {
@@ -134,6 +136,7 @@ export const useEventSession = () => {
                 if (p.chaos_mode !== undefined) setChaosMode(p.chaos_mode ?? false);
                 if (p.max_validations_per_bar !== undefined) setMaxValidationsPerBar(p.max_validations_per_bar ?? 0);
                 if (p.boost_auction_ends_at !== undefined) setBoostAuctionEndsAt(p.boost_auction_ends_at ? new Date(p.boost_auction_ends_at).getTime() : null);
+                if (p.boost_auction_type !== undefined) setBoostAuctionType((p.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
                 if (p.is_active === false) {
                   setSecureSessionId(null);
                 } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
@@ -318,6 +321,8 @@ export const useEventSession = () => {
         setChaosMode(true);
         await gameService.setChaosMode(true);
       }
+      // Auto-launch boost auction at each bar change — group votes who deserves a free taunt
+      await gameService.startBoostAuction(30, 'boost');
     },
     setBarCadenceValue: async (cadence: string) => {
       setBarCadence(cadence);
@@ -332,11 +337,13 @@ export const useEventSession = () => {
       await gameService.setMaxValidationsPerBar(max);
     },
     boostAuctionEndsAt,
-    startBoostAuction: async (durationSecs?: number) => {
-      await gameService.startBoostAuction(durationSecs);
+    boostAuctionType,
+    startBoostAuction: async (durationSecs?: number, type?: 'boost' | 'sabotage') => {
+      await gameService.startBoostAuction(durationSecs, type);
     },
     clearBoostAuction: async () => {
       setBoostAuctionEndsAt(null);
+      setBoostAuctionType('boost');
       await gameService.clearBoostAuction();
     },
   };

@@ -43,9 +43,10 @@ interface GamePageProps {
   barCadence?: string;
   barTransitionActive?: boolean;
   boostAuctionEndsAt?: number | null;
+  boostAuctionType?: 'boost' | 'sabotage';
 }
 
-const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt }) => {
+const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt, boostAuctionType = 'boost' }) => {
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
@@ -542,6 +543,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           endsAt={boostAuctionEndsAt}
           sessionId={secureSessionId}
           currentPlayerId={s.user.id}
+          auctionType={boostAuctionType}
         />
       )}
       <ActivityFeed />

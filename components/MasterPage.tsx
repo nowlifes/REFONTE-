@@ -65,7 +65,8 @@ interface MasterPageProps {
   setChaosMode?: (chaos: boolean) => Promise<void>;
   setMaxValidationsPerBar?: (max: number) => Promise<void>;
   boostAuctionEndsAt?: number | null;
-  startBoostAuction?: (durationSecs?: number) => Promise<void>;
+  boostAuctionType?: 'boost' | 'sabotage';
+  startBoostAuction?: (durationSecs?: number, type?: 'boost' | 'sabotage') => Promise<void>;
   closeBoostAuction?: () => Promise<void>;
 }
 
@@ -106,7 +107,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   isGamePaused, setGamePaused,
   currentBar = 1, barCadence = '1,2,2', chaosMode = false, maxValidationsPerBar = 0,
   advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
-  boostAuctionEndsAt, startBoostAuction, closeBoostAuction,
+  boostAuctionEndsAt, boostAuctionType = 'boost', startBoostAuction, closeBoostAuction,
 }) => {
   const { t, language } = useLanguage();
 
@@ -261,20 +262,20 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleKickPlayer = async (pid: string) => {
     setKickingPlayerId(pid);
     try { await gameService.kickPlayer(pid); setPlayersList(prev => prev.filter(p => p.id !== pid)); setPlayerCount(prev => Math.max(0, prev - 1)); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors du kick. Vérifiez votre connexion.'); }
     finally { setKickingPlayerId(null); setKickConfirmId(null); }
   };
   const handleSaveRename = async (pid: string) => {
     if (!renameValue.trim()) return;
     setIsSavingRename(true);
     try { await gameService.renamePlayer(pid, renameValue.trim()); setPlayersList(prev => prev.map(p => p.id === pid ? { ...p, pseudo: renameValue.trim() } : p)); setRenamingPlayerId(null); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors du renommage. Vérifiez votre connexion.'); }
     finally { setIsSavingRename(false); }
   };
   const handleClearDeviceLock = async (pid: string) => {
     setClearingDeviceId(pid);
     try { await gameService.clearDeviceLock(pid); setPlayersList(prev => prev.map(p => p.id === pid ? { ...p, deviceId: null } : p)); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors du déverrouillage. Vérifiez votre connexion.'); }
     finally { setClearingDeviceId(null); }
   };
   const handleReset = async () => {
@@ -295,7 +296,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleWrapped = async () => {
     setIsWrapping(true);
     try { await onWrapped(); }
-    catch (e) { console.error(e); }
+    catch (e) { console.error(e); alert('Erreur lors du Wrapped. Vérifiez votre connexion.'); }
     finally { setIsWrapping(false); }
   };
   const handleSimulate = async () => {
@@ -529,30 +530,43 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     </div>
                   )}
 
-                  {/* Boost auction */}
+                  {/* Boost / Sabotage auction */}
                   {startBoostAuction && (
                     boostAuctionEndsAt && boostAuctionEndsAt > Date.now() ? (
-                      <div className="bg-[#FF8C00] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                      <div
+                        className="border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between"
+                        style={{ backgroundColor: boostAuctionType === 'sabotage' ? '#FF2D6A' : '#FF8C00' }}
+                      >
                         <div>
-                          <p className="font-impact text-black uppercase text-[9px] tracking-widest">Enchère en cours</p>
+                          <p className="font-impact text-black uppercase text-[9px] tracking-widest">
+                            {boostAuctionType === 'sabotage' ? '💀 Sabotage en cours' : '🏆 Boost en cours'}
+                          </p>
                           <p className="font-impact text-black text-lg italic">
                             <CountdownTimer endsAt={boostAuctionEndsAt} />
                           </p>
                         </div>
                         <button
                           onClick={async () => { if (secureSessionId) { await gameService.closeBoostAuction(secureSessionId); } }}
-                          className="px-3 py-2 bg-black text-[#FF8C00] rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                          className="px-3 py-2 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                         >
                           ✓ Confirmer
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => startBoostAuction(30)}
-                        className="w-full py-2.5 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2"
-                      >
-                        🏆 Lancer enchère boost (30s)
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startBoostAuction(30, 'boost')}
+                          className="flex-1 py-2.5 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1"
+                        >
+                          🏆 Boost
+                        </button>
+                        <button
+                          onClick={() => startBoostAuction(30, 'sabotage')}
+                          className="flex-1 py-2.5 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1"
+                        >
+                          💀 Sabotage
+                        </button>
+                      </div>
                     )
                   )}
 

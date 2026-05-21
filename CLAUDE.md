@@ -185,24 +185,25 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-21 13:27 — branche : main_
+_Mis à jour : 2026-05-21 18:01 — branche : main_
 
 ### Derniers commits
-- ba63f55 ✨ ux: erreurs visibles, timer urgence, haptic, lisibilité bar
+- 126579e ⚡ perf: éliminer re-renders inutiles — zero latence sur la grille
 
 ### Fichiers récemment modifiés
-- components/BoostAuctionBanner.tsx
-- components/Leaderboard.tsx
-- components/LegendsModal.tsx
-- hooks/useGameNotifications.ts
-- translations.ts
+- components/BingoCell.tsx
+- components/GamePage.tsx
+- hooks/useBingoGame.ts
 
 ### Non commité
 ```
+ M App.tsx
  M CLAUDE.md
+ M components/BoostAuctionBanner.tsx
  M components/GamePage.tsx
  M components/MasterPage.tsx
- M components/ValidationModal.tsx
- M translations.ts
+ M hooks/useEventSession.ts
+ M services/gameService.ts
+?? .planning/
 ```
 

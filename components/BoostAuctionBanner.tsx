@@ -7,6 +7,7 @@ interface BoostAuctionBannerProps {
   endsAt: number;
   sessionId: string;
   currentPlayerId: string;
+  auctionType?: 'boost' | 'sabotage';
   onExpired?: () => void;
 }
 
@@ -18,8 +19,11 @@ const EMOJI_MAP: Record<string, string> = {
 const getEmoji = (avatarId: string) => EMOJI_MAP[avatarId] ?? avatarId ?? '🎲';
 
 const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
-  endsAt, sessionId, currentPlayerId, onExpired,
+  endsAt, sessionId, currentPlayerId, auctionType = 'boost', onExpired,
 }) => {
+  const isSabotage = auctionType === 'sabotage';
+  const accentColor = isSabotage ? '#FF2D6A' : '#FF8C00';
+  const accentColorDark = isSabotage ? '#CC0040' : '#E07000';
   const { language } = useLanguage();
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
   const [players, setPlayers] = useState<Array<{ id: string; pseudo: string; emoji: string }>>([]);
@@ -101,7 +105,7 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
       {/* Top zone — orange */}
       <div
         className="flex-1 flex flex-col justify-end px-6 pb-6"
-        style={{ background: 'linear-gradient(180deg, #FF8C00 0%, #E07000 100%)', paddingTop: 'max(56px, env(safe-area-inset-top, 0px) + 40px)' }}
+        style={{ background: `linear-gradient(180deg, ${accentColor} 0%, ${accentColorDark} 100%)`, paddingTop: 'max(56px, env(safe-area-inset-top, 0px) + 40px)' }}
       >
         {/* Timer ring */}
         <div className="flex items-center gap-3 mb-5">
@@ -109,20 +113,28 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
             <span className={`font-impact text-xl transition-colors duration-300 ${isUrgent ? 'text-white' : 'text-black'}`}>{secondsLeft}</span>
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 bg-black text-[#FF8C00] px-2.5 py-1 rounded-lg mb-1 w-fit">
-              <span className="font-impact text-[9px] uppercase tracking-widest">Enchère de boost</span>
+            <div className="inline-flex items-center gap-1.5 bg-black px-2.5 py-1 rounded-lg mb-1 w-fit" style={{ color: accentColor }}>
+              <span className="font-impact text-[9px] uppercase tracking-widest">
+                {isSabotage
+                  ? (language === 'fr' ? '💀 Vote de sabotage' : '💀 Sabotage vote')
+                  : (language === 'fr' ? '🏆 Enchère de boost' : '🏆 Boost auction')}
+              </span>
             </div>
             <p className="font-impact text-black/70 uppercase text-[10px] tracking-widest">
-              {totalVotes} vote{totalVotes !== 1 ? 's' : ''} · {secondsLeft}s restantes
+              {totalVotes} vote{totalVotes !== 1 ? 's' : ''} — {secondsLeft}s {language === 'fr' ? 'restantes' : 'left'}
             </p>
           </div>
         </div>
 
         <p className="font-impact text-black text-[22px] uppercase leading-tight italic tracking-tight mb-1">
-          Qui mérite un sabotage gratuit ?
+          {isSabotage
+            ? (language === 'fr' ? 'Qui mérite un sabotage ?' : 'Who deserves a sabotage?')
+            : (language === 'fr' ? 'Qui mérite un boost gratuit ?' : 'Who deserves a free boost?')}
         </p>
         <p className="font-impact text-black/50 text-[11px] uppercase tracking-widest">
-          Vote pour un joueur — le groupe décide qui reçoit le boost
+          {isSabotage
+            ? (language === 'fr' ? 'Le joueur le plus voté reçoit un effet surprise direct' : 'Most voted player gets a surprise effect applied')
+            : (language === 'fr' ? 'Le joueur le plus voté reçoit un sabotage gratuit à utiliser' : 'Most voted player gets a free taunt to use')}
         </p>
       </div>
 
@@ -147,11 +159,12 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
               disabled={!!isVoting}
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-[3px] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-60 ${
                 isMyChoice
-                  ? 'bg-[#FF8C00] border-black shadow-[4px_4px_0px_black]'
+                  ? 'border-black shadow-[4px_4px_0px_black]'
                   : isLeading
-                  ? 'bg-white/10 border-[#FF8C00]/60 shadow-[4px_4px_0px_rgba(255,140,0,0.3)]'
+                  ? 'bg-white/10 shadow-[4px_4px_0px_rgba(0,0,0,0.3)]'
                   : 'bg-white/5 border-white/10 shadow-[3px_3px_0px_rgba(0,0,0,0.3)]'
               }`}
+              style={isMyChoice ? { backgroundColor: accentColor } : isLeading ? { borderColor: `${accentColor}99` } : undefined}
             >
               {/* Emoji */}
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center border-[2px] border-black shrink-0 ${isMyChoice ? 'bg-black/20' : 'bg-white/10'}`}>
@@ -165,7 +178,7 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
 
               {/* Vote count */}
               {votes > 0 && (
-                <div className={`px-2.5 py-1 rounded-lg border-[2px] border-black font-impact text-[11px] uppercase ${isMyChoice ? 'bg-black text-[#FF8C00]' : 'bg-[#FF8C00] text-black'}`}>
+                <div className="px-2.5 py-1 rounded-lg border-[2px] border-black font-impact text-[11px] uppercase text-black" style={{ backgroundColor: isMyChoice ? 'black' : accentColor, color: isMyChoice ? accentColor : 'black' }}>
                   {votes} vote{votes !== 1 ? 's' : ''}
                 </div>
               )}

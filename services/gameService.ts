@@ -968,7 +968,7 @@ class GameBackendService {
 
   // --- ACTIVITY FEED ---
 
-  async postActivity(playerId: string, pseudo: string, emoji: string, type: 'LINE_COMPLETED' | 'GRID_COMPLETED' | 'BOOST_WON'): Promise<void> {
+  async postActivity(playerId: string, pseudo: string, emoji: string, type: 'LINE_COMPLETED' | 'GRID_COMPLETED' | 'BOOST_WON' | 'SABOTAGE_WON'): Promise<void> {
     if (!supabase) return;
     try {
       await supabase.from('activities').insert({
@@ -1127,19 +1127,34 @@ async resetSession(): Promise<void> {
 
   // ─── BOOST AUCTION ──────────────────────────────────────────────────────────
 
-  async startBoostAuction(durationSecs: number = 30): Promise<void> {
+  async startBoostAuction(durationSecs: number = 30, type: 'boost' | 'sabotage' = 'boost'): Promise<void> {
     if (!supabase) return;
     const endsAt = new Date(Date.now() + durationSecs * 1000).toISOString();
     const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
     if (!latest) return;
     await supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt }).eq('id', latest.id);
+    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type }).eq('id', latest.id);
   }
 
   async clearBoostAuction(): Promise<void> {
     if (!supabase) return;
     const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null }).eq('id', latest.id);
+    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost' }).eq('id', latest.id);
+  }
+
+  private async applyGroupSabotage(winnerId: string): Promise<void> {
+    if (!supabase) return;
+    const SABOTAGE_TYPES = [TauntType.ICE_BLOCK, TauntType.TINY_TARGET, TauntType.BLOB, TauntType.FLASHLIGHT, TauntType.FREEZE];
+    const tauntType = SABOTAGE_TYPES[Math.floor(Math.random() * SABOTAGE_TYPES.length)];
+    const { data: targetGame } = await supabase.from('games').select('id').eq('player_id', winnerId).eq('status', 'ACTIVE').maybeSingle();
+    if (!targetGame) return;
+    const durationMs = GameBackendService.TAUNT_DURATION_MS[tauntType];
+    const frozenUntil = durationMs ? new Date(Date.now() + durationMs).toISOString() : null;
+    await supabase.from('games').update({
+      ...(frozenUntil ? { frozen_until: frozenUntil } : {}),
+      taunt_type: tauntType,
+      taunt_data: { senderName: 'Le Groupe' },
+    }).eq('id', targetGame.id);
   }
 
   async castBoostVote(sessionId: string, voterId: string, candidateId: string): Promise<void> {
@@ -1169,19 +1184,26 @@ async resetSession(): Promise<void> {
     return () => { supabase.removeChannel(ch); };
   }
 
-  async closeBoostAuction(sessionId: string): Promise<{ winnerId: string; winnerName: string; winnerEmoji: string } | null> {
+  async closeBoostAuction(sessionId: string): Promise<{ winnerId: string; winnerName: string; winnerEmoji: string; type: 'boost' | 'sabotage' } | null> {
     if (!supabase) return null;
+    const { data: session } = await supabase.from('event_session').select('boost_auction_type').eq('id', sessionId).maybeSingle();
+    const auctionType: 'boost' | 'sabotage' = (session?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost';
     const counts = await this.getBoostVoteCounts(sessionId);
     const entries = Object.entries(counts);
     if (entries.length === 0) { await this.clearBoostAuction(); return null; }
     const winnerId = entries.sort((a, b) => b[1] - a[1])[0][0];
-    const activeSession = await this.getActiveSession(winnerId);
-    if (activeSession) await this.awardBonusTaunt(activeSession.id);
+    if (auctionType === 'boost') {
+      const activeSession = await this.getActiveSession(winnerId);
+      if (activeSession) await this.awardBonusTaunt(activeSession.id);
+    } else {
+      await this.applyGroupSabotage(winnerId);
+    }
     const { data: player } = await supabase.from('players').select('nickname, avatar_id').eq('id', winnerId).maybeSingle();
-    if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, 'BOOST_WON');
+    const activityType = auctionType === 'boost' ? 'BOOST_WON' : 'SABOTAGE_WON';
+    if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, activityType);
     await supabase.from('boost_votes').delete().eq('session_id', sessionId);
     await this.clearBoostAuction();
-    return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲' };
+    return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲', type: auctionType };
   }
 
   // Duration (ms) each taunt keeps the victim affected — minimum 1 minute
