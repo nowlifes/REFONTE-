@@ -29,6 +29,8 @@ export const useEventSession = () => {
   const [secureSessionId, setSecureSessionId] = useState<string | null>(
     gameService.getCurrentSecureSessionId()
   );
+  // Ref so checkSession ([] deps) always sees the current secureSessionId without stale closure
+  const secureSessionIdRef = useRef<string | null>(gameService.getCurrentSecureSessionId());
 
   const checkSession = useCallback(async () => {
     try {
@@ -58,11 +60,14 @@ export const useEventSession = () => {
       setBoostAuctionType((row?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
       setBoostAuctionWinner(row?.boost_auction_winner ?? null);
 
-      // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
+      // Recover session UUID only when we don't already have it (page reload / cache clear)
       if (status) {
-        const recovered = await gameService.recoverSecureSessionId();
-        if (recovered) setSecureSessionId(recovered);
+        if (!secureSessionIdRef.current) {
+          const recovered = await gameService.recoverSecureSessionId();
+          if (recovered) { secureSessionIdRef.current = recovered; setSecureSessionId(recovered); }
+        }
       } else {
+        secureSessionIdRef.current = null;
         setSecureSessionId(null);
       }
     } catch (e) {
@@ -138,9 +143,9 @@ export const useEventSession = () => {
                 if (p.boost_auction_type !== undefined) setBoostAuctionType((p.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
                 if (p.boost_auction_winner !== undefined) setBoostAuctionWinner(p.boost_auction_winner ?? null);
                 if (p.is_active === false) {
-                  setSecureSessionId(null);
-                } else if (p.is_active && !gameService.getCurrentSecureSessionId()) {
-                  gameService.recoverSecureSessionId().then(id => { if (id) setSecureSessionId(id); });
+                  secureSessionIdRef.current = null; setSecureSessionId(null);
+                } else if (p.is_active && !secureSessionIdRef.current) {
+                  gameService.recoverSecureSessionId().then(id => { if (id) { secureSessionIdRef.current = id; setSecureSessionId(id); } });
                 }
               }
               // Full refetch to catch any field missing from the partial payload
@@ -195,7 +200,7 @@ export const useEventSession = () => {
         } catch (e) {
           console.warn("[EventSession] closeAllOpenSessions failed:", e);
         }
-        setSecureSessionId(null);
+        secureSessionIdRef.current = null; setSecureSessionId(null);
       }
       await gameService.setSessionStatus(active);
     } catch (e) {
@@ -219,7 +224,7 @@ export const useEventSession = () => {
   const createNewSession = async () => {
     setIsSessionActive(false); // Optimistic close
     const uuid = await gameService.createNewSession();
-    setSecureSessionId(uuid);
+    secureSessionIdRef.current = uuid; setSecureSessionId(uuid);
     // Reset cadence so the new evening starts clean at Bar 1 with no chaos
     setCurrentBar(1);
     setChaosMode(false);
