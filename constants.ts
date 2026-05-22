@@ -157,39 +157,57 @@ export const ADULT_EMOJI_MAP: Record<string, string> = {
 export const BADGE_CONFIG: Record<BadgeType, {
   emoji: string;
   color: string;
+  name: string;
+  gradient: [string, string];
 }> = {
   FIRST_BLOOD: {
     emoji: '🎯',
-    color: 'from-red-500 to-orange-600'
+    color: 'from-red-500 to-orange-600',
+    name: 'First Blood',
+    gradient: ['#EF4444', '#EA580C'],
   },
   SPEED_DEMON: {
     emoji: '⚡',
-    color: 'from-yellow-400 to-orange-500'
+    color: 'from-yellow-400 to-orange-500',
+    name: 'Speed Demon',
+    gradient: ['#FACC15', '#F97316'],
   },
   BIG_BRAIN: {
     emoji: '🧠',
-    color: 'from-blue-400 to-indigo-600'
+    color: 'from-blue-400 to-indigo-600',
+    name: 'Big Brain',
+    gradient: ['#60A5FA', '#4F46E5'],
   },
   PARTY_ANIMAL: {
     emoji: '🥳',
-    color: 'from-pink-500 to-purple-600'
+    color: 'from-pink-500 to-purple-600',
+    name: 'Party Animal',
+    gradient: ['#EC4899', '#9333EA'],
   },
   NIGHT_OWL: {
     emoji: '🦉',
-    color: 'from-indigo-800 to-black'
+    color: 'from-indigo-800 to-black',
+    name: 'Night Owl',
+    gradient: ['#3730A3', '#000000'],
   },
   EARLY_BIRD: {
     emoji: '🌅',
-    color: 'from-orange-300 to-yellow-500'
+    color: 'from-orange-300 to-yellow-500',
+    name: 'Early Bird',
+    gradient: ['#FDBA74', '#EAB308'],
   },
   SOCIAL_BUTTERFLY: {
     emoji: '🦋',
-    color: 'from-pink-300 to-rose-500'
+    color: 'from-pink-300 to-rose-500',
+    name: 'Papillon',
+    gradient: ['#F9A8D4', '#F43F5E'],
   },
   PERFECTIONIST: {
     emoji: '👑',
-    color: 'from-[#FFD700] to-[#FF8C00]'
-  }
+    color: 'from-[#FFD700] to-[#FF8C00]',
+    name: 'Perfectionist',
+    gradient: ['#FFD700', '#FF8C00'],
+  },
 };
 
 // Note: These values are intentionally not exported — consumers keep their own local copy.

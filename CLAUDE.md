@@ -185,17 +185,21 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-22 02:05 — branche : main_
+_Mis à jour : 2026-05-22 16:55 — branche : main_
 
 ### Derniers commits
-- 4cc9128 chore: add migration file 008_boost_auction_winner (already applied via MCP)
+- ca160e0 ♻️ refactor: cleanup post-fix — stale closure, param inutilisé, advanceBar clear transition
 
 ### Fichiers récemment modifiés
-- supabase/migrations/008_boost_auction_winner.sql
+- App.tsx
+- hooks/useEventSession.ts
+- services/gameService.ts
 
 ### Non commité
 ```
  M CLAUDE.md
+ M components/NFTBadgeModal.tsx
+ M constants.ts
 ?? .planning/
 ```
 
