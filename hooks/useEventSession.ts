@@ -32,34 +32,31 @@ export const useEventSession = () => {
 
   const checkSession = useCallback(async () => {
     try {
-      const [status, transition, fullRow] = await Promise.all([
-        gameService.getSessionStatus(),
-        gameService.getTransitionState(),
-        supabase
-          .from('event_session')
-          .select('pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused, current_bar, bar_cadence, chaos_mode, max_validations_per_bar, boost_auction_ends_at, boost_auction_type, boost_auction_winner')
-          .order('id', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then(r => r.data),
-      ]);
+      const { data: row } = await supabase
+        .from('event_session')
+        .select('id, is_active, transition_ends_at, next_bar_name, pregame_phase, pregame_subject_id, countdown_ends_at, spotlight_disabled, challenge_cooldown_secs, is_paused, current_bar, bar_cadence, chaos_mode, max_validations_per_bar, boost_auction_ends_at, boost_auction_type, boost_auction_winner')
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const status = row?.is_active ?? false;
+      const transitionEndsAtVal = row?.transition_ends_at ? new Date(row.transition_ends_at).getTime() : null;
       setIsSessionActive(status);
-      setTransitionEndsAt(transition.endsAt);
-      setNextBarName(transition.barName);
+      setTransitionEndsAt(transitionEndsAtVal);
+      setNextBarName(row?.next_bar_name ?? null);
       // Only propagate pregame phase when session is active — prevents stale DB values from auto-launching pregame
-      setPregamePhase(status ? (fullRow?.pregame_phase ?? null) : null);
-      setPregameSubjectId(status ? (fullRow?.pregame_subject_id ?? null) : null);
-      setCountdownEndsAt(fullRow?.countdown_ends_at ? new Date(fullRow.countdown_ends_at).getTime() : null);
-      setSpotlightDisabled(fullRow?.spotlight_disabled ?? false);
-      setChallengeCooldownSecs(fullRow?.challenge_cooldown_secs ?? 0);
-      setIsGamePaused(fullRow?.is_paused ?? false);
-      setCurrentBar(fullRow?.current_bar ?? 1);
-      setBarCadence(fullRow?.bar_cadence ?? '1,2,2');
-      setChaosMode(fullRow?.chaos_mode ?? false);
-      setMaxValidationsPerBar(fullRow?.max_validations_per_bar ?? 0);
-      setBoostAuctionEndsAt(fullRow?.boost_auction_ends_at ? new Date(fullRow.boost_auction_ends_at).getTime() : null);
-      setBoostAuctionType((fullRow?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
-      setBoostAuctionWinner(fullRow?.boost_auction_winner ?? null);
+      setPregamePhase(status ? (row?.pregame_phase ?? null) : null);
+      setPregameSubjectId(status ? (row?.pregame_subject_id ?? null) : null);
+      setCountdownEndsAt(row?.countdown_ends_at ? new Date(row.countdown_ends_at).getTime() : null);
+      setSpotlightDisabled(row?.spotlight_disabled ?? false);
+      setChallengeCooldownSecs(row?.challenge_cooldown_secs ?? 0);
+      setIsGamePaused(row?.is_paused ?? false);
+      setCurrentBar(row?.current_bar ?? 1);
+      setBarCadence(row?.bar_cadence ?? '1,2,2');
+      setChaosMode(row?.chaos_mode ?? false);
+      setMaxValidationsPerBar(row?.max_validations_per_bar ?? 0);
+      setBoostAuctionEndsAt(row?.boost_auction_ends_at ? new Date(row.boost_auction_ends_at).getTime() : null);
+      setBoostAuctionType((row?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
+      setBoostAuctionWinner(row?.boost_auction_winner ?? null);
 
       // Fix 1: recover session UUID from DB so QR survives page reload / cache clear
       if (status) {
