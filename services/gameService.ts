@@ -241,7 +241,7 @@ class GameBackendService {
     if (error) throw error;
   }
 
-  async triggerBarTransitionAndAdvance(durationMinutes: number, newBar: number, barName?: string): Promise<void> {
+  async triggerBarTransitionAndAdvance(_durationMinutes: number, newBar: number, barName?: string): Promise<void> {
     if (!supabase) return;
     const sessionId = await this.getSessionId();
     if (!sessionId) return;

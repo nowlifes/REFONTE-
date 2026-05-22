@@ -260,7 +260,7 @@ const PlayerApp: React.FC = () => {
     if (!countdownEndsAt) { setLaunchCountdown(null); return; }
     if (countdownEndsAt - Date.now() < -30000) { setLaunchCountdown(null); return; }
     // Ne pas afficher le countdown si le joueur est déjà en jeu
-    if (s.view === AppView.GAME || s.gameSession) { setLaunchCountdown(null); return; }
+    if (s.view === AppView.GAME) { setLaunchCountdown(null); return; }
     let fired = false;
     const update = () => {
       const msLeft = countdownEndsAt - Date.now();

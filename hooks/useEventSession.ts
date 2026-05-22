@@ -322,7 +322,12 @@ export const useEventSession = () => {
     advanceBar: async () => {
       const newBar = currentBar + 1;
       setCurrentBar(newBar);
-      await gameService.advanceBar();
+      setTransitionEndsAt(null);
+      setNextBarName(null);
+      await Promise.all([
+        gameService.advanceBar(),
+        gameService.clearBarTransition(),
+      ]);
       if (newBar >= 3) {
         setChaosMode(true);
         await gameService.setChaosMode(true);
