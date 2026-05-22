@@ -200,7 +200,7 @@ const PlayerApp: React.FC = () => {
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
     boostAuctionEndsAt, boostAuctionType, boostAuctionWinner, clearBoostAuctionWinner,
   } = useEventSession();
-  const { state: s, actions: a } = useBingoGame({ spotlightDisabled });
+  const { state: s, actions: a } = useBingoGame({ spotlightDisabled, currentBar });
   const aRef = React.useRef(a);
   aRef.current = a;
   const sRef = React.useRef(s);

@@ -430,7 +430,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     try { localStorage.setItem('bingo_taunt_discovery_shown', '1'); } catch {}
     if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]);
     if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current);
-    tauntDiscoveryTimerRef.current = setTimeout(() => setShowTauntDiscovery(false), 5000);
+    tauntDiscoveryTimerRef.current = setTimeout(() => setShowTauntDiscovery(false), 10000);
     return () => { if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current); };
   }, [currentBar]);
   const dismissTauntDiscovery = () => {
@@ -473,7 +473,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   };
 
   return (
-    <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${chaosMode ? 'ring-[8px] ring-inset ring-[#FF4500]' : isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
+    <div className={`fixed inset-0 bg-[#0A1629] text-white flex flex-col items-center overflow-hidden ${chaosMode ? 'ring-[8px] ring-inset ring-[#CC0000]' : isFever ? 'ring-[8px] ring-inset ring-[#FF2D6A] transition-all duration-500' : ''}`}>
       {/* PAUSE OVERLAY */}
       {isGamePaused && (
         <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-[#0A1629]/95 animate-in fade-in duration-300">
@@ -494,7 +494,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* ⚡ CHAOS MODE — full-screen announcement (shows once on activation) */}
       {showChaosAnnounce && (
         <div className="fixed inset-0 z-[260] flex flex-col items-center justify-center animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-[#FF4500]" />
+          <div className="absolute inset-0 bg-[#CC0000]" />
           {/* Brutalist noise dots */}
           <div className="absolute inset-0 pointer-events-none opacity-15">
             {Array.from({ length: 12 }).map((_, i) => (
@@ -503,16 +503,16 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             ))}
           </div>
           <div className="relative z-10 flex flex-col items-center text-center px-6 gap-4">
-            <div className="font-impact uppercase italic leading-none text-black animate-in zoom-in-75 duration-300"
-              style={{ fontSize: 'clamp(56px, 18vw, 80px)', textShadow: '4px 4px 0px rgba(0,0,0,0.35)' }}>
+            <div className="font-impact uppercase italic leading-none text-white animate-in zoom-in-75 duration-300"
+              style={{ fontSize: 'clamp(56px, 18vw, 80px)', textShadow: '4px 4px 0px rgba(0,0,0,0.6)' }}>
               ⚡ CHAOS ⚡
             </div>
-            <div className="font-impact uppercase italic text-black text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100"
-              style={{ fontSize: 'clamp(20px, 6vw, 28px)', textShadow: '2px 2px 0px rgba(0,0,0,0.25)' }}>
+            <div className="font-impact uppercase italic text-white/90 text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100"
+              style={{ fontSize: 'clamp(20px, 6vw, 28px)', textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
               {language === 'fr' ? "ATTAQUE AVANT D'ÊTRE ATTAQUÉ !" : 'ATTACK BEFORE BEING ATTACKED!'}
             </div>
             <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
-              <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
+              <div className="font-impact uppercase text-[#CC0000] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
                 {language === 'fr' ? 'CHAQUE DÉFI = UN SABOTAGE GRATUIT' : 'EVERY CHALLENGE = 1 FREE SABOTAGE'}
               </div>
               <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
@@ -526,12 +526,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* ⚡ CHAOS MODE banner — persistent top strip while active */}
       {chaosMode && (
         <div className="fixed top-0 inset-x-0 z-[160] pointer-events-none">
-          <div className="bg-[#FF4500] border-b-[3px] border-black py-2 flex items-center justify-center gap-2">
-            <span className="font-impact uppercase text-black text-[10px] tracking-[0.25em]">⚡ CHAOS</span>
-            <div className="w-1 h-1 rounded-full bg-black/50" />
-            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">{language === 'fr' ? 'TOUT LE MONDE A UN SABOTAGE' : 'EVERYONE HAS A SABOTAGE'}</span>
-            <div className="w-1 h-1 rounded-full bg-black/50" />
-            <span className="font-impact uppercase text-black text-[10px]">⚡</span>
+          <div className="bg-[#CC0000] border-b-[3px] border-black py-2 flex items-center justify-center gap-2">
+            <span className="font-impact uppercase text-white text-[10px] tracking-[0.25em]">⚡ CHAOS</span>
+            <div className="w-1 h-1 rounded-full bg-white/40" />
+            <span className="font-impact uppercase text-white text-[10px] tracking-[0.2em]">{language === 'fr' ? 'TOUT LE MONDE A UN SABOTAGE' : 'EVERYONE HAS A SABOTAGE'}</span>
+            <div className="w-1 h-1 rounded-full bg-white/40" />
+            <span className="font-impact uppercase text-white text-[10px]">⚡</span>
           </div>
         </div>
       )}
@@ -749,9 +749,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                const cadenceGoals = barCadence.split(',').map(Number);
                const barGoal = cadenceGoals[currentBar - 1] ?? 1;
                return chaosMode ? (
-                 <div className="flex items-center gap-1 bg-[#FF4500]/20 border border-[#FF4500]/50 rounded-lg px-2 py-1 animate-pulse">
+                 <div className="flex items-center gap-1 bg-[#CC0000]/20 border border-[#CC0000]/50 rounded-lg px-2 py-1 animate-pulse">
                    <span className="text-[9px]">⚡</span>
-                   <span className="font-impact text-[#FF4500] text-[9px] uppercase tracking-wider">CHAOS</span>
+                   <span className="font-impact text-[#CC0000] text-[9px] uppercase tracking-wider">CHAOS</span>
                  </div>
                ) : (
                  <div className="flex items-center gap-1 bg-[#FF8C00]/10 border border-[#FF8C00]/30 rounded-lg px-2 py-1">
@@ -880,7 +880,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       </main>
 
       {/* CADENCE COOLDOWN badge + anti-spam gamified message */}
-      {challengeCooldownSecs > 0 && cooldownSecondsLeft > 0 && (
+      {challengeCooldownSecs > 0 && cooldownSecondsLeft > 0 && currentBar >= 2 && (
         <div className="shrink-0 flex flex-col items-center gap-1 z-40 -mb-1">
           <div className={`flex items-center gap-2 bg-[#FF8C00] border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] animate-in slide-in-from-bottom-2 duration-200 transition-transform ${showCooldownFlash ? 'scale-110' : 'scale-100'}`}>
             <span className="text-sm">⏳</span>
@@ -1102,50 +1102,57 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
       {/* TAUNT DISCOVERY — one-time power-up reveal when entering Bar 2 */}
       {showTauntDiscovery && (
-        <div
-          className="fixed inset-0 z-[171] flex items-center justify-center animate-in fade-in duration-200"
-          onClick={dismissTauntDiscovery}
-        >
-          <div className="absolute inset-0 bg-[#0A1629]/88" />
+        <div className="fixed inset-0 z-[171] flex items-center justify-center animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/85" />
           <div
-            className="relative flex flex-col items-center gap-4 px-7 py-7 bg-[#0A1629] border-[4px] border-[#FF2D6A] rounded-2xl shadow-[8px_8px_0px_black] max-w-[86vw] animate-in zoom-in-90 duration-300"
-            onClick={(e) => e.stopPropagation()}
+            className="relative flex flex-col items-center gap-5 px-7 py-8 bg-[#0A1629] border-[4px] border-[#FF2D6A] rounded-2xl shadow-[8px_8px_0px_black] max-w-[88vw] w-full animate-in zoom-in-90 duration-300"
+            style={{ maxWidth: 340 }}
           >
-            {/* "POWER UNLOCKED" badge pill */}
-            <div className="bg-[#FF2D6A] border-[3px] border-black rounded-lg px-3 py-1 shadow-[3px_3px_0px_black] -mt-12">
+            {/* "POWER UNLOCKED" badge */}
+            <div className="bg-[#FF2D6A] border-[3px] border-black rounded-lg px-3 py-1 shadow-[3px_3px_0px_black] -mt-14">
               <span className="font-impact uppercase text-white text-[11px] tracking-[0.25em]">
-                {t('power_unlocked')}
+                💥 {language === 'fr' ? 'NOUVEAU POUVOIR' : 'POWER UNLOCKED'}
               </span>
             </div>
 
-            {/* Big icon */}
-            <div className="text-5xl leading-none">⚡</div>
-
             {/* Title */}
             <div
-              className="font-impact uppercase italic text-[#FF2D6A] text-3xl tracking-tight leading-none text-center"
+              className="font-impact uppercase italic text-[#FF2D6A] text-[32px] tracking-tight leading-none text-center"
               style={{ textShadow: '3px 3px 0px black' }}
             >
               {t('taunts_unlocked_title')}
             </div>
 
             {/* Explanation */}
-            <p className="font-impact uppercase text-white/80 text-[11px] tracking-widest text-center leading-relaxed max-w-[260px]">
+            <p className="font-impact uppercase text-white/70 text-[11px] tracking-widest text-center leading-relaxed">
               {t('taunts_unlocked_desc')}
             </p>
 
-            {/* How to earn pill */}
-            <div className="flex items-center gap-2 bg-[#FF2D6A] border-[3px] border-black rounded-xl px-4 py-2.5 shadow-[4px_4px_0px_black]">
-              <Zap size={14} fill="white" className="text-white shrink-0" />
-              <span className="font-impact uppercase text-white text-[11px] tracking-widest leading-tight">
+            {/* FREE sabotage CTA — makes it enticing */}
+            <div className="w-full bg-[#FF2D6A] border-[3px] border-black rounded-xl px-5 py-4 shadow-[5px_5px_0px_black] text-center">
+              <div className="font-impact uppercase text-white text-[22px] italic leading-none tracking-tight">
+                {language === 'fr' ? '🎁 1 SABOTAGE OFFERT' : '🎁 1 FREE SABOTAGE'}
+              </div>
+              <div className="font-impact uppercase text-white/70 text-[10px] tracking-widest mt-1.5">
+                {language === 'fr' ? 'Essaie-le — complète des défis pour en avoir d\'autres' : 'Try it — complete challenges to earn more'}
+              </div>
+            </div>
+
+            {/* How to earn */}
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5">
+              <Zap size={13} fill="currentColor" className="text-[#FF2D6A] shrink-0" />
+              <span className="font-impact uppercase text-white/60 text-[10px] tracking-widest leading-tight">
                 {t('taunts_earn_desc')}
               </span>
             </div>
 
-            {/* Tap hint */}
-            <span className="font-impact uppercase text-white/35 text-[9px] tracking-[0.3em] mt-1">
-              {t('tap_close')}
-            </span>
+            {/* Dismiss button */}
+            <button
+              onClick={dismissTauntDiscovery}
+              className="w-full py-3.5 bg-white text-black font-impact uppercase text-[13px] tracking-widest border-[3px] border-black shadow-[4px_4px_0px_black] rounded-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+            >
+              {language === 'fr' ? "J'AI COMPRIS !" : "GOT IT!"}
+            </button>
           </div>
         </div>
       )}

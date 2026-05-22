@@ -1778,10 +1778,19 @@ async resetSession(): Promise<void> {
 
   async confirmWitness(validation: any): Promise<void> {
     if (!supabase) return;
-    await this.approveMasterValidation(validation);
-    await supabase
-      .from('master_validations')
-      .update({ witness_status: 'CONFIRMED', resolved_at: new Date().toISOString() })
+    const now = new Date().toISOString();
+    // Look up actual witness name instead of hardcoding 'Master'
+    let witnessName = 'Témoin';
+    if (validation.witness_player_id) {
+      const { data: wp } = await supabase.from('players').select('pseudo').eq('id', validation.witness_player_id).maybeSingle();
+      if (wp?.pseudo) {
+        const m = wp.pseudo.match(/^\[[A-Z]{2}\]\s*(.*)/);
+        witnessName = m ? m[1] : wp.pseudo;
+      }
+    }
+    await this.validateCell(validation.game_id, validation.cell_id, { witnessName, witnessSignature: 'digital-confirmed' }, true);
+    await supabase.from('master_validations')
+      .update({ status: 'APPROVED', witness_status: 'CONFIRMED', resolved_at: now })
       .eq('id', validation.id);
   }
 

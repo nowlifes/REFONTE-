@@ -10,9 +10,11 @@ import { gameService } from '../services/gameService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBadges } from './useBadges';
 
-export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
+export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: number } = {}) => {
   const spotlightDisabledRef = useRef(opts.spotlightDisabled ?? false);
   useEffect(() => { spotlightDisabledRef.current = opts.spotlightDisabled ?? false; }, [opts.spotlightDisabled]);
+  const currentBarRef = useRef(opts.currentBar ?? 1);
+  useEffect(() => { currentBarRef.current = opts.currentBar ?? 1; }, [opts.currentBar]);
   const { language } = useLanguage();
   
   // DEFAULT VIEW IS NOW NICKNAME
@@ -622,11 +624,11 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
           if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {});
         }
 
-        // COMBO SYSTEM: 3 validations in 15 min = +1 joker
+        // COMBO SYSTEM: 3 validations in 15 min = +1 joker (bar 2+ only)
         const now = Date.now();
         const COMBO_WINDOW = 15 * 60 * 1000;
         validationTimestamps.current = [...validationTimestamps.current.filter(t => now - t < COMBO_WINDOW), now];
-        if (validationTimestamps.current.length >= 3 && !isSpotlightCell) {
+        if (validationTimestamps.current.length >= 3 && !isSpotlightCell && currentBarRef.current >= 2) {
           validationTimestamps.current = []; // reset after combo
           setJokers(prev => prev + 1);
           setComboActive(true);

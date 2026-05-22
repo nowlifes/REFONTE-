@@ -505,12 +505,14 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         Nice Move
                         {(currentBar ?? 1) >= 3
                           ? <span className="text-[#FF2D6A] ml-1">· AUTO OFF (Bar 3 KO)</span>
-                          : (challengeCooldownSecs ?? 0) > 0
-                            ? <span className="text-[#FF8C00] ml-1">· {challengeCooldownSecs}s</span>
-                            : <span className="text-[#00F5A0] ml-1">· 60s par défaut</span>
+                          : (currentBar ?? 1) < 2
+                            ? <span className="text-black/30 ml-1">· actif au bar 2</span>
+                            : (challengeCooldownSecs ?? 0) > 0
+                              ? <span className="text-[#FF8C00] ml-1">· {challengeCooldownSecs}s</span>
+                              : <span className="text-[#00F5A0] ml-1">· 60s par défaut</span>
                         }
                       </p>
-                      {(currentBar ?? 1) < 3 && (() => {
+                      {(currentBar ?? 1) >= 2 && (currentBar ?? 1) < 3 && (() => {
                         const effectiveSecs = Math.max(challengeCooldownSecs || 0, 60);
                         return (
                           <div className="grid grid-cols-5 gap-1.5">
@@ -557,7 +559,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                     ) : (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => startBoostAuction(30, 'boost')}
+                          onClick={() => startBoostAuction(120, 'boost')}
                           className="flex-1 py-2.5 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-1"
                         >
                           🏆 Boost
