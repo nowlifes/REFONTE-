@@ -65,12 +65,12 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[80] bg-black/70 animate-in fade-in duration-200"
+        className="fixed inset-0 z-[145] bg-black/70 animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-[90] animate-in slide-in-from-bottom-4 duration-300">
+      <div className="fixed bottom-0 left-0 right-0 z-[150] animate-in slide-in-from-bottom-4 duration-300">
         <div className="bg-[#0A1629] border-t-[4px] border-x-[4px] border-black rounded-t-[28px] shadow-[0_-8px_0px_black] px-5 pt-5 pb-10">
 
           {/* Handle */}

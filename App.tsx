@@ -259,6 +259,8 @@ const PlayerApp: React.FC = () => {
   useEffect(() => {
     if (!countdownEndsAt) { setLaunchCountdown(null); return; }
     if (countdownEndsAt - Date.now() < -30000) { setLaunchCountdown(null); return; }
+    // Ne pas afficher le countdown si le joueur est déjà en jeu
+    if (s.view === AppView.GAME || s.gameSession) { setLaunchCountdown(null); return; }
     let fired = false;
     const update = () => {
       const msLeft = countdownEndsAt - Date.now();
@@ -583,7 +585,7 @@ const PlayerApp: React.FC = () => {
               secureSessionId={secureSessionId}
               challengeCooldownSecs={chaosMode || currentBar >= 3 ? 0 : Math.max(challengeCooldownSecs || 0, 60)}
               isGamePaused={isGamePaused}
-              chaosMode={chaosMode}
+              chaosMode={chaosMode || currentBar >= 3}
               currentBar={currentBar}
               barCadence={barCadence}
               barTransitionActive={!!transitionEndsAt && transitionSecondsLeft > 0}

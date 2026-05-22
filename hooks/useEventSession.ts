@@ -286,9 +286,10 @@ export const useEventSession = () => {
     transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition,
     triggerBarTransitionAndAdvance: async (durationMinutes: number, barName?: string) => {
       const newBar = currentBar + 1;
-      const newEndsAt = Date.now() + durationMinutes * 60 * 1000;
-      setTransitionEndsAt(newEndsAt);
-      setNextBarName(barName || null);
+      // Avance le bar sans démarrer le "moving soon" timer
+      // (la transition physique est déclenchée séparément via triggerBarTransition)
+      setTransitionEndsAt(null);
+      setNextBarName(null);
       setCurrentBar(newBar);
       if (newBar >= 3) setChaosMode(true);
       await gameService.triggerBarTransitionAndAdvance(durationMinutes, newBar, barName);

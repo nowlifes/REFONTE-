@@ -245,10 +245,11 @@ class GameBackendService {
     if (!supabase) return;
     const sessionId = await this.getSessionId();
     if (!sessionId) return;
-    const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+    // Avance le bar uniquement — sans "moving soon" timer pour éviter la confusion
+    // (les défis du nouveau bar s'activent immédiatement, la transition physique est gérée séparément)
     const updates: Record<string, unknown> = {
-      transition_ends_at: endsAt,
-      next_bar_name: barName || null,
+      transition_ends_at: null,
+      next_bar_name: null,
       current_bar: newBar,
     };
     if (newBar >= 3) updates.chaos_mode = true;

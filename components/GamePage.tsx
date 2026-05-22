@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock } from 'lucide-react';
 import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AppView, BingoCellData, CellStatus, TauntType } from '../types';
+import { AppView, BingoCellData, CellStatus, TauntType, ChallengeType } from '../types';
 import BingoCell from './BingoCell';
 import QRScanner from './QRScanner';
 import ValidationModal from './ValidationModal';
@@ -303,7 +303,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   const handleValidateCell = (data?: any) => {
     if (isGamePaused) return;
-    if (challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) {
+    const isMasterCell = s.selectedCell?.type === ChallengeType.MASTER;
+    if (!isMasterCell && challengeCooldownSecs > 0 && cooldownSecondsLeft > 0) {
       setShowCooldownFlash(true);
       setTimeout(() => setShowCooldownFlash(false), 800);
       return;
@@ -585,8 +586,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* COMBO notification */}
-      {s.comboActive && (
+      {/* COMBO notification — disponible à partir du bar 2 */}
+      {s.comboActive && currentBar >= 2 && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[160] animate-in zoom-in-75 fade-in duration-300 pointer-events-none">
           <div className="bg-[#FF2D6A] border-[3px] border-black rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2">
             <span className="text-white text-2xl">🔥</span>

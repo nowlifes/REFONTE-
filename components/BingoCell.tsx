@@ -145,9 +145,9 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
             ${isFeverTarget && !isLocked ? 'ring-2 ring-white animate-pulse' : ''}
             ${isSpotlight ? 'ring-[3px] ring-white ring-offset-[2px] ring-offset-black animate-pulse' : ''}
             ${isLocked ? 'animate-pulse' : ''}
-            ${isWinning ? 'cell-winning' : chaosMode && !isValidated ? 'chaos-drift' : ''}
+            ${isWinning ? 'cell-winning' : (chaosMode && !isValidated && Math.floor(id / 5) >= 3) ? 'chaos-drift' : ''}
           `}
-          style={isWinning ? { animationDelay: winDelay } : chaosMode && !isValidated ? { animationDelay: `${(id % 7) * 110}ms` } : undefined}
+          style={isWinning ? { animationDelay: winDelay } : (chaosMode && !isValidated && Math.floor(id / 5) >= 3) ? { animationDelay: `${(id % 7) * 110}ms` } : undefined}
         >
           {isLocked ? (
             <div className="flex flex-col items-center gap-0.5">

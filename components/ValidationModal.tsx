@@ -224,7 +224,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const accentBorder = isWitness ? 'border-[#FF2E63]' : 'border-[#00FF9D]';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[155] bg-black/90 flex items-end sm:items-center justify-center">
       <div className="w-full max-w-sm sm:max-w-sm bg-[#0A1629] border-[3px] border-white/10 rounded-t-[2rem] sm:rounded-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.6)] sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250"
         style={{ maxHeight: '88vh' }}>
 
