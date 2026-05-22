@@ -417,7 +417,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   {/* Bar tracker */}
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3].map(b => {
-                      const labels = ['1 ligne', '3 lignes', '⚡ Chaos'];
+                      const labels = language === 'fr' ? ['1 ligne', '3 lignes', '⚡ Chaos'] : ['1 line', '3 lines', '⚡ Chaos'];
                       const colors = ['#00F5A0', '#FF8C00', '#FF2D6A'];
                       return (
                         <div key={b} className={`rounded-xl border-[2px] border-black px-2 py-3 text-center transition-all ${
@@ -439,7 +439,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           <p className="font-impact text-black text-2xl italic">
                             <CountdownTimer endsAt={transitionEndsAt} />
                           </p>
-                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">Bar {currentBar} → {currentBar + 1} · Lignes débloquées ✓</p>
+                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">Bar {currentBar} → {currentBar + 1} · {language === 'fr' ? 'Lignes débloquées ✓' : 'Lines unlocked ✓'}</p>
                         </div>
                         <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
                           <XCircle size={20} className="text-[#FF8C00]" strokeWidth={3} />
@@ -459,20 +459,20 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           ))}
                         </div>
                         <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
-                          placeholder="Nom du prochain bar (optionnel)"
+                          placeholder={language === 'fr' ? 'Nom du prochain bar (optionnel)' : 'Next bar name (optional)'}
                           className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
                         <button onClick={handleAdvanceBarWithTransition} disabled={isTriggeringTransition}
                           className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
                           {isTriggeringTransition
-                            ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> Envoi...</>
-                            : <><ChevronRight size={17} strokeWidth={3} /> Passer au bar {currentBar + 1} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
+                            ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> {language === 'fr' ? 'Envoi...' : 'Sending...'}</>
+                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `Passer au bar ${currentBar + 1}` : `Go to bar ${currentBar + 1}`} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
                           }
                         </button>
                       </div>
                     )
                   ) : (
                     <div className="w-full py-3 bg-[#FF2D6A]/10 border-[2px] border-[#FF2D6A] rounded-xl text-center">
-                      <span className="font-impact uppercase text-[#FF2D6A] text-[12px] tracking-widest">⚡ Mode Chaos actif</span>
+                      <span className="font-impact uppercase text-[#FF2D6A] text-[12px] tracking-widest">{language === 'fr' ? '⚡ Mode Chaos actif' : '⚡ Chaos Mode active'}</span>
                     </div>
                   )}
                 </div>
@@ -539,7 +539,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       >
                         <div>
                           <p className="font-impact text-black uppercase text-[9px] tracking-widest">
-                            {boostAuctionType === 'sabotage' ? '💀 Sabotage en cours' : '🏆 Boost en cours'}
+                            {boostAuctionType === 'sabotage'
+                              ? (language === 'fr' ? '💀 Sabotage en cours' : '💀 Sabotage active')
+                              : (language === 'fr' ? '🏆 Boost en cours' : '🏆 Boost active')}
                           </p>
                           <p className="font-impact text-black text-lg italic">
                             <CountdownTimer endsAt={boostAuctionEndsAt} />

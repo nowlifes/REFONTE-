@@ -508,14 +508,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             </div>
             <div className="font-impact uppercase italic text-black text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100"
               style={{ fontSize: 'clamp(20px, 6vw, 28px)', textShadow: '2px 2px 0px rgba(0,0,0,0.25)' }}>
-              ATTAQUE AVANT D'ÊTRE ATTAQUÉ !
+              {language === 'fr' ? "ATTAQUE AVANT D'ÊTRE ATTAQUÉ !" : 'ATTACK BEFORE BEING ATTACKED!'}
             </div>
             <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
               <div className="font-impact uppercase text-[#FF4500] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
-                CHAQUE DÉFI = UN SABOTAGE GRATUIT
+                {language === 'fr' ? 'CHAQUE DÉFI = UN SABOTAGE GRATUIT' : 'EVERY CHALLENGE = 1 FREE SABOTAGE'}
               </div>
               <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
-                ⚡ GRILLE ENTIÈRE DÉBLOQUÉE · FONCE OU DISPARAIS ⚡
+                {language === 'fr' ? '⚡ GRILLE ENTIÈRE DÉBLOQUÉE · FONCE OU DISPARAIS ⚡' : '⚡ FULL GRID UNLOCKED · GO OR DISAPPEAR ⚡'}
               </div>
             </div>
           </div>
@@ -528,7 +528,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           <div className="bg-[#FF4500] border-b-[3px] border-black py-2 flex items-center justify-center gap-2">
             <span className="font-impact uppercase text-black text-[10px] tracking-[0.25em]">⚡ CHAOS</span>
             <div className="w-1 h-1 rounded-full bg-black/50" />
-            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">TOUT LE MONDE A UN SABOTAGE</span>
+            <span className="font-impact uppercase text-black text-[10px] tracking-[0.2em]">{language === 'fr' ? 'TOUT LE MONDE A UN SABOTAGE' : 'EVERYONE HAS A SABOTAGE'}</span>
             <div className="w-1 h-1 rounded-full bg-black/50" />
             <span className="font-impact uppercase text-black text-[10px]">⚡</span>
           </div>

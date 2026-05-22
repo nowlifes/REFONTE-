@@ -378,7 +378,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean } = {}) => {
   const SPOTLIGHT_MAX_PER_BAR = 2;
 
   useEffect(() => {
-    if (view !== AppView.GAME || cells.length === 0) return;
+    if (view !== AppView.GAME) return;
     const pickSpotlight = () => {
       if (spotlightDisabledRef.current) return;
       if (spotlightBarCount.current >= SPOTLIGHT_MAX_PER_BAR) return;

@@ -344,7 +344,12 @@ export const useEventSession = () => {
     boostAuctionWinner,
     clearBoostAuctionWinner: () => setBoostAuctionWinner(null),
     startBoostAuction: async (durationSecs?: number, type?: 'boost' | 'sabotage') => {
-      await gameService.startBoostAuction(durationSecs, type);
+      const dur = durationSecs ?? 30;
+      const t = type ?? 'boost';
+      setBoostAuctionEndsAt(Date.now() + dur * 1000);
+      setBoostAuctionType(t);
+      setBoostAuctionWinner(null);
+      await gameService.startBoostAuction(dur, t);
     },
     clearBoostAuction: async () => {
       setBoostAuctionEndsAt(null);

@@ -1132,8 +1132,10 @@ async resetSession(): Promise<void> {
     const endsAt = new Date(Date.now() + durationSecs * 1000).toISOString();
     const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
     if (!latest) return;
-    await supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type, boost_auction_winner: null }).eq('id', latest.id);
+    await Promise.all([
+      supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type, boost_auction_winner: null }).eq('id', latest.id),
+    ]);
   }
 
   async clearBoostAuction(): Promise<void> {
