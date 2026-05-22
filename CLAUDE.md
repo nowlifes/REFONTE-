@@ -185,19 +185,18 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-22 17:10 — branche : main_
+_Mis à jour : 2026-05-22 17:32 — branche : main_
 
 ### Derniers commits
-- b0db237 docs: spec + plan système duel (PVP challenges)
+- 551699b fix: NiceMove combo reset sur bar transition + correctifs UX
 
 ### Fichiers récemment modifiés
-- docs/superpowers/plans/2026-05-22-duel-system.md
-- docs/superpowers/specs/2026-05-22-duel-system-design.md
+- hooks/useBingoGame.ts
 
 ### Non commité
 ```
- M App.tsx
  M CLAUDE.md
 ?? .planning/
+?? supabase/migrations/009_event_session_replica_identity.sql
 ```
 
