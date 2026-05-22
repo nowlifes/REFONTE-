@@ -185,25 +185,17 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-21 18:01 — branche : main_
+_Mis à jour : 2026-05-22 02:05 — branche : main_
 
 ### Derniers commits
-- 126579e ⚡ perf: éliminer re-renders inutiles — zero latence sur la grille
+- 4cc9128 chore: add migration file 008_boost_auction_winner (already applied via MCP)
 
 ### Fichiers récemment modifiés
-- components/BingoCell.tsx
-- components/GamePage.tsx
-- hooks/useBingoGame.ts
+- supabase/migrations/008_boost_auction_winner.sql
 
 ### Non commité
 ```
- M App.tsx
  M CLAUDE.md
- M components/BoostAuctionBanner.tsx
- M components/GamePage.tsx
- M components/MasterPage.tsx
- M hooks/useEventSession.ts
- M services/gameService.ts
 ?? .planning/
 ```
 
