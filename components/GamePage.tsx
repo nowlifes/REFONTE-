@@ -876,44 +876,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           })}
         </div>
 
-        {/* Mystery cell progress */}
-        {isMysteryCellLocked && (
-          <div className="mt-3 flex items-center justify-center animate-in fade-in duration-300">
-            <div className="flex items-center gap-3 bg-[#FFD700]/10 border-[2px] border-[#FFD700]/40 rounded-2xl px-4 py-2 shadow-[2px_2px_0px_black]">
-              <Lock className="w-4 h-4 text-[#FFD700]/70 shrink-0" strokeWidth={2.5} />
-              <div className="flex flex-col gap-1">
-                <span className="font-impact text-[#FFD700]/90 uppercase text-[9px] tracking-widest leading-none">
-                  {t('mystery_cell_label').replace('{n}', String(CENTER_UNLOCK_SCORE - s.score))}
-                </span>
-                <div className="flex gap-1">
-                  {Array.from({length: CENTER_UNLOCK_SCORE}).map((_, i) => (
-                    <div key={i} className={`w-4 h-[5px] rounded-full transition-all duration-300 ${i < s.score ? 'bg-[#FFD700] shadow-[0_0_6px_#FFD700]' : 'bg-white/15'}`} />
-                  ))}
-                </div>
-              </div>
-              <span className="font-impact text-[#FFD700] uppercase text-[14px] leading-none">
-                {s.score}/{CENTER_UNLOCK_SCORE}
-              </span>
-            </div>
-          </div>
-        )}
-        {/* Bar 2 wave progress */}
-        {currentBar === 2 && !bar2Wave1Complete && !chaosMode && (
-          <div className="mt-2 flex items-center justify-center animate-in fade-in duration-300">
-            <div className="flex items-center gap-3 bg-[#00F5A0]/10 border-[2px] border-[#00F5A0]/30 rounded-2xl px-4 py-2">
-              <div className="flex flex-col gap-1">
-                <span className="font-impact text-[#00F5A0]/80 uppercase text-[9px] tracking-widest leading-none">
-                  {t('bar2_wave_label')}
-                </span>
-                <div className="flex gap-1">
-                  {s.cells.filter((c: BingoCellData) => Math.floor(c.id / 5) === 1).map((c: BingoCellData, i: number) => (
-                    <div key={i} className={`w-4 h-[5px] rounded-full transition-all duration-300 ${c.status === CellStatus.VALIDATED ? 'bg-[#00F5A0] shadow-[0_0_4px_#00F5A0]' : 'bg-white/15'}`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* CADENCE COOLDOWN badge + anti-spam gamified message */}
@@ -946,23 +908,22 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       )}
 
-      {/* Jokers — two counters: swap + taunt */}
-      <div className="shrink-0 py-2 flex justify-center gap-3 z-40">
-        {/* Swap jokers */}
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all duration-300 ${s.jokers > 0 ? 'bg-black/60 border-[#00F5A0]/40 text-[#00F5A0]' : 'bg-black/80 border-white/5 text-white/10'}`}>
-          <Sparkles size={11} className={jokerFlash ? 'animate-pulse' : ''} />
-          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">{t('jokers')} : {s.jokers}</span>
+      {/* Power-ups — jokers + sabotages fusionnés */}
+      <div className="shrink-0 pb-1 flex justify-center z-40">
+        <div className="flex items-center bg-black/50 border-[2px] border-white/10 rounded-2xl overflow-hidden">
+          <div className={`flex items-center gap-1.5 px-4 py-2 transition-all duration-300 ${s.jokers > 0 ? 'text-[#00F5A0]' : 'text-white/20'}`}>
+            <Sparkles size={12} className={jokerFlash ? 'animate-pulse' : ''} />
+            <span className="text-[10px] font-impact uppercase tracking-widest leading-none">{s.jokers} joker{s.jokers !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="w-px h-5 bg-white/15 shrink-0" />
+          <button
+            onClick={() => a.setView(AppView.LEADERBOARD)}
+            className={`flex items-center gap-1.5 px-4 py-2 transition-all active:bg-white/5 ${s.tauntsLeft > 0 ? 'text-[#FF2E63]' : 'text-white/20'}`}
+          >
+            <Zap size={12} fill="currentColor" className={tauntFlash ? 'animate-pulse' : ''} />
+            <span className="text-[10px] font-impact uppercase tracking-widest leading-none">{s.tauntsLeft} sabotage{s.tauntsLeft !== 1 ? 's' : ''}</span>
+          </button>
         </div>
-        {/* Taunt credits — tap to go to leaderboard */}
-        <button
-          onClick={() => a.setView(AppView.LEADERBOARD)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 transition-all active:scale-95 ${s.tauntsLeft > 0 ? 'bg-black/60 border-[#FF2E63]/40 text-[#FF2E63]' : 'bg-black/80 border-white/5 text-white/10'}`}
-        >
-          <Zap size={11} fill="currentColor" className={tauntFlash ? 'animate-pulse' : s.tauntsLeft === 0 ? 'opacity-30' : ''} />
-          <span className="text-[9px] font-impact uppercase tracking-widest leading-none">
-            SABOTAGES : {s.tauntsLeft}
-          </span>
-        </button>
       </div>
 
       {/* Footer Nav */}
