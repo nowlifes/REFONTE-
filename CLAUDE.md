@@ -185,21 +185,19 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-22 16:55 — branche : main_
+_Mis à jour : 2026-05-22 17:10 — branche : main_
 
 ### Derniers commits
-- ca160e0 ♻️ refactor: cleanup post-fix — stale closure, param inutilisé, advanceBar clear transition
+- b0db237 docs: spec + plan système duel (PVP challenges)
 
 ### Fichiers récemment modifiés
-- App.tsx
-- hooks/useEventSession.ts
-- services/gameService.ts
+- docs/superpowers/plans/2026-05-22-duel-system.md
+- docs/superpowers/specs/2026-05-22-duel-system-design.md
 
 ### Non commité
 ```
+ M App.tsx
  M CLAUDE.md
- M components/NFTBadgeModal.tsx
- M constants.ts
 ?? .planning/
 ```
 

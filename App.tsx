@@ -18,7 +18,6 @@ import NetworkStatus from './components/NetworkStatus';
 import Leaderboard from './components/Leaderboard';
 import LockedPage from './components/LockedPage';
 import SessionStartOverlay from './components/SessionStartOverlay';
-import SessionEndOverlay from './components/SessionEndOverlay';
 import MissionReport from './components/MissionReport';
 import BarTransitionOverlay from './components/BarTransitionOverlay';
 
@@ -217,10 +216,10 @@ const PlayerApp: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
-  // Quand la session se ferme pendant le jeu → afficher le rapport avant LockedPage
+  // Quand la session se ferme pendant le jeu ou le classement → aller direct au rapport
   const prevSessionActiveRef = React.useRef(true);
   useEffect(() => {
-    if (!isSessionActive && prevSessionActiveRef.current && s.view === AppView.GAME) {
+    if (!isSessionActive && prevSessionActiveRef.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
       aRef.current.setView(AppView.MISSION_REPORT);
     }
     prevSessionActiveRef.current = isSessionActive;
@@ -322,7 +321,6 @@ const PlayerApp: React.FC = () => {
 
   // Session Start Animation State
   const [showStartAnimation, setShowStartAnimation] = useState(false);
-  const [showEndOverlay, setShowEndOverlay] = useState(false);
   const isFirstLoad = useRef(true);
   const prevSessionActive = useRef(isSessionActive);
 
@@ -392,15 +390,10 @@ const PlayerApp: React.FC = () => {
     // 1. KICK LOGIC
     if (!isSessionActive) {
       setVipBypass(false);
-      if (prevSessionActive.current && !isFirstLoad.current && (s.view === AppView.GAME || s.view === AppView.LEADERBOARD)) {
-        setShowEndOverlay(true);
-      }
-      // Always reset game state on session close, regardless of overlay state,
-      // to prevent returning to GAME view after dismissing the end overlay.
-      if (s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT) {
-        if (!showEndOverlay) {
-          aRef.current.setView(AppView.NICKNAME);
-        }
+      // Navigation to MISSION_REPORT is handled by prevSessionActiveRef effect above.
+      // Here we just reset game state for views that are not the report.
+      if (s.view !== AppView.NICKNAME && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME && s.view !== AppView.LEADERBOARD) {
+        aRef.current.setView(AppView.NICKNAME);
         aRef.current.resetGame();
       }
     }
@@ -410,7 +403,6 @@ const PlayerApp: React.FC = () => {
       setShowStartAnimation(true);
       aRef.current.resetGame();
       aRef.current.setView(AppView.NICKNAME);
-      setShowEndOverlay(false);
 
       const duration = 2000;
       const animationEnd = Date.now() + duration;
@@ -433,7 +425,7 @@ const PlayerApp: React.FC = () => {
 
     prevSessionActive.current = isSessionActive;
     if (isFirstLoad.current) isFirstLoad.current = false;
-  }, [isSessionActive, s.view, isSessionLoading, showEndOverlay]);
+  }, [isSessionActive, s.view, isSessionLoading]);
 
   // --- WAKE LOCK ---
   useEffect(() => {
@@ -507,7 +499,7 @@ const PlayerApp: React.FC = () => {
   }
 
   // SESSION LOCK
-  if (!isSessionActive && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME_OVER && !showEndOverlay && !vipBypass) {
+  if (!isSessionActive && s.view !== AppView.MISSION_REPORT && s.view !== AppView.GAME_OVER && !vipBypass) {
     return (
       <>
         <NetworkStatus />
@@ -529,16 +521,6 @@ const PlayerApp: React.FC = () => {
   return (
     <>
       {showStartAnimation && <SessionStartOverlay />}
-      {showEndOverlay && (
-        <SessionEndOverlay
-          nickname={s.nickname}
-          onViewReport={() => {
-            setShowEndOverlay(false);
-            a.setView(AppView.MISSION_REPORT);
-          }}
-        />
-      )}
-
       <GameRoom setView={a.setView}>
 
         {/* 1. NICKNAME PAGE */}
@@ -651,7 +633,7 @@ const PlayerApp: React.FC = () => {
             badges={s.badges}
             photoProofs={photoProofs}
             startedAt={s.gameSession?.startedAt || Date.now()}
-            onBack={() => a.setView(AppView.GAME)}
+            onBack={() => { a.resetGame(); a.setView(AppView.NICKNAME); }}
             onReset={() => {
               a.resetGame();
               a.setView(AppView.NICKNAME);
