@@ -31,6 +31,7 @@ class GameBackendService {
   private _syncListeners: ((isSyncing: boolean) => void)[] = [];
   private _validatingCells = new Set<string>(); // per-cell lock to prevent double-tap lost update
   private _isCreatingSession = false;           // guard against double-click createNewSession
+  private _cachedSessionId: number | null = null; // avoids repeated SELECT before every mutation
 
   constructor() {
       // Listen to window online event to trigger sync
@@ -59,6 +60,17 @@ class GameBackendService {
       return () => {
           this._syncListeners = this._syncListeners.filter(l => l !== callback);
       };
+  }
+
+  // --- SESSION ID CACHE ---
+
+  private async getSessionId(): Promise<number | null> {
+    if (this._cachedSessionId !== null) return this._cachedSessionId;
+    if (!supabase) return null;
+    const { data } = await supabase
+      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
+    if (data?.id) this._cachedSessionId = data.id;
+    return data?.id ?? null;
   }
 
   // --- OFFLINE QUEUE MANAGEMENT ---
@@ -219,30 +231,20 @@ class GameBackendService {
 
   async triggerBarTransition(durationMinutes: number, barName?: string): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session')
-      .select('id')
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!latest) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
     const { error } = await supabase
       .from('event_session')
       .update({ transition_ends_at: endsAt, next_bar_name: barName || null })
-      .eq('id', latest.id);
+      .eq('id', sessionId);
     if (error) throw error;
   }
 
   async triggerBarTransitionAndAdvance(durationMinutes: number, newBar: number, barName?: string): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session')
-      .select('id')
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!latest) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
     const updates: Record<string, unknown> = {
       transition_ends_at: endsAt,
@@ -251,7 +253,7 @@ class GameBackendService {
     };
     if (newBar >= 3) updates.chaos_mode = true;
     const [{ error }] = await Promise.all([
-      supabase.from('event_session').update(updates).eq('id', latest.id),
+      supabase.from('event_session').update(updates).eq('id', sessionId),
       supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE'),
     ]);
     if (error) throw error;
@@ -259,41 +261,30 @@ class GameBackendService {
 
   async clearBarTransition(): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session')
-      .select('id')
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!latest) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     await supabase
       .from('event_session')
       .update({ transition_ends_at: null, next_bar_name: null })
-      .eq('id', latest.id);
+      .eq('id', sessionId);
   }
 
   async setSessionStatus(isActive: boolean): Promise<void> {
     if (!supabase) return;
     try {
-      // Get the latest record
-      const { data: latest } = await supabase
-        .from('event_session')
-        .select('id')
-        .order('id', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (latest) {
+      const sessionId = await this.getSessionId();
+      if (sessionId) {
         const { error } = await supabase
           .from('event_session')
           .update({ is_active: isActive })
-          .eq('id', latest.id);
+          .eq('id', sessionId);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('event_session')
           .insert({ is_active: isActive });
         if (error) throw error;
+        this._cachedSessionId = null; // new row — refresh cache on next call
       }
     } catch (e) {
       console.error("[GameService] Failed to set session status", e);
@@ -1053,6 +1044,7 @@ class GameBackendService {
 
 async resetSession(): Promise<void> {
   if (!supabase) return;
+  this._cachedSessionId = null;
   try {
     console.log("[GameService] Starting full session reset...");
     const { error } = await supabase.rpc('reset_all_data');
@@ -1129,19 +1121,19 @@ async resetSession(): Promise<void> {
 
   async startBoostAuction(durationSecs: number = 30, type: 'boost' | 'sabotage' = 'boost'): Promise<void> {
     if (!supabase) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     const endsAt = new Date(Date.now() + durationSecs * 1000).toISOString();
-    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
     await Promise.all([
       supabase.from('boost_votes').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
-      supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type, boost_auction_winner: null }).eq('id', latest.id),
+      supabase.from('event_session').update({ boost_auction_ends_at: endsAt, boost_auction_type: type, boost_auction_winner: null }).eq('id', sessionId),
     ]);
   }
 
   async clearBoostAuction(): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (latest) await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: null }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (sessionId) await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: null }).eq('id', sessionId);
   }
 
   private async applyGroupSabotage(winnerId: string): Promise<void> {
@@ -1203,12 +1195,14 @@ async resetSession(): Promise<void> {
     const { data: player } = await supabase.from('players').select('nickname, avatar_id').eq('id', winnerId).maybeSingle();
     const activityType = auctionType === 'boost' ? 'BOOST_WON' : 'SABOTAGE_WON';
     if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, activityType);
-    await supabase.from('boost_votes').delete().eq('session_id', sessionId);
+    const [eventSessionId] = await Promise.all([
+      this.getSessionId(),
+      supabase.from('boost_votes').delete().eq('session_id', sessionId),
+    ]);
     // Persist winner for reveal overlay on all clients, then clear auction state
-    const { data: latest } = await supabase.from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (latest) {
+    if (eventSessionId) {
       const winnerPayload = { name: player?.nickname ?? '?', emoji: player?.avatar_id ?? '🎲', type: auctionType };
-      await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: winnerPayload }).eq('id', latest.id);
+      await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: winnerPayload }).eq('id', eventSessionId);
     }
     return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲', type: auctionType };
   }
@@ -1328,22 +1322,20 @@ async resetSession(): Promise<void> {
 
   async setPregamePhase(phase: string | null, subjectId?: string | null): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     await supabase.from('event_session').update({
       pregame_phase: phase,
       pregame_subject_id: subjectId ?? null,
-    }).eq('id', latest.id);
+    }).eq('id', sessionId);
   }
 
   async triggerCountdown(seconds: number): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
     const endsAt = new Date(Date.now() + seconds * 1000).toISOString();
-    await supabase.from('event_session').update({ countdown_ends_at: endsAt }).eq('id', latest.id);
+    await supabase.from('event_session').update({ countdown_ends_at: endsAt }).eq('id', sessionId);
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1607,18 +1599,16 @@ async resetSession(): Promise<void> {
 
   async setSpotlightDisabled(disabled: boolean): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ spotlight_disabled: disabled }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ spotlight_disabled: disabled }).eq('id', sessionId);
   }
 
   async setChallengeCooldown(secs: number): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ challenge_cooldown_secs: secs }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ challenge_cooldown_secs: secs }).eq('id', sessionId);
   }
 
   // ─── PLAYER MANAGEMENT ───────────────────────────────────────────────────
@@ -1631,52 +1621,49 @@ async resetSession(): Promise<void> {
     const { data: latest } = await supabase
       .from('event_session').select('id, current_bar').order('id', { ascending: false }).limit(1).maybeSingle();
     if (!latest) return;
+    if (latest.id) this._cachedSessionId = latest.id;
     const newBar = (latest.current_bar ?? 1) + 1;
-    await supabase.from('event_session').update({ current_bar: newBar }).eq('id', latest.id);
-    // Reset per-bar counters on all active games so anti-spam resets per bar
-    await supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE');
+    await Promise.all([
+      supabase.from('event_session').update({ current_bar: newBar }).eq('id', latest.id),
+      supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE'),
+    ]);
   }
 
   async setCurrentBar(bar: number): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ current_bar: bar }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ current_bar: bar }).eq('id', sessionId);
   }
 
   async setBarCadence(cadence: string): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ bar_cadence: cadence }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ bar_cadence: cadence }).eq('id', sessionId);
   }
 
   async setChaosMode(chaos: boolean): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ chaos_mode: chaos }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ chaos_mode: chaos }).eq('id', sessionId);
   }
 
   async setMaxValidationsPerBar(max: number): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ max_validations_per_bar: max }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ max_validations_per_bar: max }).eq('id', sessionId);
   }
 
   // ─── PAUSE ────────────────────────────────────────────────────────────────
 
   async setPaused(paused: boolean): Promise<void> {
     if (!supabase) return;
-    const { data: latest } = await supabase
-      .from('event_session').select('id').order('id', { ascending: false }).limit(1).maybeSingle();
-    if (!latest) return;
-    await supabase.from('event_session').update({ is_paused: paused }).eq('id', latest.id);
+    const sessionId = await this.getSessionId();
+    if (!sessionId) return;
+    await supabase.from('event_session').update({ is_paused: paused }).eq('id', sessionId);
   }
 
   // ─── SOFT RECONNECT (keeps player row, resets game only) ──────────────────
