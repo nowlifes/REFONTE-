@@ -301,13 +301,20 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                   </p>
                   {/* PRIMARY: choisir un témoin dans la liste (si session active) */}
                   {onRequestPlayerWitness && sessionId && (
-                    <button
-                      onClick={() => setStep('PLAYER_WITNESS_SELECT')}
-                      className="w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all bg-[#FF2E63] text-white flex items-center justify-center gap-2"
-                    >
-                      <span>👥</span>
-                      {t('choose_witness_btn')}
-                    </button>
+                    witnessPlayers.length === 0 ? (
+                      <div className="w-full py-3 rounded-2xl border-[2px] border-white/10 bg-white/5 text-center">
+                        <p className="font-impact text-white/40 uppercase text-[11px] tracking-widest">Aucun témoin disponible</p>
+                        <p className="font-impact text-white/20 uppercase text-[9px] tracking-widest mt-0.5">Signe manuellement ci-dessous</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setStep('PLAYER_WITNESS_SELECT')}
+                        className="w-full py-4 rounded-2xl font-impact uppercase text-lg border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all bg-[#FF2E63] text-white flex items-center justify-center gap-2"
+                      >
+                        <span>👥</span>
+                        {t('choose_witness_btn')}
+                      </button>
+                    )
                   )}
                   {/* SECONDARY: signature directe si pas de session ou fallback */}
                   <button

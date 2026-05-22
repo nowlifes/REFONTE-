@@ -165,6 +165,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [selectedDuration, setSelectedDuration] = useState<number>(5);
   const [barNameInput, setBarNameInput] = useState('');
   const [isTriggeringTransition, setIsTriggeringTransition] = useState(false);
+  const [showBarAdvanceConfirm, setShowBarAdvanceConfirm] = useState(false);
 
   useEffect(() => { gameService.getChallenges().then(setDbChallenges); }, []);
 
@@ -461,7 +462,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
                           placeholder={language === 'fr' ? 'Nom du prochain bar (optionnel)' : 'Next bar name (optional)'}
                           className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
-                        <button onClick={handleAdvanceBarWithTransition} disabled={isTriggeringTransition}
+                        <button onClick={() => setShowBarAdvanceConfirm(true)} disabled={isTriggeringTransition}
                           className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
                           {isTriggeringTransition
                             ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> {language === 'fr' ? 'Envoi...' : 'Sending...'}</>
@@ -774,6 +775,78 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 {isCreatingNew ? t('loading') : t('create_new_session_btn')}
               </button>
               <button onClick={() => setShowNewSessionConfirm(false)} className="w-full bg-white text-black font-impact uppercase py-3 rounded-xl border-[3px] border-black hover:bg-black/5 transition-all">{t('cancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BAR ADVANCE CONFIRM */}
+      {showBarAdvanceConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white border-[4px] border-black rounded-2xl p-6 relative shadow-[10px_10px_0px_#FF8C00] animate-in zoom-in duration-300">
+            <button onClick={() => setShowBarAdvanceConfirm(false)} className="absolute top-4 right-4 text-black/20 hover:text-black"><X size={22} strokeWidth={2.5} /></button>
+
+            {/* Icon + titre */}
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 bg-[#FF8C00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <MapPin size={24} className="text-[#FF8C00]" />
+              </div>
+              <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic mb-1">
+                {language === 'fr' ? `Passage au bar ${currentBar + 1}` : `Go to bar ${currentBar + 1}`}
+              </h3>
+              <p className="text-[11px] font-impact text-black/40 uppercase tracking-widest">
+                {language === 'fr' ? `Timer : ${selectedDuration} minutes` : `Timer: ${selectedDuration} min`}
+              </p>
+            </div>
+
+            {/* Ce qui va se passer */}
+            <div className="bg-black/5 border-[2px] border-black/10 rounded-xl p-4 mb-5 flex flex-col gap-2.5">
+              <div className="flex items-start gap-3">
+                <span className="text-lg leading-none mt-0.5">🏃</span>
+                <p className="font-impact text-black/60 uppercase text-[10px] tracking-widest leading-relaxed">
+                  {language === 'fr'
+                    ? `Un compte à rebours de ${selectedDuration} min s'affiche — les joueurs savent qu'il faut bouger`
+                    : `A ${selectedDuration} min countdown shows — players know to move`}
+                </p>
+              </div>
+              {currentBar + 1 === 2 && (
+                <>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg leading-none mt-0.5">🎯</span>
+                    <p className="font-impact text-black/60 uppercase text-[10px] tracking-widest leading-relaxed">
+                      {language === 'fr' ? 'La 1ère ligne de défis est immédiatement débloquée' : 'Row 1 of challenges unlocks immediately'}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg leading-none mt-0.5">💣</span>
+                    <p className="font-impact text-[#FF2D6A] uppercase text-[10px] tracking-widest leading-relaxed font-bold">
+                      {language === 'fr' ? 'Mode Sabotage activé — les joueurs peuvent se sabrer entre eux via les Taunts' : 'Sabotage mode unlocked — players can taunt and sabotage each other'}
+                    </p>
+                  </div>
+                </>
+              )}
+              {currentBar + 1 === 3 && (
+                <div className="flex items-start gap-3">
+                  <span className="text-lg leading-none mt-0.5">⚡</span>
+                  <p className="font-impact text-[#FF2D6A] uppercase text-[10px] tracking-widest leading-relaxed font-bold">
+                    {language === 'fr' ? 'Mode Chaos activé — les défis s\'enchaînent à grande vitesse' : 'Chaos mode — challenges fire at max speed'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => { setShowBarAdvanceConfirm(false); handleAdvanceBarWithTransition(); }}
+                disabled={isTriggeringTransition}
+                className="w-full bg-[#FF8C00] text-black font-impact uppercase py-4 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-[13px] tracking-widest"
+              >
+                <ChevronRight size={17} strokeWidth={3} />
+                {language === 'fr' ? `Lancer · ${selectedDuration}min` : `Launch · ${selectedDuration}min`}
+              </button>
+              <button onClick={() => setShowBarAdvanceConfirm(false)} className="w-full bg-white text-black font-impact uppercase py-3 rounded-xl border-[3px] border-black hover:bg-black/5 transition-all text-[11px] tracking-widest">
+                {language === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
             </div>
           </div>
         </div>

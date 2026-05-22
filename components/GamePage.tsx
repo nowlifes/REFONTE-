@@ -316,6 +316,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       setRevancheExpiresAt(Date.now() + REVANCHE_DURATION_MS);
     }
     a.validateCell(data);
+    sounds.playValidate();
+    if (navigator.vibrate) navigator.vibrate([30, 20, 80]);
   };
 
   // Line completion celebration — auto-dismiss after 3s
