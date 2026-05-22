@@ -83,6 +83,8 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
   // --- COMBO ---
   const validationTimestamps = useRef<number[]>([]);
   const [comboActive, setComboActive] = useState(false);
+  // Clear combo window on bar transition — timestamps from bar 1 must not trigger bar 2 combo
+  useEffect(() => { validationTimestamps.current = []; }, [opts.currentBar]);
 
   // --- BONUS TAUNT NOTIFICATION ---
   const [bonusTauntActive, setBonusTauntActive] = useState(false);
