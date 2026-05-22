@@ -83,7 +83,8 @@ INSERT INTO public.challenges (text, type, is_partner) VALUES
   ('Main chaude — poser les mains sur celles de l''autre, esquiver 🖐️', 'PVP', false),
   ('Miroir — copier tous les mouvements de l''autre pendant 30s 🪞', 'PVP', false),
   ('Swap identité — pendant 90s tu incarnes l''autre 🎭',   'PVP', false),
-  ('Négociation impossible — 60s pour convaincre l''autre de faire un truc absurde 🤝', 'PVP', false)
+  ('Négociation impossible — 60s pour convaincre l''autre de faire un truc absurde 🤝', 'PVP', false),
+  ('Pile ou Face — 3 manches avec une vraie pièce 🪙 Best of 3, l''adversaire déclare le résultat', 'PVP', false)
 ON CONFLICT DO NOTHING;
 ```
 
