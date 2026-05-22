@@ -84,7 +84,11 @@ INSERT INTO public.challenges (text, type, is_partner) VALUES
   ('Miroir — copier tous les mouvements de l''autre pendant 30s 🪞', 'PVP', false),
   ('Swap identité — pendant 90s tu incarnes l''autre 🎭',   'PVP', false),
   ('Négociation impossible — 60s pour convaincre l''autre de faire un truc absurde 🤝', 'PVP', false),
-  ('Pile ou Face — 3 manches avec une vraie pièce 🪙 Best of 3, l''adversaire déclare le résultat', 'PVP', false)
+  ('Pile ou Face — 3 manches avec une vraie pièce 🪙 Best of 3, l''adversaire déclare le résultat', 'PVP', false),
+  ('Mime — 3 manches, 30s par mime 🎭 L''adversaire devine. Meilleur score sur 3 gagne.', 'PVP', false),
+  ('Alphabet Rapide — Marques de voitures 🚗 À tour de rôle, premier qui bloque perd.', 'PVP', false),
+  ('Alphabet Rapide — Pays 🌍 À tour de rôle, premier qui bloque perd.', 'PVP', false),
+  ('Alphabet Rapide — Cocktails 🍹 À tour de rôle, premier qui bloque perd.', 'PVP', false)
 ON CONFLICT DO NOTHING;
 ```
 
