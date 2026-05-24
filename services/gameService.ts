@@ -1118,6 +1118,20 @@ async resetSession(): Promise<void> {
     if (error) console.warn('[Bonus] award_bonus_taunt failed:', error.message);
   }
 
+  async awardDuelVictory(winnerId: string): Promise<void> {
+    if (!supabase) return;
+    const { data: game } = await supabase
+      .from('games')
+      .select('id, score')
+      .eq('player_id', winnerId)
+      .eq('status', 'ACTIVE')
+      .maybeSingle();
+    if (!game) return;
+    await supabase.from('games').update({ score: game.score + 1 }).eq('id', game.id);
+    await this.awardBonusTaunt(game.id);
+    await this.unlockBadge(winnerId, 'DUEL_KING');
+  }
+
   // ─── BOOST AUCTION ──────────────────────────────────────────────────────────
 
   async startBoostAuction(durationSecs: number = 30, type: 'boost' | 'sabotage' = 'boost'): Promise<void> {

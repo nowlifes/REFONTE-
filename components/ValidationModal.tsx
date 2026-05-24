@@ -26,6 +26,10 @@ interface ValidationModalProps {
   onRequestPlayerWitness?: (witnessPlayerId: string) => Promise<void>;
   /** Fortune reveal after validation — called when player wins a bonus taunt */
   onFortuneWon?: () => void;
+  /** PVP duel — ID of the assigned opponent */
+  assignedPlayerId?: string;
+  /** Called when the current player declares defeat; opponent gets the victory rewards */
+  onPvpLost?: (opponentId: string) => void;
 }
 
 type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SENT' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS' | 'PVP_OUTCOME' | 'FORTUNE';
@@ -34,6 +38,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest,
   playerNickname, playerAvatarId,
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
+  assignedPlayerId, onPvpLost,
 }) => {
   const { t } = useLanguage();
   const initialStep: ModalStep = cell.type === ChallengeType.MASTER ? 'MASTER_PAD'
@@ -658,12 +663,16 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               >
                 {t('pvp_won_btn')}
               </button>
-              {/* LOST — validate + brief SUCCESS flash + close (no fortune) */}
+              {/* LOST — if opponent known: award them + close without validating; else validate anyway */}
               <button
                 onClick={() => {
-                  setStep('SUCCESS');
-                  onConfirm({ witnessName: '', witnessSignature: '', pvpWon: false });
-                  setTimeout(onClose, 1200);
+                  if (onPvpLost && assignedPlayerId) {
+                    onPvpLost(assignedPlayerId);
+                  } else {
+                    setStep('SUCCESS');
+                    onConfirm({ witnessName: '', witnessSignature: '', pvpWon: false });
+                    setTimeout(onClose, 1200);
+                  }
                 }}
                 className="w-full py-4 rounded-2xl font-impact uppercase text-lg bg-white/8 text-white/50 border-[2px] border-white/15 active:bg-white/12 transition-all"
               >

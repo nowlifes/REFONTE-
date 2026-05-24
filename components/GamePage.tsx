@@ -55,6 +55,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
   const [revealedCell, setRevealedCell] = useState<import('../types').BingoCellData | null>(null);
   const [assignedPlayer, setAssignedPlayer] = useState<string | null>(null);
+  const [assignedPlayerId, setAssignedPlayerId] = useState<string | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
@@ -164,14 +165,18 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         if (others.length > 0) {
           const pick = others[Math.floor(Math.random() * others.length)];
           setAssignedPlayer(pick.pseudo);
+          setAssignedPlayerId(pick.userId);
         } else {
           setAssignedPlayer(null);
+          setAssignedPlayerId(null);
         }
       } catch {
         setAssignedPlayer(null);
+        setAssignedPlayerId(null);
       }
     } else {
       setAssignedPlayer(null);
+      setAssignedPlayerId(null);
     }
   }, []); // stable — reads mutable state via refs
 
@@ -981,8 +986,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             a.handleCellClick(revealedCell.id);
             setRevealedCell(null);
             setAssignedPlayer(null);
+            setAssignedPlayerId(null);
           }}
-          onClose={() => { setRevealedCell(null); setAssignedPlayer(null); }}
+          onClose={() => { setRevealedCell(null); setAssignedPlayer(null); setAssignedPlayerId(null); }}
         />
       )}
 
@@ -1031,6 +1037,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                   : undefined
               }
               onFortuneWon={a.grantFortuneTaunt}
+              assignedPlayerId={assignedPlayerId ?? undefined}
+              onPvpLost={assignedPlayerId ? async (opponentId: string) => {
+                await gameService.awardDuelVictory(opponentId);
+                a.setSelectedCell(null);
+                setRevancheExpiresAt(Date.now() + REVANCHE_DURATION_MS);
+              } : undefined}
           />
         </div>
       )}

@@ -185,18 +185,21 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-22 17:32 — branche : main_
+_Mis à jour : 2026-05-24 17:02 — branche : main_
 
 ### Derniers commits
-- 551699b fix: NiceMove combo reset sur bar transition + correctifs UX
+- ffec4f5 docs: +5 challenges PVP — PFC, Barbichette, Ni oui ni non, Mot interdit, Je n'ai jamais
 
 ### Fichiers récemment modifiés
-- hooks/useBingoGame.ts
+- docs/superpowers/plans/2026-05-22-duel-system.md
+- docs/superpowers/specs/2026-05-22-duel-system-design.md
 
 ### Non commité
 ```
  M CLAUDE.md
+ M components/GamePage.tsx
+ M services/gameService.ts
+ M types.ts
 ?? .planning/
-?? supabase/migrations/009_event_session_replica_identity.sql
 ```
 

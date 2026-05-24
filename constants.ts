@@ -208,6 +208,12 @@ export const BADGE_CONFIG: Record<BadgeType, {
     name: 'Perfectionist',
     gradient: ['#FFD700', '#FF8C00'],
   },
+  DUEL_KING: {
+    emoji: '⚔️',
+    color: 'from-[#FF2D6A] to-[#FF8C00]',
+    name: 'Duel King',
+    gradient: ['#FF2D6A', '#FF8C00'],
+  },
 };
 
 // Note: These values are intentionally not exported — consumers keep their own local copy.

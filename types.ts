@@ -86,15 +86,16 @@ export enum TutorialStep {
 }
 
 // --- BADGE TYPES ---
-export type BadgeType = 
+export type BadgeType =
   | 'FIRST_BLOOD'
-  | 'SPEED_DEMON' 
+  | 'SPEED_DEMON'
   | 'BIG_BRAIN'
   | 'PARTY_ANIMAL'
   | 'NIGHT_OWL'
   | 'EARLY_BIRD'
   | 'SOCIAL_BUTTERFLY'
-  | 'PERFECTIONIST';
+  | 'PERFECTIONIST'
+  | 'DUEL_KING';
 
 export interface Badge {
   id: string;
