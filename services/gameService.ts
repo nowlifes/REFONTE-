@@ -1761,6 +1761,7 @@ async resetSession(): Promise<void> {
       .select('id')
       .single();
     if (error) throw error;
+    this.pingPlayer(witnessPlayerId, 'witness');
     return data.id;
   }
 
@@ -1824,14 +1825,30 @@ async resetSession(): Promise<void> {
       .eq('id', validationId);
   }
 
+  /** Send an instant broadcast ping to a player-specific named channel.
+   *  The sender subscribes briefly, sends, then unsubscribes — no auth required. */
+  private pingPlayer(targetPlayerId: string, event: 'witness' | 'duel' | 'duel_result'): void {
+    if (!supabase) return;
+    const channelName = `${event}_inbox_${targetPlayerId}`;
+    const ch = supabase.channel(channelName);
+    ch.subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return;
+      ch.send({ type: 'broadcast', event, payload: {} }).finally(() => {
+        setTimeout(() => supabase!.removeChannel(ch), 500);
+      });
+    });
+  }
+
   subscribeWitnessRequests(playerId: string, onRequests: (requests: any[]) => void): () => void {
     if (!supabase) return () => {};
-    // Poll at 2s — realtime filtered subscriptions can lag 30-45s without Supabase auth session
-    this.getMyWitnessRequests(playerId).then(onRequests);
-    const interval = setInterval(() => {
-      this.getMyWitnessRequests(playerId).then(onRequests);
-    }, 2000);
-    return () => clearInterval(interval);
+    const refetch = () => this.getMyWitnessRequests(playerId).then(onRequests);
+    refetch();
+    // Dedicated channel per event type avoids topic collision with duel inbox
+    const ch = supabase.channel(`witness_inbox_${playerId}`)
+      .on('broadcast', { event: 'witness' }, refetch)
+      .subscribe();
+    const interval = setInterval(refetch, 5000);
+    return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 
   subscribeHotTakes(sessionId: string, callback: (takes: any[]) => void) {
@@ -1978,6 +1995,7 @@ async resetSession(): Promise<void> {
       .select('id')
       .single();
     if (error) throw error;
+    this.pingPlayer(opponentPlayerId, 'duel');
     return data.id as string;
   }
 
@@ -1992,11 +2010,12 @@ async resetSession(): Promise<void> {
 
   async declineDuel(duelId: string): Promise<void> {
     if (!supabase) throw new Error('No backend');
+    const { data: duel } = await supabase
+      .from('duel_requests').select('challenger_player_id').eq('id', duelId).maybeSingle();
     const { error } = await supabase
-      .from('duel_requests')
-      .update({ status: 'DECLINED', resolved_at: new Date().toISOString() })
-      .eq('id', duelId);
+      .from('duel_requests').update({ status: 'DECLINED', resolved_at: new Date().toISOString() }).eq('id', duelId);
     if (error) throw error;
+    if (duel?.challenger_player_id) this.pingPlayer(duel.challenger_player_id, 'duel_result');
   }
 
   async declareDuelResult(duelId: string, opponentWon: boolean): Promise<void> {
@@ -2036,6 +2055,8 @@ async resetSession(): Promise<void> {
         await this.awardBonusTaunt(opponentGame.id);
       }
     }
+    // Ping challenger inbox so their subscribeDuelStatus fires instantly
+    if (duel.challenger_player_id) this.pingPlayer(duel.challenger_player_id, 'duel_result');
   }
 
   subscribeDuelRequests(
@@ -2053,12 +2074,17 @@ async resetSession(): Promise<void> {
       onRequests(data ?? []);
     };
     refetch();
-    const interval = setInterval(refetch, 2000);
-    return () => clearInterval(interval);
+    // Dedicated duel inbox — instant notification, poll 5s as fallback
+    const ch = supabase.channel(`duel_inbox_${playerId}`)
+      .on('broadcast', { event: 'duel' }, refetch)
+      .subscribe();
+    const interval = setInterval(refetch, 5000);
+    return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 
   subscribeDuelStatus(
     duelId: string,
+    challengerPlayerId: string,
     onUpdate: (duel: any) => void,
   ): () => void {
     if (!supabase) return () => {};
@@ -2071,8 +2097,12 @@ async resetSession(): Promise<void> {
       if (data) onUpdate(data);
     };
     refetch();
-    const interval = setInterval(refetch, 2000);
-    return () => clearInterval(interval);
+    // Challenger listens on their duel_result inbox for instant result notification
+    const ch = supabase.channel(`duel_result_inbox_${challengerPlayerId}`)
+      .on('broadcast', { event: 'duel_result' }, refetch)
+      .subscribe();
+    const interval = setInterval(refetch, 5000);
+    return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 }
 

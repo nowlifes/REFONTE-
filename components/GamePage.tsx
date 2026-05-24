@@ -107,7 +107,8 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   // Duel status — côté challenger : écoute le résultat en realtime
   useEffect(() => {
     if (!activeDuelId) return;
-    return gameService.subscribeDuelStatus(activeDuelId, (duel) => {
+    const myPlayerId = localStorage.getItem('bingo_user_id') || '';
+    return gameService.subscribeDuelStatus(activeDuelId, myPlayerId, (duel) => {
       if (duel.status === 'CHALLENGER_WON') {
         setDuelResult('won');
         setActiveDuelId(null);
