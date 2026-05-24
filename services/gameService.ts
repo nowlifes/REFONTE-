@@ -1282,13 +1282,19 @@ async resetSession(): Promise<void> {
 
   subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {
     if (!supabase) return () => {};
+    const refetch = async () => {
+      const { data } = await supabase!.from('games').select('*').eq('id', gameId).maybeSingle();
+      if (data) callback(data);
+    };
     const channel = supabase
       .channel(`game-${gameId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
         (payload) => callback(payload.new)
       )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      .subscribe((status) => { if (status === 'SUBSCRIBED') refetch(); });
+    // Safety net — realtime handles it, poll catches any missed events
+    const interval = setInterval(refetch, 10000);
+    return () => { supabase.removeChannel(channel); clearInterval(interval); };
   }
 
   private mapDataToSession(data: any): GameSession {
