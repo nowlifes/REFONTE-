@@ -247,7 +247,7 @@ export const TRANSLATIONS = {
     // Cooldown / Nice Move
     cooldown_title: "🎯 NICE MOVE!",
     cooldown_sub: "Save challenges for later · {n}s",
-    cooldown_bar3_off: "Bar 3 = KO mode · no cooldown",
+    cooldown_bar3_off: "Round 3 = KO mode · no cooldown",
 
     // PvP Challenge
     pvp_feat: "PvP Challenge",
@@ -275,8 +275,8 @@ export const TRANSLATIONS = {
 
     // GamePage — separators & progress
     wave_challenges: "{n} challenges to complete",
-    unlocked_at_bar: "Unlocked at Bar {n}",
-    bar_label: "Bar {n}",
+    unlocked_at_bar: "Unlocked at Round {n}",
+    bar_label: "Round {n}",
     mystery_cell_label: "MYSTERY CELL · {n} CHALLENGES",
     bar2_wave_label: "WAVE 2 · COMPLETE ROW 1",
     wave_complete_title: "5 / 5 challenges!",
@@ -556,7 +556,7 @@ export const TRANSLATIONS = {
     // Cooldown / Nice Move
     cooldown_title: "🎯 BIEN JOUÉ !",
     cooldown_sub: "Garde des défis pour la suite · {n}s",
-    cooldown_bar3_off: "Bar 3 = mode KO · sans cooldown",
+    cooldown_bar3_off: "Manche 3 = mode KO · sans cooldown",
 
     // PvP Challenge
     pvp_feat: "Défi PvP",
@@ -584,8 +584,8 @@ export const TRANSLATIONS = {
 
     // GamePage — separators & progress
     wave_challenges: "{n} défis à compléter",
-    unlocked_at_bar: "Débloqué au Bar {n}",
-    bar_label: "Bar {n}",
+    unlocked_at_bar: "Débloqué à la manche {n}",
+    bar_label: "Manche {n}",
     mystery_cell_label: "CASE MYSTÈRE · {n} DÉFIS",
     bar2_wave_label: "VAGUE 2 · FINIR LA RANGÉE 1",
     wave_complete_title: "5 / 5 défis !",

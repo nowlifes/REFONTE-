@@ -1018,7 +1018,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <div className="flex items-center gap-1.5 px-4 py-2 text-white/20 cursor-default">
               <span className="text-[10px] leading-none">🔒</span>
               <span className="text-[10px] font-impact uppercase tracking-widest leading-none">
-                {language === 'fr' ? 'Bar 2' : 'Bar 2'}
+                {language === 'fr' ? 'Manche 2' : 'Round 2'}
               </span>
             </div>
           )}

@@ -413,7 +413,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
             {/* ── PROGRESSION DES BARS ──────────────────────────────────────── */}
             {isSessionActive && advanceBar && (
-              <Section title="Progression des bars" accent="#FF8C00" defaultOpen={true}>
+              <Section title="Progression des manches" accent="#FF8C00" defaultOpen={true}>
                 <div className="flex flex-col gap-3">
                   {/* Bar tracker */}
                   <div className="grid grid-cols-3 gap-2">
@@ -424,7 +424,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         <div key={b} className={`rounded-xl border-[2px] border-black px-2 py-3 text-center transition-all ${
                           b === currentBar ? 'bg-black text-white shadow-[2px_2px_0px_black]' : b < currentBar ? 'bg-black/5 opacity-40' : 'bg-white'
                         }`}>
-                          <div className="font-impact text-[8px] uppercase tracking-widest mb-0.5" style={{ color: b === currentBar ? colors[b-1] : 'rgba(0,0,0,0.3)' }}>Bar {b}</div>
+                          <div className="font-impact text-[8px] uppercase tracking-widest mb-0.5" style={{ color: b === currentBar ? colors[b-1] : 'rgba(0,0,0,0.3)' }}>{language === 'fr' ? `Manche ${b}` : `Round ${b}`}</div>
                           <div className="font-impact text-[11px] leading-tight" style={{ color: b === currentBar ? colors[b-1] : 'rgba(0,0,0,0.25)' }}>{labels[b-1]}</div>
                         </div>
                       );
@@ -440,7 +440,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           <p className="font-impact text-black text-2xl italic">
                             <CountdownTimer endsAt={transitionEndsAt} />
                           </p>
-                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">Bar {currentBar} → {currentBar + 1} · {language === 'fr' ? 'Lignes débloquées ✓' : 'Lines unlocked ✓'}</p>
+                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">{language === 'fr' ? `Manche ${currentBar} → ${currentBar + 1}` : `Round ${currentBar} → ${currentBar + 1}`} · {language === 'fr' ? 'Lignes débloquées ✓' : 'Lines unlocked ✓'}</p>
                         </div>
                         <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
                           <XCircle size={20} className="text-[#FF8C00]" strokeWidth={3} />
@@ -466,7 +466,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
                           {isTriggeringTransition
                             ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> {language === 'fr' ? 'Envoi...' : 'Sending...'}</>
-                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `Passer au bar ${currentBar + 1}` : `Go to bar ${currentBar + 1}`} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
+                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `Passer à la manche ${currentBar + 1}` : `Go to round ${currentBar + 1}`} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
                           }
                         </button>
                       </div>
@@ -505,9 +505,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       <p className="font-impact text-black uppercase text-[11px] tracking-widest mb-1">
                         Nice Move
                         {(currentBar ?? 1) >= 3
-                          ? <span className="text-[#FF2D6A] ml-1">· AUTO OFF (Bar 3 KO)</span>
+                          ? <span className="text-[#FF2D6A] ml-1">· AUTO OFF (Manche 3 KO)</span>
                           : (currentBar ?? 1) < 2
-                            ? <span className="text-black/30 ml-1">· actif au bar 2</span>
+                            ? <span className="text-black/30 ml-1">· actif à la manche 2</span>
                             : (challengeCooldownSecs ?? 0) > 0
                               ? <span className="text-[#FF8C00] ml-1">· {challengeCooldownSecs}s</span>
                               : <span className="text-[#00F5A0] ml-1">· 60s par défaut</span>
@@ -589,7 +589,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
             {/* ── BAR CHANGE (fallback — only shown if Progression section isn't available) */}
             {isSessionActive && !advanceBar && (
               <Section
-                title={language === 'fr' ? 'Changement de bar' : 'Bar Change'}
+                title={language === 'fr' ? 'Changement de manche' : 'Round Change'}
                 accent="#FF2D6A"
                 defaultOpen={!!transitionEndsAt}
                 badge={transitionEndsAt ? (
@@ -792,7 +792,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 <MapPin size={24} className="text-[#FF8C00]" />
               </div>
               <h3 className="text-2xl font-impact text-black uppercase tracking-tighter italic mb-1">
-                {language === 'fr' ? `Passage au bar ${currentBar + 1}` : `Go to bar ${currentBar + 1}`}
+                {language === 'fr' ? `Passage à la manche ${currentBar + 1}` : `Go to round ${currentBar + 1}`}
               </h3>
               <p className="text-[11px] font-impact text-black/40 uppercase tracking-widest">
                 {language === 'fr' ? `Timer : ${selectedDuration} minutes` : `Timer: ${selectedDuration} min`}
