@@ -24,12 +24,8 @@ interface PreGamePageProps {
   onCrownClick?: () => void;       // master hidden login trigger
 }
 
-// ─── EMOJI MAP (same as Avatar) ───────────────────────────────────────────────
-const EMOJI_MAP: Record<string, string> = {
-  PartyKing: '👑', NightOwl: '🦉', FireStarter: '🔥', IceCold: '🧊',
-  WildCard: '🃏', SocialButterfly: '🦋', Maverick: '🎯', DragonHeart: '🐉',
-};
-const getEmoji = (id: string) => EMOJI_MAP[id] || id || '🎲';
+import { ADULT_EMOJI_MAP } from '../constants';
+const getEmoji = (id: string) => ADULT_EMOJI_MAP[id] || id || '🎲';
 
 // ─── SHARED UI ATOMS ──────────────────────────────────────────────────────────
 

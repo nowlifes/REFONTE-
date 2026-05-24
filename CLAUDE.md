@@ -185,21 +185,22 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-24 17:02 — branche : main_
+_Mis à jour : 2026-05-24 18:57 — branche : main_
 
 ### Derniers commits
-- ffec4f5 docs: +5 challenges PVP — PFC, Barbichette, Ni oui ni non, Mot interdit, Je n'ai jamais
+- 0b84f60 refactor: renommer bar → manche dans toute l'UI visible
 
 ### Fichiers récemment modifiés
-- docs/superpowers/plans/2026-05-22-duel-system.md
-- docs/superpowers/specs/2026-05-22-duel-system-design.md
+- components/GamePage.tsx
+- components/MasterPage.tsx
+- translations.ts
 
 ### Non commité
 ```
  M CLAUDE.md
- M components/GamePage.tsx
- M services/gameService.ts
- M types.ts
+ M components/LobbyPage.tsx
+ M components/PreGamePage.tsx
+ M components/SessionStartOverlay.tsx
 ?? .planning/
 ```
 

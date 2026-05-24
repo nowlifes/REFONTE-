@@ -8,12 +8,9 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import BackgroundParticles from './BackgroundParticles';
 import ShieldLogo from './ShieldLogo';
+import { ADULT_EMOJI_MAP } from '../constants';
 
-const EMOJI_MAP: Record<string, string> = {
-  PartyKing: '👑', NightOwl: '🦉', FireStarter: '🔥', IceCold: '🧊',
-  WildCard: '🃏', SocialButterfly: '🦋', Maverick: '🎯', DragonHeart: '🐉',
-};
-const getEmoji = (id: string) => EMOJI_MAP[id] || id || '🎲';
+const getEmoji = (id: string) => ADULT_EMOJI_MAP[id] || id || '🎲';
 
 interface LobbyPageProps {
   nickname: string;
