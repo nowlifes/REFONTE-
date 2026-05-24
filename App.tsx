@@ -420,7 +420,7 @@ const PlayerApp: React.FC = () => {
       setTimeout(confettiCleanup, duration + 100);
 
       if (navigator.vibrate) navigator.vibrate([100, 100, 200, 100, 400]);
-      setTimeout(() => setShowStartAnimation(false), 3500);
+      // overlay dismisses itself via onDone
     }
 
     prevSessionActive.current = isSessionActive;
@@ -520,7 +520,7 @@ const PlayerApp: React.FC = () => {
 
   return (
     <>
-      {showStartAnimation && <SessionStartOverlay />}
+      {showStartAnimation && <SessionStartOverlay onDone={() => setShowStartAnimation(false)} />}
       <GameRoom setView={a.setView}>
 
         {/* 1. NICKNAME PAGE */}
@@ -545,7 +545,7 @@ const PlayerApp: React.FC = () => {
             currentUserId={localStorage.getItem('bingo_user_id') || undefined}
             currentGameId={s.gameSession?.id}
             currentScore={s.score}
-            tauntsLeft={s.tauntsLeft}
+            tauntsLeft={currentBar >= 2 ? s.tauntsLeft : 0}
             onTaunt={s.gameSession?.id ? async (targetUserId, tauntType) => {
               await gameService.sendTaunt(s.gameSession!.id, targetUserId, tauntType, s.nickname || undefined);
             } : undefined}

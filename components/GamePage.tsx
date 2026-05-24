@@ -1006,13 +1006,22 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             <span className="text-[10px] font-impact uppercase tracking-widest leading-none">{s.jokers} joker{s.jokers !== 1 ? 's' : ''}</span>
           </div>
           <div className="w-px h-5 bg-white/15 shrink-0" />
-          <button
-            onClick={() => a.setView(AppView.LEADERBOARD)}
-            className={`flex items-center gap-1.5 px-4 py-2 transition-all active:bg-white/5 ${s.tauntsLeft > 0 ? 'text-[#FF2E63]' : 'text-white/20'}`}
-          >
-            <Zap size={12} fill="currentColor" className={tauntFlash ? 'animate-pulse' : ''} />
-            <span className="text-[10px] font-impact uppercase tracking-widest leading-none">{s.tauntsLeft} sabotage{s.tauntsLeft !== 1 ? 's' : ''}</span>
-          </button>
+          {currentBar >= 2 ? (
+            <button
+              onClick={() => a.setView(AppView.LEADERBOARD)}
+              className={`flex items-center gap-1.5 px-4 py-2 transition-all active:bg-white/5 ${s.tauntsLeft > 0 ? 'text-[#FF2E63]' : 'text-white/20'}`}
+            >
+              <Zap size={12} fill="currentColor" className={tauntFlash ? 'animate-pulse' : ''} />
+              <span className="text-[10px] font-impact uppercase tracking-widest leading-none">{s.tauntsLeft} sabotage{s.tauntsLeft !== 1 ? 's' : ''}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-4 py-2 text-white/20 cursor-default">
+              <span className="text-[10px] leading-none">🔒</span>
+              <span className="text-[10px] font-impact uppercase tracking-widest leading-none">
+                {language === 'fr' ? 'Bar 2' : 'Bar 2'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
