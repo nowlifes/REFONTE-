@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Crosshair } from 'lucide-react';
 import { gameService } from '../services/gameService';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -51,7 +51,10 @@ const DuelOpponentPicker: React.FC<Props> = ({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-5 pb-4 border-b-[3px] border-white/10">
-        <p className="font-impact uppercase text-white text-xl tracking-wide">⚔️ Choisir un adversaire</p>
+        <div className="flex items-center gap-2">
+            <Crosshair size={20} strokeWidth={2.5} style={{ color: '#FF8C00' }} />
+            <span className="font-impact uppercase text-white text-xl tracking-wide">Choisir un adversaire</span>
+          </div>
         <button
           onClick={onClose}
           className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-xl border-[2px] border-white/20 active:bg-white/20 transition-all"
@@ -93,7 +96,7 @@ const DuelOpponentPicker: React.FC<Props> = ({
             </div>
             {sending === p.userId
               ? <span className="w-5 h-5 border-[3px] border-black/20 border-t-black rounded-full animate-spin" />
-              : <span className="font-impact text-[#FF2D6A] uppercase text-xs tracking-widest">Défier ⚔️</span>
+              : <span className="flex items-center gap-1 font-impact uppercase text-xs tracking-widest" style={{ color: '#FF8C00' }}><Crosshair size={14} strokeWidth={2.5} /> Défier</span>
             }
           </button>
         ))}

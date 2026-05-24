@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Crosshair } from 'lucide-react';
 import { gameService } from '../services/gameService';
 
 interface Props {
@@ -92,8 +92,8 @@ const DuelRequestBanner: React.FC<Props> = ({ playerId }) => {
       >
         {/* Icône */}
         <div className="mb-6">
-          <div className="w-14 h-14 bg-black/20 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_black]">
-            <span className="text-2xl">⚔️</span>
+          <div className="w-14 h-14 border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_black]" style={{ background: '#FF8C00' }}>
+            <Crosshair size={28} strokeWidth={2.5} className="text-white" />
           </div>
         </div>
 

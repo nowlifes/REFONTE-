@@ -1826,15 +1826,12 @@ async resetSession(): Promise<void> {
 
   subscribeWitnessRequests(playerId: string, onRequests: (requests: any[]) => void): () => void {
     if (!supabase) return () => {};
+    // Poll at 2s — realtime filtered subscriptions can lag 30-45s without Supabase auth session
     this.getMyWitnessRequests(playerId).then(onRequests);
-    const ch = supabase
-      .channel(`witness_${playerId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'master_validations',
-        filter: `witness_player_id=eq.${playerId}`,
-      }, () => { this.getMyWitnessRequests(playerId).then(onRequests); })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const interval = setInterval(() => {
+      this.getMyWitnessRequests(playerId).then(onRequests);
+    }, 2000);
+    return () => clearInterval(interval);
   }
 
   subscribeHotTakes(sessionId: string, callback: (takes: any[]) => void) {
@@ -2056,14 +2053,8 @@ async resetSession(): Promise<void> {
       onRequests(data ?? []);
     };
     refetch();
-    const channel = supabase
-      .channel(`duel_opponent_${playerId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'duel_requests',
-        filter: `opponent_player_id=eq.${playerId}`,
-      }, refetch)
-      .subscribe();
-    return () => { supabase!.removeChannel(channel); };
+    const interval = setInterval(refetch, 2000);
+    return () => clearInterval(interval);
   }
 
   subscribeDuelStatus(
@@ -2080,14 +2071,8 @@ async resetSession(): Promise<void> {
       if (data) onUpdate(data);
     };
     refetch();
-    const channel = supabase
-      .channel(`duel_status_${duelId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'duel_requests',
-        filter: `id=eq.${duelId}`,
-      }, refetch)
-      .subscribe();
-    return () => { supabase!.removeChannel(channel); };
+    const interval = setInterval(refetch, 2000);
+    return () => clearInterval(interval);
   }
 }
 
