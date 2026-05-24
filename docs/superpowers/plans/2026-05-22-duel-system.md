@@ -88,7 +88,12 @@ INSERT INTO public.challenges (text, type, is_partner) VALUES
   ('Mime — 3 manches, 30s par mime 🎭 L''adversaire devine. Meilleur score sur 3 gagne.', 'PVP', false),
   ('Alphabet Rapide — Marques de voitures 🚗 À tour de rôle, premier qui bloque perd.', 'PVP', false),
   ('Alphabet Rapide — Pays 🌍 À tour de rôle, premier qui bloque perd.', 'PVP', false),
-  ('Alphabet Rapide — Cocktails 🍹 À tour de rôle, premier qui bloque perd.', 'PVP', false)
+  ('Alphabet Rapide — Cocktails 🍹 À tour de rôle, premier qui bloque perd.', 'PVP', false),
+  ('Pierre-Feuille-Ciseaux ✂️ Best of 3 — l''adversaire déclare le résultat.', 'PVP', false),
+  ('La Barbichette 🧔 "Je te tiens, tu me tiens par la barbichette — le premier qui rira aura une tapette." Celui qui rit perd.', 'PVP', false),
+  ('Ni oui ni non 🚫 60s de questions, interdit de dire oui ou non — premier qui craque perd.', 'PVP', false),
+  ('Mot interdit 🤫 Un mot secret imposé, parlez 60s sans le prononcer — premier qui le dit perd.', 'PVP', false),
+  ('Je n''ai jamais 🫣 3 "je n''ai jamais", l''adversaire avoue ou bluff — le public juge.', 'PVP', false)
 ON CONFLICT DO NOTHING;
 ```
 

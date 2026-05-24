@@ -71,6 +71,11 @@ CREATE POLICY "players can read own duels"
 | "Swap identité — pendant 90s tu es l'autre" | DUEL | swap |
 | "Négociation impossible — 60s pour convaincre" | DUEL | nego |
 | "Pile ou Face — 3 manches avec une vraie pièce 🪙 Best of 3" | DUEL | coinflip |
+| "Pierre-Feuille-Ciseaux ✂️ Best of 3" | DUEL | pfc |
+| "La Barbichette 🧔 Celui qui rit perd" | DUEL | barbichette |
+| "Ni oui ni non 🚫 60s, premier qui craque perd" | DUEL | nouinonnon |
+| "Mot interdit 🤫 60s sans prononcer le mot" | DUEL | motinterdit |
+| "Je n'ai jamais 🫣 3 rounds, public juge" | DUEL | jamais |
 | "Mime — 3 manches, 30s par mime 🎭 Meilleur score sur 3 gagne" | DUEL | mime |
 | "Alphabet Rapide — Marques de voitures 🚗 Premier qui bloque perd" | DUEL | alphabet |
 | "Alphabet Rapide — Pays 🌍 Premier qui bloque perd" | DUEL | alphabet |
