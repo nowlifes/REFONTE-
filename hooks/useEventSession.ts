@@ -22,6 +22,8 @@ export const useEventSession = () => {
   const [boostAuctionEndsAt, setBoostAuctionEndsAt] = useState<number | null>(null);
   const [boostAuctionType, setBoostAuctionType] = useState<'boost' | 'sabotage'>('boost');
   const [boostAuctionWinner, setBoostAuctionWinner] = useState<{ name: string; emoji: string; type: 'boost' | 'sabotage' } | null>(null);
+  // Tracks the winner key already dismissed by the player — prevents checkSession from re-showing it
+  const dismissedBoostWinnerKey = useRef<string | null>(null);
   // Track whether we've ever successfully loaded session state.
   // Used by checkSession to fail-open (don't kick players on network errors).
   const hasLoadedOnce = useRef(false);
@@ -58,7 +60,9 @@ export const useEventSession = () => {
       setMaxValidationsPerBar(row?.max_validations_per_bar ?? 0);
       setBoostAuctionEndsAt(row?.boost_auction_ends_at ? new Date(row.boost_auction_ends_at).getTime() : null);
       setBoostAuctionType((row?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
-      setBoostAuctionWinner(row?.boost_auction_winner ?? null);
+      const newWinner = row?.boost_auction_winner ?? null;
+      const newWinnerKey = newWinner ? `${newWinner.name}:${newWinner.type}` : null;
+      if (newWinnerKey !== dismissedBoostWinnerKey.current) setBoostAuctionWinner(newWinner);
 
       // Recover session UUID only when we don't already have it (page reload / cache clear)
       if (status) {
@@ -141,7 +145,11 @@ export const useEventSession = () => {
                 if (p.max_validations_per_bar !== undefined) setMaxValidationsPerBar(p.max_validations_per_bar ?? 0);
                 if (p.boost_auction_ends_at !== undefined) setBoostAuctionEndsAt(p.boost_auction_ends_at ? new Date(p.boost_auction_ends_at).getTime() : null);
                 if (p.boost_auction_type !== undefined) setBoostAuctionType((p.boost_auction_type as 'boost' | 'sabotage') ?? 'boost');
-                if (p.boost_auction_winner !== undefined) setBoostAuctionWinner(p.boost_auction_winner ?? null);
+                if (p.boost_auction_winner !== undefined) {
+                  const rtWinner = p.boost_auction_winner ?? null;
+                  const rtWinnerKey = rtWinner ? `${rtWinner.name}:${rtWinner.type}` : null;
+                  if (rtWinnerKey !== dismissedBoostWinnerKey.current) setBoostAuctionWinner(rtWinner);
+                }
                 if (p.is_active === false) {
                   secureSessionIdRef.current = null; setSecureSessionId(null);
                 } else if (p.is_active && !secureSessionIdRef.current) {
@@ -193,13 +201,9 @@ export const useEventSession = () => {
     try {
       setIsSessionActive(active); // Optimistic update
       if (!active) {
-        // Closing the session: kill all open secure sessions.
-        // Non-blocking if sessions table doesn't exist yet.
-        try {
-          await gameService.closeAllOpenSessions();
-        } catch (e) {
-          console.warn("[EventSession] closeAllOpenSessions failed:", e);
-        }
+        // Only clear the local secure session reference — do NOT close the sessions table here.
+        // closeAllOpenSessions() would trigger useSessionGuard → GAME_OVER for all players,
+        // racing against the MISSION_REPORT navigation. Sessions table is cleaned on reset/new session.
         secureSessionIdRef.current = null; setSecureSessionId(null);
       }
       await gameService.setSessionStatus(active);
@@ -281,6 +285,13 @@ export const useEventSession = () => {
     await gameService.triggerCountdown(0); // sets countdown_ends_at to past
   };
 
+  const clearBoostAuctionWinner = useCallback(() => {
+    setBoostAuctionWinner(prev => {
+      if (prev) dismissedBoostWinnerKey.current = `${prev.name}:${prev.type}`;
+      return null;
+    });
+  }, []);
+
   return {
     isSessionActive, isLoading, setSessionActive, resetSession, createNewSession, checkSession,
     transitionEndsAt, nextBarName, triggerBarTransition, clearBarTransition,
@@ -350,10 +361,11 @@ export const useEventSession = () => {
     boostAuctionEndsAt,
     boostAuctionType,
     boostAuctionWinner,
-    clearBoostAuctionWinner: () => setBoostAuctionWinner(null),
+    clearBoostAuctionWinner,
     startBoostAuction: async (durationSecs?: number, type?: 'boost' | 'sabotage') => {
       const dur = durationSecs ?? 30;
       const t = type ?? 'boost';
+      dismissedBoostWinnerKey.current = null; // new auction = new winner to show
       setBoostAuctionEndsAt(Date.now() + dur * 1000);
       setBoostAuctionType(t);
       setBoostAuctionWinner(null);
