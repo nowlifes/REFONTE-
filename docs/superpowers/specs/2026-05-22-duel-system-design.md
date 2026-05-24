@@ -67,9 +67,6 @@ CREATE POLICY "players can read own duels"
 | "Pair ou impair — chacun cache des doigts, deviner la somme" | DUEL | fingers |
 | "Course aux verres — qui finit en premier" | DUEL | drink |
 | "Main chaude — poser les mains, esquiver" | DUEL | handslap |
-| "Miroir — copier les mouvements de l'autre pendant 30s" | DUEL | mirror |
-| "Swap identité — pendant 90s tu es l'autre" | DUEL | swap |
-| "Négociation impossible — 60s pour convaincre" | DUEL | nego |
 | "Pile ou Face — 3 manches avec une vraie pièce 🪙 Best of 3" | DUEL | coinflip |
 | "Pierre-Feuille-Ciseaux ✂️ Best of 3" | DUEL | pfc |
 | "La Barbichette 🧔 Celui qui rit perd" | DUEL | barbichette |
