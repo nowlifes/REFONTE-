@@ -1742,14 +1742,22 @@ async resetSession(): Promise<void> {
     witnessPlayerId: string
   ): Promise<string> {
     if (!supabase) throw new Error('No backend');
+    // Partial unique index (WHERE status = 'PENDING') can't be used as upsert conflict target.
+    // Delete any existing PENDING record first, then insert fresh.
+    await supabase
+      .from('master_validations')
+      .delete()
+      .eq('game_id', gameId)
+      .eq('cell_id', cellId)
+      .eq('status', 'PENDING');
     const { data, error } = await supabase
       .from('master_validations')
-      .upsert({
+      .insert({
         game_id: gameId, cell_id: cellId, challenge_text: challengeText,
         player_nickname: playerNickname, player_emoji: playerEmoji,
         session_id: sessionId, status: 'PENDING',
         witness_player_id: witnessPlayerId, witness_status: 'PENDING',
-      }, { onConflict: 'game_id,cell_id', ignoreDuplicates: false })
+      })
       .select('id')
       .single();
     if (error) throw error;
@@ -1942,6 +1950,143 @@ async resetSession(): Promise<void> {
       .update({ pseudo: prefix + newNickname, emoji: emojiChar })
       .eq('id', playerId);
     if (error) throw error;
+  }
+
+  // ─── DUEL (PVP challenges) ──────────────────────────────────────────────────
+
+  async requestDuel(
+    gameId: string,
+    cellId: number,
+    challengeText: string,
+    challengerPlayerId: string,
+    challengerNickname: string,
+    challengerEmoji: string,
+    opponentPlayerId: string,
+    opponentNickname: string,
+  ): Promise<string> {
+    if (!supabase) throw new Error('No backend');
+    const { data, error } = await supabase
+      .from('duel_requests')
+      .insert({
+        challenger_game_id:   gameId,
+        challenger_player_id: challengerPlayerId,
+        challenger_nickname:  challengerNickname,
+        challenger_emoji:     challengerEmoji,
+        opponent_player_id:   opponentPlayerId,
+        opponent_nickname:    opponentNickname,
+        cell_id:              cellId,
+        challenge_text:       challengeText,
+        status:               'PENDING',
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data.id as string;
+  }
+
+  async acceptDuel(duelId: string): Promise<void> {
+    if (!supabase) throw new Error('No backend');
+    const { error } = await supabase
+      .from('duel_requests')
+      .update({ status: 'ACCEPTED' })
+      .eq('id', duelId);
+    if (error) throw error;
+  }
+
+  async declineDuel(duelId: string): Promise<void> {
+    if (!supabase) throw new Error('No backend');
+    const { error } = await supabase
+      .from('duel_requests')
+      .update({ status: 'DECLINED', resolved_at: new Date().toISOString() })
+      .eq('id', duelId);
+    if (error) throw error;
+  }
+
+  async declareDuelResult(duelId: string, opponentWon: boolean): Promise<void> {
+    if (!supabase) throw new Error('No backend');
+    const { data: duel, error: fetchError } = await supabase
+      .from('duel_requests')
+      .select('*')
+      .eq('id', duelId)
+      .single();
+    if (fetchError || !duel) throw fetchError ?? new Error('Duel not found');
+
+    const newStatus = opponentWon ? 'OPPONENT_WON' : 'CHALLENGER_WON';
+    const { error: updateError } = await supabase
+      .from('duel_requests')
+      .update({ status: newStatus, resolved_at: new Date().toISOString() })
+      .eq('id', duelId);
+    if (updateError) throw updateError;
+
+    if (!opponentWon) {
+      await this.validateCell(
+        duel.challenger_game_id,
+        duel.cell_id,
+        { witnessName: duel.opponent_nickname, witnessSignature: 'duel-win' },
+        true,
+      );
+      await this.unlockBadge(duel.challenger_player_id, 'DUELISTE_WINNER', true);
+    } else {
+      await this.unlockBadge(duel.opponent_player_id, 'DUELISTE_WINNER', true);
+      const { data: opponentGame } = await supabase
+        .from('games')
+        .select('id')
+        .eq('player_id', duel.opponent_player_id)
+        .eq('status', 'ACTIVE')
+        .maybeSingle();
+      if (opponentGame) {
+        await this.awardBonusTaunt(opponentGame.id);
+      }
+    }
+  }
+
+  subscribeDuelRequests(
+    playerId: string,
+    onRequests: (requests: any[]) => void,
+  ): () => void {
+    if (!supabase) return () => {};
+    const refetch = async () => {
+      const { data } = await supabase!
+        .from('duel_requests')
+        .select('*')
+        .eq('opponent_player_id', playerId)
+        .in('status', ['PENDING', 'ACCEPTED'])
+        .order('created_at', { ascending: false });
+      onRequests(data ?? []);
+    };
+    refetch();
+    const channel = supabase
+      .channel(`duel_opponent_${playerId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'duel_requests',
+        filter: `opponent_player_id=eq.${playerId}`,
+      }, refetch)
+      .subscribe();
+    return () => { supabase!.removeChannel(channel); };
+  }
+
+  subscribeDuelStatus(
+    duelId: string,
+    onUpdate: (duel: any) => void,
+  ): () => void {
+    if (!supabase) return () => {};
+    const refetch = async () => {
+      const { data } = await supabase!
+        .from('duel_requests')
+        .select('*')
+        .eq('id', duelId)
+        .maybeSingle();
+      if (data) onUpdate(data);
+    };
+    refetch();
+    const channel = supabase
+      .channel(`duel_status_${duelId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'duel_requests',
+        filter: `id=eq.${duelId}`,
+      }, refetch)
+      .subscribe();
+    return () => { supabase!.removeChannel(channel); };
   }
 }
 
