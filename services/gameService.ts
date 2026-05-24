@@ -2025,16 +2025,17 @@ async resetSession(): Promise<void> {
         { witnessName: duel.opponent_nickname, witnessSignature: 'duel-win' },
         true,
       );
-      await this.unlockBadge(duel.challenger_player_id, 'DUELISTE_WINNER', true);
+      await this.unlockBadge(duel.challenger_player_id, 'DUEL_KING', true);
     } else {
-      await this.unlockBadge(duel.opponent_player_id, 'DUELISTE_WINNER', true);
+      await this.unlockBadge(duel.opponent_player_id, 'DUEL_KING', true);
       const { data: opponentGame } = await supabase
         .from('games')
-        .select('id')
+        .select('id, score')
         .eq('player_id', duel.opponent_player_id)
         .eq('status', 'ACTIVE')
         .maybeSingle();
       if (opponentGame) {
+        await supabase.from('games').update({ score: opponentGame.score + 1 }).eq('id', opponentGame.id);
         await this.awardBonusTaunt(opponentGame.id);
       }
     }

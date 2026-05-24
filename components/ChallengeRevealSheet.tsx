@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { X, HandMetal, Users, Crown, Zap, Star, Instagram } from 'lucide-react';
+import { X, HandMetal, Users, Crown, Zap, Star, Instagram, Crosshair } from 'lucide-react';
 import { BingoCellData, ChallengeType } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -35,6 +35,14 @@ const TYPE_CONFIG = {
     bg: 'bg-[#FFD700]',
     icon: <Crown className="w-5 h-5 text-black" strokeWidth={3} fill="currentColor" />,
     desc: { fr: 'Le Game Master valide.', en: 'Game Master validates.' },
+  },
+  [ChallengeType.PVP]: {
+    label: 'DUEL',
+    color: '#FF8C00',
+    textColor: 'text-white',
+    bg: 'bg-[#FF8C00]',
+    icon: <Crosshair className="w-5 h-5 text-white" strokeWidth={3} />,
+    desc: { fr: 'Choisis un adversaire et affronte-le.', en: 'Pick a rival and face off.' },
   },
 };
 
@@ -131,8 +139,17 @@ const ChallengeRevealSheet: React.FC<ChallengeRevealSheetProps> = ({ cell, onCon
             className="w-full font-impact text-xl uppercase py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center justify-center gap-3 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
             style={{ backgroundColor: cfg.color, color: cell.type === ChallengeType.WITNESS ? '#fff' : '#000' }}
           >
-            <Zap className="w-5 h-5" strokeWidth={3} fill="currentColor" />
-            {language === 'fr' ? 'Je relève ce défi' : "I'm taking this one"}
+            {cell.type === ChallengeType.PVP ? (
+              <>
+                <Crosshair className="w-5 h-5" strokeWidth={3} />
+                {language === 'fr' ? 'Choisir mon adversaire' : 'Pick my rival'}
+              </>
+            ) : (
+              <>
+                <Zap className="w-5 h-5" strokeWidth={3} fill="currentColor" />
+                {language === 'fr' ? 'Je relève ce défi' : "I'm taking this one"}
+              </>
+            )}
           </button>
 
           <button

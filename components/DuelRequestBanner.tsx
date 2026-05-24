@@ -9,11 +9,9 @@ interface Props {
 const DuelRequestBanner: React.FC<Props> = ({ playerId }) => {
   const [requests, setRequests] = useState<any[]>([]);
   const [phase, setPhase] = useState<'pick' | 'playing'>('pick');
-  const [resultReady, setResultReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const seenRef = useRef<Set<string>>(new Set());
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!playerId) return;
@@ -26,21 +24,14 @@ const DuelRequestBanner: React.FC<Props> = ({ playerId }) => {
         }
         if (r.status === 'ACCEPTED') {
           setPhase('playing');
-          if (timerRef.current) clearTimeout(timerRef.current);
-          timerRef.current = setTimeout(() => setResultReady(true), 5000);
         }
       });
     });
   }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
-
   const dismiss = (id: string) => {
     setDismissed(prev => new Set([...prev, id]));
     setPhase('pick');
-    setResultReady(false);
   };
 
   const visible = requests.filter(r => !dismissed.has(r.id) && r.status !== 'DECLINED');
@@ -74,7 +65,7 @@ const DuelRequestBanner: React.FC<Props> = ({ playerId }) => {
   };
 
   const handleResult = async (opponentWon: boolean) => {
-    if (busy || !resultReady) return;
+    if (busy) return;
     setBusy(true);
     try {
       await gameService.declareDuelResult(current.id, opponentWon);
@@ -167,17 +158,17 @@ const DuelRequestBanner: React.FC<Props> = ({ playerId }) => {
           <>
             <button
               onClick={() => handleResult(true)}
-              disabled={busy || !resultReady}
+              disabled={busy}
               className="w-full py-5 bg-[#00FF9D] text-black rounded-2xl font-impact uppercase text-xl border-[3px] border-black shadow-[5px_5px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-40 flex items-center justify-center gap-3"
             >
-              {!resultReady
-                ? <span className="font-impact text-black/60 text-sm tracking-wide">Attends la fin du duel…</span>
+              {busy
+                ? <span className="w-6 h-6 border-[3px] border-black/30 border-t-black rounded-full animate-spin" />
                 : '🏆 J\'ai gagné'
               }
             </button>
             <button
               onClick={() => handleResult(false)}
-              disabled={busy || !resultReady}
+              disabled={busy}
               className="w-full py-4 bg-white/5 border-[2px] border-white/15 text-white/50 rounded-2xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 active:bg-white/10 transition-all disabled:opacity-40"
             >
               💀 J&apos;ai perdu
