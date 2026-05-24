@@ -20,6 +20,8 @@ import TinyTargetOverlay from './TinyTargetOverlay';
 import BlobOverlay from './BlobOverlay';
 import FlashlightOverlay from './FlashlightOverlay';
 import WitnessRequestBanner from './WitnessRequestBanner';
+import DuelRequestBanner from './DuelRequestBanner';
+import DuelOpponentPicker from './DuelOpponentPicker';
 import BoostAuctionBanner from './BoostAuctionBanner';
 import BoostRevealOverlay from './BoostRevealOverlay';
 import EditProfileSheet from './EditProfileSheet';
@@ -59,6 +61,11 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
+  // Duel (PVP challenges)
+  const [duelPicker, setDuelPicker] = useState<{ cellId: number; challengeText: string } | null>(null);
+  const [activeDuelId, setActiveDuelId] = useState<string | null>(null);
+  const [duelResult, setDuelResult] = useState<'won' | 'lost' | 'declined' | null>(null);
+
   // Revenge challenge — active for 5 min after a PvP loss
   const REVANCHE_DURATION_MS = 5 * 60 * 1000;
   const [revancheExpiresAt, setRevancheExpiresAt] = useState<number | null>(null);
@@ -96,6 +103,23 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
   }, [revancheExpiresAt]);
+
+  // Duel status — côté challenger : écoute le résultat en realtime
+  useEffect(() => {
+    if (!activeDuelId) return;
+    return gameService.subscribeDuelStatus(activeDuelId, (duel) => {
+      if (duel.status === 'CHALLENGER_WON') {
+        setDuelResult('won');
+        setActiveDuelId(null);
+      } else if (duel.status === 'OPPONENT_WON') {
+        setDuelResult('lost');
+        setActiveDuelId(null);
+      } else if (duel.status === 'DECLINED') {
+        setDuelResult('declined');
+        setActiveDuelId(null);
+      }
+    });
+  }, [activeDuelId]);
 
   // Score count-up animation (#6)
   const [displayScore, setDisplayScore] = useState(s.score);
@@ -548,6 +572,63 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {s.gameSession && (
         <WitnessRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
       )}
+
+      {/* Duel banner — shown when another player challenges us to a PVP duel */}
+      {s.gameSession && (
+        <DuelRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
+      )}
+
+      {/* Duel opponent picker — shown when challenger taps a PVP cell */}
+      {duelPicker && s.gameSession && (
+        <DuelOpponentPicker
+          currentPlayerId={localStorage.getItem('bingo_user_id') || ''}
+          gameId={s.gameSession.id}
+          cellId={duelPicker.cellId}
+          challengeText={duelPicker.challengeText}
+          challengerNickname={s.nickname || 'Joueur'}
+          challengerEmoji={playerEmojiChar}
+          onDuelSent={(duelId: string) => {
+            setActiveDuelId(duelId);
+            setDuelPicker(null);
+          }}
+          onClose={() => setDuelPicker(null)}
+        />
+      )}
+
+      {/* Overlay résultat duel — côté challenger */}
+      {duelResult && (
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center"
+          style={{ background: 'rgba(10,22,41,0.95)' }}
+          onClick={() => setDuelResult(null)}
+        >
+          <div className="text-center px-8">
+            {duelResult === 'won' && (
+              <>
+                <p className="text-7xl mb-4">🏆</p>
+                <p className="font-impact uppercase text-[#00FF9D] text-4xl">Victoire !</p>
+                <p className="font-impact uppercase text-white/60 text-sm mt-2 tracking-widest">Cellule validée</p>
+              </>
+            )}
+            {duelResult === 'lost' && (
+              <>
+                <p className="text-7xl mb-4">💀</p>
+                <p className="font-impact uppercase text-[#FF2D6A] text-4xl">Défaite</p>
+                <p className="font-impact uppercase text-white/60 text-sm mt-2 tracking-widest">Retente avec quelqu'un d'autre</p>
+              </>
+            )}
+            {duelResult === 'declined' && (
+              <>
+                <p className="text-7xl mb-4">🫤</p>
+                <p className="font-impact uppercase text-white text-3xl">Refusé</p>
+                <p className="font-impact uppercase text-white/60 text-sm mt-2 tracking-widest">Essaie avec un autre joueur</p>
+              </>
+            )}
+            <p className="font-impact text-white/30 text-xs uppercase tracking-widest mt-6">Tap pour fermer</p>
+          </div>
+        </div>
+      )}
+
       {/* Boost auction — master triggered group vote to give a free taunt */}
       {boostAuctionEndsAt && boostAuctionEndsAt > Date.now() && s.user && secureSessionId && (
         <BoostAuctionBanner
@@ -983,6 +1064,13 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           cell={revealedCell}
           assignedPlayer={assignedPlayer}
           onConfirm={() => {
+            if (revealedCell.type === ChallengeType.PVP) {
+              setDuelPicker({ cellId: revealedCell.id, challengeText: revealedCell.text });
+              setRevealedCell(null);
+              setAssignedPlayer(null);
+              setAssignedPlayerId(null);
+              return;
+            }
             a.handleCellClick(revealedCell.id);
             setRevealedCell(null);
             setAssignedPlayer(null);
