@@ -337,15 +337,14 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
         setGameSession(prev => prev ? { ...prev, tauntsBonus: data.taunts_bonus } : prev);
       }
 
-      // Remote cell update (master validated a MASTER challenge for us) — reload grid
-      if (Array.isArray(data.validated_cells) && userIdRef.current) {
+      // Remote cell update (master validated a MASTER challenge for us)
+      // payload.new already has all columns (REPLICA IDENTITY FULL) — map directly, no extra round trip
+      if (Array.isArray(data.validated_cells) && data.grid_challenges) {
         try {
-          const updatedGame = await gameService.getActiveSession(userIdRef.current);
-          if (updatedGame) {
-            setCells(updatedGame.grid);
-            setGameSession(updatedGame);
-          }
-        } catch (e) { console.warn('[BingoGame] Failed to reload after remote validation', e); }
+          const updatedGame = gameService.mapDataToSession(data);
+          setCells(updatedGame.grid);
+          setGameSession(updatedGame);
+        } catch (e) { console.warn('[BingoGame] Failed to map remote validation', e); }
       }
     });
 

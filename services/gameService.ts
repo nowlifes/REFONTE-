@@ -667,45 +667,25 @@ class GameBackendService {
     }
 
     try {
-        const { data: game, error: fetchError } = await supabase
-        .from('games')
-        .select('id, validated_cells, status')
-        .eq('id', gameId)
-        .single();
+        // Single atomic round trip: RPC handles dedup + UPDATE + RETURNING in one query
+        const { data: rows, error: rpcError } = await supabase
+          .rpc('validate_cell_atomic', {
+            p_game_id: gameId,
+            p_cell_id: cellId,
+            p_proof: proofData ? JSON.parse(JSON.stringify(proofData)) : null,
+          });
 
-        if (fetchError || !game) throw new Error("Game not found");
-        if (game.status !== 'ACTIVE') throw Object.assign(new Error("Game is no longer active"), { code: 'GAME_INACTIVE' });
+        if (rpcError) throw rpcError;
 
-        const currentValidated = game.validated_cells || [];
-        if (currentValidated.find((v: any) => v.id === cellId)) {
-            const { data: fullGame } = await supabase.from('games').select('*').eq('id', gameId).single();
-            const session = this.mapDataToSession(fullGame);
-            localStorage.setItem('bingo_last_session', JSON.stringify(session)); // Update cache
-            return session;
+        // RPC returns empty if game not ACTIVE or already validated (idempotent)
+        if (!rows || rows.length === 0) {
+          // Game inactive or cell already validated — fallback to cache
+          const cached = localStorage.getItem('bingo_last_session');
+          if (cached) return JSON.parse(cached) as GameSession;
+          throw Object.assign(new Error("Game is no longer active or cell already validated"), { code: 'GAME_INACTIVE' });
         }
 
-        const newValidation = {
-            id: cellId,
-            timestamp: Date.now(),
-            proof: proofData || null
-        };
-
-        const newValidatedList = [...currentValidated, newValidation];
-        const newScore = newValidatedList.length;
-
-        const { data: updatedData, error: updateError } = await supabase
-        .from('games')
-        .update({
-            validated_cells: newValidatedList,
-            score: newScore
-        })
-        .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
-        .single();
-
-        if (updateError) throw updateError;
-        
-        const finalSession = this.mapDataToSession(updatedData);
+        const finalSession = this.mapDataToSession(rows[0]);
         localStorage.setItem('bingo_last_session', JSON.stringify(finalSession));
         return finalSession;
 
@@ -1297,7 +1277,7 @@ async resetSession(): Promise<void> {
     return () => { supabase.removeChannel(channel); clearInterval(interval); };
   }
 
-  private mapDataToSession(data: any): GameSession {
+  mapDataToSession(data: any): GameSession {
     const validatedMap = new Map<number, any>((data.validated_cells || []).map((v: any) => [v.id, v]));
     
     const grid: BingoCellData[] = (data.grid_challenges || []).map((c: any) => {
