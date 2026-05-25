@@ -25,9 +25,9 @@ dist-ssr
 .vercel
 
 # Claude Code + graphify (runtime state, not source)
-.claude/
+.claude/*
 !.claude/settings.json
-!.claude/hooks/
+!.claude/hooks
 !.claude/hooks/**
 graphify-out/
 
