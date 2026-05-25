@@ -134,6 +134,9 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
     }
   };
 
+  // Cleanup ref for the device-eviction subscription (created inside async initApp)
+  const unsubEvictRef = useRef<(() => void) | null>(null);
+
   // INITIALIZATION
   useEffect(() => {
     const initApp = async () => {
@@ -245,13 +248,14 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
             // re-triggers the device-conflict modal instead of wiping their profile.
             const unsubEvict = gameService.subscribePlayerDeviceChange(savedUserId, (newDeviceId) => {
               if (newDeviceId && newDeviceId !== myDeviceId) {
-                // Don't wipe user_id — let them reclaim on next load
                 localStorage.removeItem('bingo_last_session');
-                setDeviceEvicted(true); // Show eviction overlay before redirecting
+                setDeviceEvicted(true);
                 setView(AppView.NICKNAME);
-                unsubEvict();
+                unsubEvictRef.current?.();
+                unsubEvictRef.current = null;
               }
             });
+            unsubEvictRef.current = unsubEvict;
 
             // Resume Active Session
             const activeGame = await gameService.getActiveSession(savedUserId);
@@ -306,6 +310,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
       setIsLoading(false);
     };
     initApp();
+    return () => { unsubEvictRef.current?.(); };
   }, []);
 
   // Keep user/id ref so subscription callbacks can access current userId without stale closure
@@ -446,14 +451,18 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
         colors: ['#FFFFFF', '#FDE047', '#00FF9D', '#FF2D6A'],
       });
 
-      // +1 joker OR +1 taunt per new line (random, optimistic)
+      // +1 joker OR +1 taunt per new line (random, optimistic with rollback)
       const reward: 'joker' | 'taunt' = Math.random() < 0.5 ? 'joker' : 'taunt';
       if (reward === 'joker') {
         setJokers(prev => prev + newLines);
-        if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {});
+        if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {
+          setJokers(prev => Math.max(0, prev - newLines));
+        });
       } else {
         setGameSession(prev => prev ? { ...prev, tauntsBonus: (prev.tauntsBonus ?? 0) + newLines } : prev);
-        if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {});
+        if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {
+          setGameSession(prev => prev ? { ...prev, tauntsBonus: Math.max(0, (prev.tauntsBonus ?? 0) - newLines) } : prev);
+        });
       }
 
       // Trigger celebration banner in GamePage
