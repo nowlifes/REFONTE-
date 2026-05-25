@@ -11,6 +11,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useEventSession } from './hooks/useEventSession';
 import { useTutorial } from './hooks/useTutorial';
 import { gameService } from './services/gameService';
+import { authReady } from './lib/supabaseClient';
 
 import ShieldLogo from './components/ShieldLogo';
 import BackgroundParticles from './components/BackgroundParticles';
@@ -767,7 +768,20 @@ const PlayerApp: React.FC = () => {
 };
 
 // ─── Root App — BrowserRouter + Routes ───────────────────────────────────────
+// Auth gate: wait for anonymous JWT before mounting any component that creates
+// realtime subscriptions. Without this, postgres_changes filtered subs lag 35-45 s.
 const App: React.FC = () => {
+  const [authDone, setAuthDone] = useState(false);
+  useEffect(() => { authReady.then(() => setAuthDone(true)); }, []);
+
+  if (!authDone) {
+    return (
+      <div className="fixed inset-0 bg-[#0A1629] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#FFD700] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

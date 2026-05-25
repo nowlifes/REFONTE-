@@ -6,8 +6,13 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Anonymous auth session — gives realtime subscriptions a valid JWT
-// without this, postgres_changes filtered subs lag 30-45s
-supabase.auth.getSession().then(({ data: { session } }) => {
-  if (!session) supabase.auth.signInAnonymously();
-});
+// Resolves once a valid JWT exists (anonymous or real).
+// MUST be awaited before any realtime subscription is created —
+// subscriptions without a JWT lag 35-45 s on Supabase (postgres_changes filtered).
+export const authReady: Promise<void> = (async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) console.error('[Auth] signInAnonymously failed:', error);
+  }
+})();

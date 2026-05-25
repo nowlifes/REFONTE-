@@ -1812,16 +1812,20 @@ async resetSession(): Promise<void> {
   }
 
   /** Send an instant broadcast ping to a player-specific named channel.
-   *  The sender subscribes briefly, sends, then unsubscribes — no auth required. */
+   *  If subscribe doesn't complete within 4 s, we bail — the 5 s fallback poll covers it. */
   private pingPlayer(targetPlayerId: string, event: 'witness' | 'duel' | 'duel_result'): void {
     if (!supabase) return;
     const channelName = `${event}_inbox_${targetPlayerId}`;
     const ch = supabase.channel(channelName);
+    let done = false;
+    const cleanup = () => { done = true; setTimeout(() => supabase!.removeChannel(ch), 500); };
+    const bailout = setTimeout(() => {
+      if (!done) { done = true; supabase!.removeChannel(ch); }
+    }, 4000);
     ch.subscribe((status) => {
-      if (status !== 'SUBSCRIBED') return;
-      ch.send({ type: 'broadcast', event, payload: {} }).finally(() => {
-        setTimeout(() => supabase!.removeChannel(ch), 500);
-      });
+      if (status !== 'SUBSCRIBED' || done) return;
+      clearTimeout(bailout);
+      ch.send({ type: 'broadcast', event, payload: {} }).finally(cleanup);
     });
   }
 
@@ -1829,11 +1833,15 @@ async resetSession(): Promise<void> {
     if (!supabase) return () => {};
     const refetch = () => this.getMyWitnessRequests(playerId).then(onRequests);
     refetch();
-    // Dedicated channel per event type avoids topic collision with duel inbox
+    // Triple coverage: broadcast (instant) + postgres_changes (reliable) + poll (safety net)
     const ch = supabase.channel(`witness_inbox_${playerId}`)
       .on('broadcast', { event: 'witness' }, refetch)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'master_validations',
+        filter: `witness_player_id=eq.${playerId}`
+      }, refetch)
       .subscribe();
-    const interval = setInterval(refetch, 5000);
+    const interval = setInterval(refetch, 15000); // reduced from 5s — realtime covers it
     return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 
@@ -2060,11 +2068,15 @@ async resetSession(): Promise<void> {
       onRequests(data ?? []);
     };
     refetch();
-    // Dedicated duel inbox — instant notification, poll 5s as fallback
+    // Triple coverage: broadcast (instant) + postgres_changes (reliable) + poll (safety net)
     const ch = supabase.channel(`duel_inbox_${playerId}`)
       .on('broadcast', { event: 'duel' }, refetch)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'duel_requests',
+        filter: `opponent_player_id=eq.${playerId}`
+      }, refetch)
       .subscribe();
-    const interval = setInterval(refetch, 5000);
+    const interval = setInterval(refetch, 15000); // reduced from 5s
     return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 
@@ -2083,11 +2095,15 @@ async resetSession(): Promise<void> {
       if (data) onUpdate(data);
     };
     refetch();
-    // Challenger listens on their duel_result inbox for instant result notification
+    // Triple coverage: broadcast (instant) + postgres_changes (reliable) + poll (safety net)
     const ch = supabase.channel(`duel_result_inbox_${challengerPlayerId}`)
       .on('broadcast', { event: 'duel_result' }, refetch)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'duel_requests',
+        filter: `id=eq.${duelId}`
+      }, refetch)
       .subscribe();
-    const interval = setInterval(refetch, 5000);
+    const interval = setInterval(refetch, 15000); // reduced from 5s
     return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 }
