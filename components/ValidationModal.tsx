@@ -3,6 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Check, RefreshCw, ScanLine, Camera, Trash2, ChevronRight } from 'lucide-react';
 import { gameService } from '../services/gameService';
 import { BingoCellData, ChallengeType } from '../types';
+
+const TYPE_HINTS: Record<ChallengeType, { bg: string; text: 'black' | 'white'; fr: string; en: string }> = {
+  [ChallengeType.AUTO]:    { bg: '#00F5A0', text: 'black', fr: '🟢 Défi Solo — accomplis-le et appuie sur "J\'ai réussi" !', en: '🟢 Solo — do it, then tap "I Did It"!' },
+  [ChallengeType.WITNESS]: { bg: '#FF2D6A', text: 'white', fr: '👁️ Témoin — choisis un joueur qui t\'a vu le faire !',        en: '👁️ Witness — pick a player who saw you do it!' },
+  [ChallengeType.MASTER]:  { bg: '#FFD700', text: 'black', fr: '⭐ Master — montre ce défi au barman pour le valider !',       en: '⭐ Master — show this to the barman to validate!' },
+  [ChallengeType.PVP]:     { bg: '#FF8C00', text: 'black', fr: '⚔️ Duel — défie un adversaire, le perdant boit !',             en: '⚔️ Duel — challenge an opponent, loser drinks!' },
+};
 import MasterRunePad from './MasterRunePad';
 import { useLanguage } from '../contexts/LanguageContext';
 import Avatar from './Avatar';
@@ -40,7 +47,27 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
   assignedPlayerId, onPvpLost,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // Hint contextuel — s'affiche uniquement la 1ère fois que le joueur ouvre ce type de défi
+  const [showTypeHint, setShowTypeHint] = useState(() => {
+    try {
+      const seen: string[] = JSON.parse(localStorage.getItem('bingo_seen_types') || '[]');
+      return !seen.includes(cell.type);
+    } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (!showTypeHint) return;
+    try {
+      const seen: string[] = JSON.parse(localStorage.getItem('bingo_seen_types') || '[]');
+      if (!seen.includes(cell.type)) {
+        localStorage.setItem('bingo_seen_types', JSON.stringify([...seen, cell.type]));
+      }
+    } catch {}
+    const timer = setTimeout(() => setShowTypeHint(false), 4500);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const initialStep: ModalStep = cell.type === ChallengeType.MASTER ? 'MASTER_PAD'
     : cell.type === ChallengeType.PVP ? 'PVP_OUTCOME'
     : 'INFO';
@@ -230,8 +257,30 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[155] bg-black/90 flex items-end sm:items-center justify-center">
-      <div className="w-full max-w-sm sm:max-w-sm bg-[#0A1629] border-[3px] border-white/10 rounded-t-[2rem] sm:rounded-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.6)] sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250"
-        style={{ maxHeight: '88vh' }}>
+      <div
+        className="w-full max-w-sm sm:max-w-sm bg-[#0A1629] border-[3px] border-white/10 rounded-t-[2rem] sm:rounded-[2rem] shadow-[0_-8px_40px_rgba(0,0,0,0.6)] sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col relative animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250"
+        style={{ maxHeight: '88vh' }}
+      >
+        {/* ── Hint 1ère fois — type de défi ──────────────────────────────────── */}
+        {showTypeHint && (() => {
+          const hint = TYPE_HINTS[cell.type];
+          if (!hint) return null;
+          return (
+            <button
+              onClick={() => setShowTypeHint(false)}
+              className="absolute top-0 left-0 right-0 z-50 flex items-center gap-3 px-5 py-3 animate-in slide-in-from-top-2 duration-300"
+              style={{ background: hint.bg }}
+            >
+              <p
+                className="font-impact uppercase text-[12px] tracking-tight leading-tight flex-1 text-left"
+                style={{ color: hint.text }}
+              >
+                {language === 'fr' ? hint.fr : hint.en}
+              </p>
+              <X size={14} strokeWidth={3} style={{ color: hint.text, opacity: 0.5 }} className="shrink-0" />
+            </button>
+          );
+        })()}
 
         {step !== 'SUCCESS' && (
           <button

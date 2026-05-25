@@ -10,8 +10,8 @@ interface BarTransitionOverlayProps {
 }
 
 const MECHANIC_UNLOCK: Record<number, { fr: string; en: string; emoji: string }> = {
-  2: { emoji: '⚔️', fr: 'Les Duels PVP sont débloqués !', en: 'PVP Duels are now unlocked!' },
-  3: { emoji: '🌀', fr: 'Mode Chaos activé — tout est permis !', en: 'Chaos Mode ON — anything goes!' },
+  2: { emoji: '🔥', fr: '2ème bar — les défis deviennent plus fous !', en: '2nd bar — challenges get wilder!' },
+  3: { emoji: '🌀', fr: 'Mode Chaos — plus de limites !', en: 'Chaos Mode — no more limits!' },
 };
 
 const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName, language, currentBar, onDismiss }) => {
