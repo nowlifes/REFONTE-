@@ -126,8 +126,8 @@ export const useEventSession = () => {
               table: 'event_session'
             },
             (payload: any) => {
-              // Always do a full DB refetch — realtime UPDATE payloads are partial without REPLICA IDENTITY FULL.
-              // Apply what we have from payload optimistically, then confirm with checkSession.
+              // REPLICA IDENTITY FULL → payload.new contient toujours tous les champs.
+              // Mise à jour directe du state, pas de refetch nécessaire.
               if (payload.new && typeof payload.new === 'object') {
                 const p = payload.new;
                 if (p.is_active !== undefined) setIsSessionActive(!!p.is_active);
@@ -150,14 +150,13 @@ export const useEventSession = () => {
                   const rtWinnerKey = rtWinner ? `${rtWinner.name}:${rtWinner.type}` : null;
                   if (rtWinnerKey !== dismissedBoostWinnerKey.current) setBoostAuctionWinner(rtWinner);
                 }
+                // secureSessionId vient d'une table séparée → seul cas qui nécessite un fetch externe
                 if (p.is_active === false) {
                   secureSessionIdRef.current = null; setSecureSessionId(null);
                 } else if (p.is_active && !secureSessionIdRef.current) {
                   gameService.recoverSecureSessionId().then(id => { if (id) { secureSessionIdRef.current = id; setSecureSessionId(id); } });
                 }
               }
-              // Full refetch to catch any field missing from the partial payload
-              debouncedCheck();
             }
           )
           .subscribe((status) => {
