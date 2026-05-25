@@ -59,7 +59,7 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
         ))}
       </div>
 
-      <div className="relative z-10 flex flex-col items-center text-center px-8 gap-5">
+      <div className="relative z-10 flex flex-col items-center text-center px-8 gap-5 pb-[env(safe-area-inset-bottom,16px)]">
 
         {/* Countdown ring */}
         <div className="relative flex items-center justify-center">
@@ -82,8 +82,8 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
           <p className="font-impact text-white/70 uppercase text-[11px] tracking-[0.4em] mb-1">
             {language === 'fr' ? 'Prépare-toi !' : 'Get ready!'}
           </p>
-          <h1 className="font-impact text-white uppercase italic leading-none" style={{ fontSize: '52px', textShadow: '4px 4px 0px rgba(0,0,0,0.3)' }}>
-            {language === 'fr' ? 'ON CHANGE\nDE BAR !' : "MOVING TO\nNEXT BAR!"}
+          <h1 className="font-impact text-white uppercase italic leading-[1.05] whitespace-pre-line" style={{ fontSize: '52px', textShadow: '4px 4px 0px rgba(0,0,0,0.3)' }}>
+            {language === 'fr' ? 'ON CHANGE\nDE BAR !' : 'MOVING TO\nNEXT BAR!'}
           </h1>
         </div>
 

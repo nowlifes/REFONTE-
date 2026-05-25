@@ -185,22 +185,20 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-25 03:19 — branche : main_
+_Mis à jour : 2026-05-25 16:24 — branche : main_
 
 ### Derniers commits
-- b69da09 🐛 fix: 6 bugs post-test 2 téléphones
+- ba6032b ✨ feat: BarTransitionOverlay — auto-dismiss 15s countdown ring
 
 ### Fichiers récemment modifiés
-- components/BadgeNotification.tsx
-- components/BingoCell.tsx
-- components/BoostAuctionBanner.tsx
-- components/GamePage.tsx
-- components/TinyTargetOverlay.tsx
-- components/WitnessRequestBanner.tsx
+- components/BarTransitionOverlay.tsx
 
 ### Non commité
 ```
  M CLAUDE.md
+ M components/BarTransitionOverlay.tsx
+?? .agents/
 ?? .planning/
+?? skills-lock.json
 ```
 

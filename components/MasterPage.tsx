@@ -136,6 +136,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [renameValue, setRenameValue] = useState('');
   const [isSavingRename, setIsSavingRename] = useState(false);
   const [clearingDeviceId, setClearingDeviceId] = useState<string | null>(null);
+  const [resettingPlayerId, setResettingPlayerId] = useState<string | null>(null);
   const [recoveryQR, setRecoveryQR] = useState<{ playerId: string; token: string | null; loading: boolean } | null>(null);
 
   // Master validations
@@ -145,18 +146,18 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [witnessSelectedPlayer, setWitnessSelectedPlayer] = useState<Record<string, string>>({});
   const [sendingWitnessId, setSendingWitnessId] = useState<string | null>(null);
 
-  // Player count
+  // Player count — refetch on every INSERT/DELETE to avoid out-of-order drift
   const [playerCount, setPlayerCount] = useState(0);
   useEffect(() => {
     if (!secureSessionId) { setPlayerCount(0); return; }
-    supabase.from('players').select('id', { count: 'exact', head: true })
+    const fetchCount = () => supabase
+      .from('players').select('id', { count: 'exact', head: true })
       .eq('session_id', secureSessionId)
       .then(({ count }) => setPlayerCount(count ?? 0));
+    fetchCount();
     const ch = supabase.channel(`player_count_${secureSessionId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` },
-        () => setPlayerCount(prev => prev + 1))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` },
-        () => setPlayerCount(prev => Math.max(0, prev - 1)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` }, fetchCount)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` }, fetchCount)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [secureSessionId]);
@@ -278,6 +279,13 @@ const MasterPage: React.FC<MasterPageProps> = ({
     try { await gameService.clearDeviceLock(pid); setPlayersList(prev => prev.map(p => p.id === pid ? { ...p, deviceId: null } : p)); }
     catch (e) { console.error(e); alert('Erreur lors du déverrouillage. Vérifiez votre connexion.'); }
     finally { setClearingDeviceId(null); }
+  };
+
+  const handleResetPlayerGame = async (pid: string) => {
+    setResettingPlayerId(pid);
+    try { await gameService.resetPlayerGame(pid); }
+    catch (e) { console.error(e); alert('Erreur reset joueur. Vérifiez votre connexion.'); }
+    finally { setResettingPlayerId(null); }
   };
   const handleReset = async () => {
     setIsResetting(true);
@@ -974,9 +982,9 @@ const MasterPage: React.FC<MasterPageProps> = ({
                                 <span className="font-impact uppercase text-[8px]">Device</span>
                               </button>
                             )}
-                            <button onClick={async () => { await gameService.resetPlayerGame(player.id); }}
-                              className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#FF8C00]/60 hover:text-[#FF8C00] hover:bg-[#FF8C00]/5 transition-all border-r-2 border-black/5">
-                              <RefreshCw size={11} strokeWidth={2.5} />
+                            <button onClick={() => handleResetPlayerGame(player.id)} disabled={resettingPlayerId === player.id}
+                              className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#FF8C00]/60 hover:text-[#FF8C00] hover:bg-[#FF8C00]/5 transition-all border-r-2 border-black/5 disabled:opacity-40">
+                              {resettingPlayerId === player.id ? <span className="w-2.5 h-2.5 border border-[#FF8C00]/30 border-t-[#FF8C00] rounded-full animate-spin" /> : <RefreshCw size={11} strokeWidth={2.5} />}
                               <span className="font-impact uppercase text-[8px]">Reset</span>
                             </button>
                             <button onClick={() => setKickConfirmId(player.id)} className="flex-1 py-1.5 flex items-center justify-center gap-1 text-[#FF2D6A]/60 hover:text-[#FF2D6A] hover:bg-[#FF2D6A]/5 transition-all">
