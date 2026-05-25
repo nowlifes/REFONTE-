@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 interface BarTransitionOverlayProps {
@@ -14,16 +14,36 @@ const MECHANIC_UNLOCK: Record<number, { fr: string; en: string; emoji: string }>
   3: { emoji: '🌀', fr: 'Mode Chaos — plus de limites !', en: 'Chaos Mode — no more limits!' },
 };
 
+const AUTO_DISMISS_SECS = 15;
+const CIRCUMFERENCE = 2 * Math.PI * 28; // r=28
+
 const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName, language, currentBar, onDismiss }) => {
   const mechanic = currentBar != null ? MECHANIC_UNLOCK[currentBar] : undefined;
+  const [secsLeft, setSecsLeft] = useState(AUTO_DISMISS_SECS);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   useEffect(() => {
     if (navigator.vibrate) navigator.vibrate([100, 80, 100, 80, 300]);
   }, []);
 
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setSecsLeft(prev => {
+        if (prev <= 1) { clearInterval(iv); onDismissRef.current(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const progress = secsLeft / AUTO_DISMISS_SECS;
+  const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#FF2D6A] animate-in fade-in duration-400">
 
-      {/* Animated background dots — kept to 8 for performance on weak phones */}
+      {/* Animated background dots */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
@@ -39,22 +59,40 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
         ))}
       </div>
 
-      <div className="relative z-10 flex flex-col items-center text-center px-8 gap-6">
+      <div className="relative z-10 flex flex-col items-center text-center px-8 gap-5">
 
-        {/* Icon */}
-        <div className="w-24 h-24 bg-white border-[4px] border-black rounded-[24px] shadow-[8px_8px_0px_black] flex items-center justify-center animate-bounce">
-          <span className="text-5xl">🚶</span>
+        {/* Countdown ring */}
+        <div className="relative flex items-center justify-center">
+          <svg width="72" height="72" className="-rotate-90">
+            <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="5" />
+            <circle
+              cx="36" cy="36" r="28" fill="none"
+              stroke="white" strokeWidth="5"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.9s linear' }}
+            />
+          </svg>
+          <span className="absolute font-impact text-white text-2xl">{secsLeft}</span>
         </div>
 
         {/* Title */}
         <div>
-          <p className="font-impact text-white/60 uppercase text-[11px] tracking-[0.4em] mb-1">
-            {language === 'fr' ? 'Temps écoulé' : "Time's up"}
+          <p className="font-impact text-white/70 uppercase text-[11px] tracking-[0.4em] mb-1">
+            {language === 'fr' ? 'Prépare-toi !' : 'Get ready!'}
           </p>
-          <h1 className="font-impact text-white uppercase italic leading-none" style={{ fontSize: '56px', textShadow: '4px 4px 0px rgba(0,0,0,0.3)' }}>
-            {language === 'fr' ? 'ON BOUGE !' : "LET'S MOVE!"}
+          <h1 className="font-impact text-white uppercase italic leading-none" style={{ fontSize: '52px', textShadow: '4px 4px 0px rgba(0,0,0,0.3)' }}>
+            {language === 'fr' ? 'ON CHANGE\nDE BAR !' : "MOVING TO\nNEXT BAR!"}
           </h1>
         </div>
+
+        {/* Instruction */}
+        <p className="font-impact text-white/70 uppercase text-[12px] tracking-wide leading-tight max-w-[260px]">
+          {language === 'fr'
+            ? 'Rejoins le groupe — le jeu continue au prochain bar !'
+            : 'Join the group — the game continues at the next bar!'}
+        </p>
 
         {/* Next bar */}
         {nextBarName && (
@@ -82,9 +120,9 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
         {/* CTA */}
         <button
           onClick={onDismiss}
-          className="mt-2 bg-white text-[#FF2D6A] font-impact uppercase text-xl px-8 py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center gap-3 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+          className="mt-1 bg-white text-[#FF2D6A] font-impact uppercase text-xl px-8 py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center gap-3 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
         >
-          {language === 'fr' ? "J'y vais !" : "I'm moving!"}
+          {language === 'fr' ? "C'est parti !" : "Let's go!"}
           <ArrowRight className="w-5 h-5" strokeWidth={3} />
         </button>
 
