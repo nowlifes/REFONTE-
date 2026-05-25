@@ -185,22 +185,22 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-24 18:57 — branche : main_
+_Mis à jour : 2026-05-25 03:19 — branche : main_
 
 ### Derniers commits
-- 0b84f60 refactor: renommer bar → manche dans toute l'UI visible
+- b69da09 🐛 fix: 6 bugs post-test 2 téléphones
 
 ### Fichiers récemment modifiés
+- components/BadgeNotification.tsx
+- components/BingoCell.tsx
+- components/BoostAuctionBanner.tsx
 - components/GamePage.tsx
-- components/MasterPage.tsx
-- translations.ts
+- components/TinyTargetOverlay.tsx
+- components/WitnessRequestBanner.tsx
 
 ### Non commité
 ```
  M CLAUDE.md
- M components/LobbyPage.tsx
- M components/PreGamePage.tsx
- M components/SessionStartOverlay.tsx
 ?? .planning/
 ```
 

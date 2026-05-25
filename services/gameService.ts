@@ -489,7 +489,7 @@ class GameBackendService {
   async startGame(userId: string, challenges: any[]): Promise<GameSession> {
     if (!supabase) throw new Error("Backend not configured");
 
-    // Row 0 (bar 1 intro): exactly 1 MASTER + 4 non-MASTER, no "story" challenge
+    // Row 0 (bar 1 intro): 1 MASTER + 1 WITNESS + 1 PVP + 2 AUTO — tous les types visibles dès le départ
     // "Story" challenge (id=2) is reserved for bar 2 (rows 1+)
     const STORY_ID = 2;
     const masterPool = shuffleArray(challenges.filter((c: any) => c.is_partner && c.id !== STORY_ID));
@@ -499,9 +499,18 @@ class GameBackendService {
 
     // 1 MASTER for row 0 (prefer partner master, fallback to extra master)
     const row0Master = masterPool.length > 0 ? masterPool[0] : extraMasterPool[0];
-    // 4 non-MASTER for row 0 (AUTO, WITNESS, PVP)
-    const row0Others = nonMasterPool.slice(0, 4);
-    const row0 = shuffleArray([row0Master, ...row0Others].filter(Boolean));
+
+    // Garantir 1 WITNESS + 1 PVP + 2 AUTO dans la row 0 pour que les joueurs voient tous les types
+    const witnessPool = shuffleArray(nonMasterPool.filter((c: any) => c.type === 'WITNESS'));
+    const pvpPool = shuffleArray(nonMasterPool.filter((c: any) => c.type === 'PVP'));
+    const fallbackPool = shuffleArray(nonMasterPool.filter((c: any) => c.type !== 'WITNESS' && c.type !== 'PVP' && c.type !== 'AUTO'));
+
+    const row0Witness = witnessPool[0] ?? fallbackPool.shift() ?? nonMasterPool[0];
+    const row0PVP = pvpPool[0] ?? fallbackPool.shift() ?? nonMasterPool[1];
+    const usedInRow0 = new Set([row0Witness?.id, row0PVP?.id, row0Master?.id].filter(Boolean));
+    const autoFill = shuffleArray(nonMasterPool.filter((c: any) => !usedInRow0.has(c.id))).slice(0, 2);
+
+    const row0 = shuffleArray([row0Master, row0Witness, row0PVP, ...autoFill].filter(Boolean));
 
     // Fill row0 to 5 cells if not enough unique challenges (cycle through pool)
     if (row0.length < 5) {
