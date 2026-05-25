@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Check, RefreshCw, ScanLine, Camera, Trash2, ChevronRight } from 'lucide-react';
+import { X, Check, RefreshCw, ScanLine, Camera, Trash2, ChevronRight, Search, Zap } from 'lucide-react';
 import { gameService } from '../services/gameService';
 import { BingoCellData, ChallengeType } from '../types';
 
@@ -82,6 +82,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     if (step !== 'WITNESS_SENT' || !gameId) return;
     const unsub = gameService.subscribeWitnessResult(gameId, cell.id, (status) => {
       if (status === 'CONFIRMED') {
+        if (selectedWitnessId) incrementFavorite(selectedWitnessId);
         onConfirm({ witnessName: '', witnessSignature: 'digital-confirmed' });
         onClose();
       } else {
@@ -123,7 +124,23 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   const [isLoadingWitnesses, setIsLoadingWitnesses] = useState(false);
   const [sendingWitnessTo, setSendingWitnessTo] = useState<string | null>(null);
   const [selectedWitnessName, setSelectedWitnessName] = useState('');
+  const [selectedWitnessId, setSelectedWitnessId] = useState<string | null>(null);
   const [witnessRequestError, setWitnessRequestError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Favorites — { [playerId]: count } — incremented only on CONFIRMED
+  const loadFavorites = (): Record<string, number> => {
+    try { return JSON.parse(localStorage.getItem('witness_favorites') || '{}'); } catch { return {}; }
+  };
+  const [favorites, setFavorites] = useState<Record<string, number>>(loadFavorites);
+
+  const incrementFavorite = (playerId: string) => {
+    setFavorites(prev => {
+      const next = { ...prev, [playerId]: (prev[playerId] || 0) + 1 };
+      try { localStorage.setItem('witness_favorites', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   // Précharge la liste dès l'ouverture de la modal (silencieux, sans spinner)
   useEffect(() => {
@@ -157,6 +174,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     if (!onRequestPlayerWitness || sendingWitnessTo) return;
     setSendingWitnessTo(witnessId);
     setSelectedWitnessName(witnessName);
+    setSelectedWitnessId(witnessId);
     setWitnessRequestError(null);
     try {
       await onRequestPlayerWitness(witnessId);
@@ -518,6 +536,28 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
               </p>
             </div>
 
+            {/* Search bar */}
+            {!isLoadingWitnesses && witnessPlayers.length > 0 && (
+              <div className="shrink-0 px-4 pt-3 pb-1">
+                <div className="flex items-center gap-2 bg-white/8 border-[2px] border-white/15 rounded-xl px-3 py-2.5 focus-within:border-[#FF8C00]/60 transition-colors">
+                  <Search size={14} strokeWidth={2.5} className="text-white/30 shrink-0" />
+                  <input
+                    type="text"
+                    inputMode="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder={t('search_player')}
+                    className="flex-1 bg-transparent font-impact uppercase text-[14px] tracking-wide text-white placeholder:text-white/25 outline-none min-w-0"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="shrink-0 text-white/30 active:text-white/60">
+                      <X size={14} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Player list */}
             <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 no-scrollbar">
               {isLoadingWitnesses ? (
@@ -533,18 +573,41 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                     {t('use_manual_validation')}
                   </p>
                 </div>
-              ) : (
-                witnessPlayers.map(p => (
+              ) : (() => {
+                const q = searchQuery.toLowerCase().trim();
+                const filtered = q
+                  ? witnessPlayers.filter(p => p.pseudo.toLowerCase().includes(q))
+                  : witnessPlayers;
+
+                const withFav = filtered.filter(p => (favorites[p.id] || 0) > 0)
+                  .sort((a, b) => (favorites[b.id] || 0) - (favorites[a.id] || 0));
+                const rest = filtered.filter(p => !(favorites[p.id] || 0))
+                  .sort((a, b) => a.pseudo.localeCompare(b.pseudo));
+
+                if (filtered.length === 0) return (
+                  <div className="text-center py-8">
+                    <p className="font-impact text-white/30 uppercase text-[11px] tracking-widest">Aucun résultat</p>
+                    <p className="font-impact text-white/20 uppercase text-[9px] tracking-widest mt-1">Essaie un autre nom</p>
+                  </div>
+                );
+
+                const renderPlayer = (p: { id: string; pseudo: string; emoji: string }, isFav: boolean) => (
                   <button
                     key={p.id}
                     onClick={() => handleSelectWitness(p.id, p.pseudo)}
                     disabled={sendingWitnessTo !== null}
-                    className="flex items-center gap-4 px-4 py-4 bg-white/5 border-[2px] border-white/10 rounded-2xl active:bg-[#FF8C00]/15 active:border-[#FF8C00]/60 hover:border-[#FF8C00]/40 hover:bg-[#FF8C00]/5 transition-all disabled:opacity-50 group min-h-[64px]"
+                    className={`flex items-center gap-4 px-4 py-4 border-[2px] rounded-2xl active:bg-[#FF8C00]/15 active:border-[#FF8C00]/60 hover:border-[#FF8C00]/40 hover:bg-[#FF8C00]/5 transition-all disabled:opacity-50 group min-h-[64px] ${isFav ? 'bg-[#FF8C00]/8 border-[#FF8C00]/25' : 'bg-white/5 border-white/10'}`}
                   >
                     <span className="text-3xl leading-none shrink-0 w-10 text-center">{p.emoji}</span>
                     <span className="font-impact text-white uppercase text-[17px] tracking-tight flex-1 text-left truncate leading-none">
                       {p.pseudo}
                     </span>
+                    {isFav && (
+                      <div className="flex items-center gap-1 shrink-0 mr-1">
+                        <Zap size={12} strokeWidth={3} className="text-[#FF8C00]" fill="#FF8C00" />
+                        <span className="font-impact text-[#FF8C00] text-[10px] tracking-widest">{favorites[p.id]}</span>
+                      </div>
+                    )}
                     {sendingWitnessTo === p.id ? (
                       <span className="w-6 h-6 border-2 border-[#FF8C00]/30 border-t-[#FF8C00] rounded-full animate-spin shrink-0" />
                     ) : (
@@ -553,8 +616,24 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
                       </div>
                     )}
                   </button>
-                ))
-              )}
+                );
+
+                return (
+                  <>
+                    {withFav.length > 0 && !q && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap size={10} strokeWidth={3} className="text-[#FF8C00]" fill="#FF8C00" />
+                        <span className="font-impact text-[#FF8C00]/70 uppercase text-[9px] tracking-widest">Habituels</span>
+                      </div>
+                    )}
+                    {withFav.map(p => renderPlayer(p, true))}
+                    {withFav.length > 0 && rest.length > 0 && !q && (
+                      <div className="h-px bg-white/8 my-1" />
+                    )}
+                    {rest.map(p => renderPlayer(p, false))}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Fallback to physical signature */}
