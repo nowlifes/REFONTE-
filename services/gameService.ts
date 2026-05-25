@@ -1800,7 +1800,6 @@ async resetSession(): Promise<void> {
   async confirmWitness(validation: any): Promise<void> {
     if (!supabase) return;
     const now = new Date().toISOString();
-    // Look up actual witness name instead of hardcoding 'Master'
     let witnessName = 'Témoin';
     if (validation.witness_player_id) {
       const { data: wp } = await supabase.from('players').select('pseudo').eq('id', validation.witness_player_id).maybeSingle();
@@ -1809,7 +1808,13 @@ async resetSession(): Promise<void> {
         witnessName = m ? m[1] : wp.pseudo;
       }
     }
-    await this.validateCell(validation.game_id, validation.cell_id, { witnessName, witnessSignature: 'digital-confirmed' }, true);
+    // Call the RPC directly — do NOT use this.validateCell() which would corrupt the
+    // witness's own localStorage with the requester's game session.
+    await supabase.rpc('validate_cell_atomic', {
+      p_game_id: validation.game_id,
+      p_cell_id: validation.cell_id,
+      p_proof: { witnessName, witnessSignature: 'digital-confirmed' },
+    });
     await supabase.from('master_validations')
       .update({ status: 'APPROVED', witness_status: 'CONFIRMED', resolved_at: now })
       .eq('id', validation.id);
