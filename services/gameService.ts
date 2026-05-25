@@ -1854,6 +1854,7 @@ async resetSession(): Promise<void> {
         onResult(data.witness_status as 'CONFIRMED' | 'REJECTED');
       }
     };
+    check(); // immediate check — handles case where witness confirmed before subscribe
     const ch = supabase
       .channel(`witness_result_${gameId}_${cellId}`)
       .on('postgres_changes', {
