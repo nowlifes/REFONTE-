@@ -97,11 +97,12 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
       {/* ── Bouton fermer (sans rejeter) ─────────────────────────────── */}
       <button
         onClick={() => addDismissed(current.id)}
-        className="absolute right-4 z-10 w-11 h-11 flex items-center justify-center bg-black/50 border-[2px] border-white/30 rounded-xl active:bg-black/70 transition-all"
+        className="absolute right-4 z-10 flex items-center gap-1.5 px-3 h-10 bg-white border-[2px] border-black rounded-xl shadow-[3px_3px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
         style={{ top: 'max(16px, env(safe-area-inset-top, 0px) + 8px)' }}
         aria-label="Ignorer pour l'instant"
       >
-        <X size={20} strokeWidth={2.5} className="text-white" />
+        <X size={16} strokeWidth={2.5} className="text-black" />
+        <span className="font-impact uppercase text-[10px] tracking-widest text-black">Ignorer</span>
       </button>
 
       {/* ── Toast erreur confirmation ─────────────────────────────────── */}

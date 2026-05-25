@@ -1913,7 +1913,7 @@ async resetSession(): Promise<void> {
         filter: `witness_player_id=eq.${playerId}`
       }, refetch)
       .subscribe();
-    const interval = setInterval(refetch, 15000); // reduced from 5s — realtime covers it
+    const interval = setInterval(refetch, 3000); // aggressive poll — Safari blocks postgres_changes WebSocket
     return () => { supabase!.removeChannel(ch); clearInterval(interval); };
   }
 

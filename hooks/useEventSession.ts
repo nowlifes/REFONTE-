@@ -106,7 +106,7 @@ export const useEventSession = () => {
 
   const restartPoll = useCallback(() => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    const interval = isRealtimeConnected.current ? 15_000 : 8_000;
+    const interval = isRealtimeConnected.current ? 3_000 : 3_000; // 3s Safari fix — postgres_changes silent on Safari
     pollIntervalRef.current = setInterval(() => checkSession(), interval);
   }, [checkSession]);
 

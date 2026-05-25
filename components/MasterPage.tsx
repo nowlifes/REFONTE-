@@ -559,7 +559,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                           </p>
                         </div>
                         <button
-                          onClick={async () => { if (secureSessionId) { await gameService.closeBoostAuction(secureSessionId); } }}
+                          onClick={async () => { await closeBoostAuction?.(); }}
                           className="px-3 py-2 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                         >
                           ✓ Confirmer
