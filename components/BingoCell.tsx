@@ -35,6 +35,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     switch (type) {
       case ChallengeType.MASTER:  return 'bg-[#FFD700] text-black';
       case ChallengeType.WITNESS: return 'bg-[#FF2D6A] text-white';
+      case ChallengeType.PVP:     return 'bg-[#FF8C00] text-black';
       default:                    return 'bg-[#00F5A0] text-black';
     }
   }, [isLocked, type]);
@@ -64,6 +65,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
     const auraColor =
       type === ChallengeType.MASTER  ? '#FFD700' :
       type === ChallengeType.WITNESS ? '#FF2D6A' :
+      type === ChallengeType.PVP     ? '#FF8C00' :
                                        '#00F5A0';
     const borderOpacity = type === ChallengeType.WITNESS ? '30' : '25';
     return (

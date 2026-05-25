@@ -31,6 +31,7 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
   const [myVote, setMyVote] = useState<string | null>(null);
   const [isVoting, setIsVoting] = useState<string | null>(null);
   const [voteError, setVoteError] = useState(false);
+  const [voteSuccess, setVoteSuccess] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const expiredFired = useRef(false);
 
@@ -74,6 +75,8 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
     try {
       await gameService.castBoostVote(sessionId, currentPlayerId, candidateId);
       navigator.vibrate?.(15);
+      setVoteSuccess(true);
+      setTimeout(() => setVoteSuccess(false), 2000);
     } catch (e) {
       console.error('[Boost] castBoostVote failed', e);
       setMyVote(null);
@@ -92,6 +95,15 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
 
   return (
     <div className="fixed inset-0 z-[250] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+      {/* Vote success toast */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[300] transition-all duration-300 pointer-events-none ${voteSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+        <div className="bg-[#00F5A0] border-[3px] border-black rounded-2xl px-5 py-3 shadow-[6px_6px_0px_black] flex items-center gap-2 whitespace-nowrap">
+          <span className="font-impact text-black uppercase text-sm tracking-tight">
+            ✓ {language === 'fr' ? 'Vote enregistré !' : 'Vote registered!'}
+          </span>
+        </div>
+      </div>
 
       {/* Vote error toast */}
       <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[300] transition-all duration-300 pointer-events-none ${voteError ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
@@ -143,8 +155,15 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
         className="shrink-0 bg-[#0A1629] border-t-[3px] border-black px-5 pt-4 flex flex-col gap-2.5 overflow-y-auto"
         style={{ paddingBottom: 'max(28px, env(safe-area-inset-bottom, 0px) + 16px)', maxHeight: '55vh' }}
       >
-        {players.length === 0 && (
-          <p className="text-center text-white/30 font-impact uppercase text-[11px] tracking-widest py-4">Chargement des joueurs...</p>
+        {players.length === 0 && !sessionId && (
+          <p className="text-center text-[#FF2D6A]/70 font-impact uppercase text-[11px] tracking-widest py-4">
+            {language === 'fr' ? 'Session introuvable — rescanner le QR' : 'Session not found — rescan the QR'}
+          </p>
+        )}
+        {players.length === 0 && sessionId && (
+          <p className="text-center text-white/30 font-impact uppercase text-[11px] tracking-widest py-4">
+            {language === 'fr' ? 'Chargement des joueurs...' : 'Loading players...'}
+          </p>
         )}
 
         {players.map(player => {

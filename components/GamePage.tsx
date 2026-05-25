@@ -591,6 +591,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           onDuelSent={(duelId: string) => {
             setActiveDuelId(duelId);
             setDuelPicker(null);
+            setRevealedCell(null);
+            setAssignedPlayer(null);
+            setAssignedPlayerId(null);
           }}
           onClose={() => setDuelPicker(null)}
         />

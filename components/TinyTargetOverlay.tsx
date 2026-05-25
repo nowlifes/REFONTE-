@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface TinyTargetOverlayProps {
@@ -6,22 +6,34 @@ interface TinyTargetOverlayProps {
   onCaught: () => void;
 }
 
-const BUTTON_SIZE = 52;   // légèrement plus grand qu'avant
-const FLEE_DISTANCE = 90; // fuit moins loin — moins frustrant
-
-const CATCHES_NEEDED = 3;
+const BUTTON_SIZE = 44;
+const FLEE_DISTANCE = 140; // fuit loin
+const CATCHES_NEEDED = 4;
 
 const TinyTargetOverlay: React.FC<TinyTargetOverlayProps> = ({ secondsLeft, onCaught }) => {
   const { language } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [pos, setPos] = useState({ x: 0.5, y: 0.5 });
+  // Position stockée en ref pour éviter les stale closures
+  const posRef = useRef({ x: 0.5, y: 0.5 });
+  // Force re-render après chaque déplacement
+  const [, forceRender] = useState(0);
   const [catches, setCatches] = useState(0);
+
+  const teleportRandom = useCallback(() => {
+    posRef.current = {
+      x: 0.1 + Math.random() * 0.8,
+      y: 0.1 + Math.random() * 0.75,
+    };
+    forceRender(n => n + 1);
+  }, []);
 
   const flee = useCallback((touchX: number, touchY: number) => {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const pos = posRef.current; // lit toujours la valeur fraîche
+
     const cx = pos.x * rect.width;
     const cy = pos.y * rect.height;
 
@@ -31,32 +43,46 @@ const TinyTargetOverlay: React.FC<TinyTargetOverlayProps> = ({ secondsLeft, onCa
     const nx = dx / dist;
     const ny = dy / dist;
 
-    const newX = Math.min(Math.max((cx + nx * FLEE_DISTANCE) / rect.width, 0.05), 0.95);
-    const newY = Math.min(Math.max((cy + ny * FLEE_DISTANCE) / rect.height, 0.1), 0.9);
-    setPos({ x: newX, y: newY });
-  }, [pos]);
+    // Si le doigt est proche, téléportation aléatoire pour éviter l'encerclement
+    if (dist < 80) {
+      teleportRandom();
+      return;
+    }
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    flee(e.clientX, e.clientY);
+    const newX = Math.min(Math.max((cx + nx * FLEE_DISTANCE) / rect.width, 0.05), 0.95);
+    const newY = Math.min(Math.max((cy + ny * FLEE_DISTANCE) / rect.height, 0.08), 0.92);
+    posRef.current = { x: newX, y: newY };
+    forceRender(n => n + 1);
+  }, [teleportRandom]);
+
+  // Enregistrement impératif du pointermove sur le container
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onMove = (e: PointerEvent) => {
+      e.preventDefault();
+      flee(e.clientX, e.clientY);
+    };
+    el.addEventListener('pointermove', onMove, { passive: false });
+    return () => el.removeEventListener('pointermove', onMove);
   }, [flee]);
 
   const handleCatch = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
     if (navigator.vibrate) navigator.vibrate([30, 20, 60]);
-    const next = catches + 1;
-    setCatches(next);
-    if (next >= CATCHES_NEEDED) {
-      onCaught();
-    } else {
-      setPos({
-        x: 0.15 + Math.random() * 0.7,
-        y: 0.15 + Math.random() * 0.65,
-      });
-    }
-  }, [catches, onCaught]);
+    setCatches(prev => {
+      const next = prev + 1;
+      if (next >= CATCHES_NEEDED) {
+        onCaught();
+      } else {
+        teleportRandom();
+      }
+      return next;
+    });
+  }, [onCaught, teleportRandom]);
 
-  // Urgence selon le timer
   const urgent = secondsLeft <= 10;
+  const pos = posRef.current;
 
   return (
     <div className="fixed inset-0 z-[150] bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200 flex flex-col">
@@ -86,26 +112,26 @@ const TinyTargetOverlay: React.FC<TinyTargetOverlayProps> = ({ secondsLeft, onCa
       {/* Play area */}
       <div
         ref={containerRef}
-        className="flex-1 relative"
-        onPointerMove={handlePointerMove}
+        className="flex-1 relative touch-none"
+        style={{ touchAction: 'none' }}
       >
         <button
           onPointerDown={handleCatch}
-          className="absolute bg-[#FFD700] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] flex items-center justify-center transition-all duration-200 active:scale-90"
+          className="absolute bg-[#FFD700] border-[3px] border-black rounded-2xl shadow-[4px_4px_0px_black] flex items-center justify-center transition-all duration-150 active:scale-90"
           style={{
             width: BUTTON_SIZE,
             height: BUTTON_SIZE,
             left: `calc(${pos.x * 100}% - ${BUTTON_SIZE / 2}px)`,
             top: `calc(${pos.y * 100}% - ${BUTTON_SIZE / 2}px)`,
             touchAction: 'none',
-            fontSize: 22,
+            fontSize: 18,
           }}
         >
           ⚡
         </button>
       </div>
 
-      {/* Timer — GROS et visible */}
+      {/* Timer */}
       <div className="pb-10 flex flex-col items-center gap-1 pointer-events-none">
         <span className={`font-impact text-6xl italic leading-none transition-colors duration-300 ${urgent ? 'text-[#FF2E63] animate-pulse' : 'text-white'}`}>
           {secondsLeft}

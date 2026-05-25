@@ -31,7 +31,7 @@ const BadgeNotification: React.FC<BadgeNotificationProps> = ({ badge, onClose })
   const titleKey = `badge_title_${badge.badge_type}` as any;
 
   return (
-    <div className={`fixed inset-0 z-[200] flex items-center justify-center p-6 transition-all duration-500 ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className={`fixed inset-0 z-[500] flex items-center justify-center p-6 transition-all duration-500 ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="absolute inset-0 bg-black/85" onClick={onClose}></div>
       
       <div className={`relative w-full max-w-sm bg-[#FFD700] border-[5px] border-black rounded-3xl p-8 shadow-[10px_10px_0px_black] transform transition-all duration-500 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-20'}`}>

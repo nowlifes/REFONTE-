@@ -76,6 +76,16 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
       className="fixed inset-0 z-[300] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300"
       style={{ background: '#0A1629' }}
     >
+      {/* ── Bouton fermer (sans rejeter) ─────────────────────────────── */}
+      <button
+        onClick={() => setDismissed(prev => new Set([...prev, current.id]))}
+        className="absolute top-safe right-4 z-10 w-10 h-10 flex items-center justify-center bg-black/30 border-[2px] border-black/40 rounded-xl active:bg-black/50 transition-all"
+        style={{ top: 'max(16px, env(safe-area-inset-top, 0px) + 8px)' }}
+        aria-label="Ignorer pour l'instant"
+      >
+        <X size={18} strokeWidth={2.5} className="text-black/60" />
+      </button>
+
       {/* ── Top zone — orange, player + challenge ────────────────────── */}
       <div
         className="flex-1 flex flex-col justify-end px-6 pb-8 pt-safe"
