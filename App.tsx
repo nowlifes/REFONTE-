@@ -616,6 +616,7 @@ const PlayerApp: React.FC = () => {
           <BarTransitionOverlay
             nextBarName={nextBarName}
             language={language as 'fr' | 'en'}
+            currentBar={currentBar}
             onDismiss={async () => {
               setShowTransitionOverlay(false);
               await clearBarTransition();

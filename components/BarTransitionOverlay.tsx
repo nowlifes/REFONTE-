@@ -5,10 +5,17 @@ import { MapPin, ArrowRight } from 'lucide-react';
 interface BarTransitionOverlayProps {
   nextBarName: string | null;
   language: 'fr' | 'en';
+  currentBar?: number;
   onDismiss: () => void;
 }
 
-const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName, language, onDismiss }) => {
+const MECHANIC_UNLOCK: Record<number, { fr: string; en: string; emoji: string }> = {
+  2: { emoji: '⚔️', fr: 'Les Duels PVP sont débloqués !', en: 'PVP Duels are now unlocked!' },
+  3: { emoji: '🌀', fr: 'Mode Chaos activé — tout est permis !', en: 'Chaos Mode ON — anything goes!' },
+};
+
+const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName, language, currentBar, onDismiss }) => {
+  const mechanic = currentBar != null ? MECHANIC_UNLOCK[currentBar] : undefined;
   useEffect(() => {
     if (navigator.vibrate) navigator.vibrate([100, 80, 100, 80, 300]);
   }, []);
@@ -59,6 +66,16 @@ const BarTransitionOverlay: React.FC<BarTransitionOverlayProps> = ({ nextBarName
               </span>
               <span className="font-impact text-black uppercase text-xl tracking-tight mt-0.5">{nextBarName}</span>
             </div>
+          </div>
+        )}
+
+        {/* New mechanic unlock */}
+        {mechanic && (
+          <div className="bg-black border-[3px] border-white/20 rounded-2xl px-5 py-3 shadow-[5px_5px_0px_rgba(0,0,0,0.4)] flex items-center gap-3 max-w-[280px]">
+            <span className="text-2xl shrink-0">{mechanic.emoji}</span>
+            <p className="font-impact text-white uppercase text-[13px] tracking-tight leading-tight text-left">
+              {language === 'fr' ? mechanic.fr : mechanic.en}
+            </p>
           </div>
         )}
 

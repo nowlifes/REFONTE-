@@ -106,7 +106,7 @@ export const useEventSession = () => {
 
   const restartPoll = useCallback(() => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    const interval = isRealtimeConnected.current ? 30_000 : 8_000;
+    const interval = isRealtimeConnected.current ? 15_000 : 8_000;
     pollIntervalRef.current = setInterval(() => checkSession(), interval);
   }, [checkSession]);
 
@@ -180,13 +180,22 @@ export const useEventSession = () => {
         document.addEventListener('visibilitychange', handleVisibility);
         window.addEventListener('online', handleOnline);
 
-        // 5. Fallback polling — 8 s when realtime is down, 30 s when connected
+        // 5. Fallback polling — 8 s when realtime is down, 15 s when connected
         restartPoll();
+
+        // 6. Broadcast channel — master pings instantly after bar advance / chaos / pause
+        //    Complements postgres_changes: catches the rare case where realtime drops the DB event
+        const broadcastCh = supabase.channel('game_master_events')
+          .on('broadcast', { event: 'bar_advance' }, debouncedCheck)
+          .on('broadcast', { event: 'chaos_mode' }, debouncedCheck)
+          .on('broadcast', { event: 'pause' }, debouncedCheck)
+          .subscribe();
 
         return () => {
           if (checkDebounceRef.current) clearTimeout(checkDebounceRef.current);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           supabase.removeChannel(subscription);
+          supabase.removeChannel(broadcastCh);
           document.removeEventListener('visibilitychange', handleVisibility);
           window.removeEventListener('online', handleOnline);
         };

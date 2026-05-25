@@ -258,6 +258,7 @@ class GameBackendService {
       supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE'),
     ]);
     if (error) throw error;
+    this.broadcastMasterEvent('bar_advance');
   }
 
   async clearBarTransition(): Promise<void> {
@@ -1637,6 +1638,7 @@ async resetSession(): Promise<void> {
       supabase.from('event_session').update({ current_bar: newBar }).eq('id', latest.id),
       supabase.from('games').update({ validations_this_bar: 0, lines_this_bar: 0 }).eq('status', 'ACTIVE'),
     ]);
+    this.broadcastMasterEvent('bar_advance');
   }
 
   async setCurrentBar(bar: number): Promise<void> {
@@ -1658,6 +1660,7 @@ async resetSession(): Promise<void> {
     const sessionId = await this.getSessionId();
     if (!sessionId) return;
     await supabase.from('event_session').update({ chaos_mode: chaos }).eq('id', sessionId);
+    this.broadcastMasterEvent('chaos_mode');
   }
 
   async setMaxValidationsPerBar(max: number): Promise<void> {
@@ -1818,6 +1821,23 @@ async resetSession(): Promise<void> {
       .from('master_validations')
       .update({ witness_status: 'REJECTED', resolved_at: new Date().toISOString() })
       .eq('id', validationId);
+  }
+
+  /** Broadcast a master event to all connected players instantly.
+   *  Complements postgres_changes — catches missed realtime events on the rare case Supabase drops them. */
+  private broadcastMasterEvent(event: 'bar_advance' | 'chaos_mode' | 'pause'): void {
+    if (!supabase) return;
+    const ch = supabase.channel('game_master_events');
+    let done = false;
+    const bailout = setTimeout(() => { done = true; supabase!.removeChannel(ch); }, 4000);
+    ch.subscribe((status) => {
+      if (status !== 'SUBSCRIBED' || done) return;
+      clearTimeout(bailout);
+      ch.send({ type: 'broadcast', event, payload: {} }).finally(() => {
+        done = true;
+        setTimeout(() => supabase!.removeChannel(ch), 500);
+      });
+    });
   }
 
   /** Send an instant broadcast ping to a player-specific named channel.
