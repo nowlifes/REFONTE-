@@ -63,6 +63,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [assignedPlayerId, setAssignedPlayerId] = useState<string | null>(null);
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
 
   // Duel (PVP challenges)
   const [duelPicker, setDuelPicker] = useState<{ cellId: number; challengeText: string } | null>(null);
@@ -971,6 +972,19 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
           })}
         </div>
 
+        {/* Legend chip — tap to see challenge type key */}
+        <button
+          onClick={() => setShowLegend(true)}
+          className="mt-3 flex items-center gap-1.5 bg-white/6 border border-white/12 rounded-full px-3 py-1.5 active:bg-white/12 transition-all"
+        >
+          <span className="text-[9px] font-impact uppercase tracking-widest text-white/35">{language === 'fr' ? 'Types de défis' : 'Challenge types'}</span>
+          <div className="flex items-center gap-[3px]">
+            {(['#00F5A0','#FF2D6A','#FFD700','#FF8C00'] as const).map(c => (
+              <div key={c} className="w-2.5 h-2.5 rounded-full border border-black/30" style={{ background: c }} />
+            ))}
+          </div>
+        </button>
+
       </main>
 
       {/* CADENCE COOLDOWN badge + anti-spam gamified message */}
@@ -1072,6 +1086,42 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {/* MODALS */}
       {ui.showLegends && <LegendsModal onClose={() => uia.setShowLegends(false)} />}
       {ui.showBadge && <NFTBadgeModal nickname={s.nickname} score={s.score} badges={s.badges} onClose={() => uia.setShowBadge(false)} />}
+
+      {/* Legend sheet — challenge type key */}
+      {showLegend && (
+        <div
+          className="fixed inset-0 z-[180] bg-black/70 flex items-end justify-center animate-in fade-in duration-200"
+          onClick={() => setShowLegend(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-[#0A1629] border-t-[3px] border-white/10 rounded-t-[2rem] p-5 pb-8 animate-in slide-in-from-bottom-4 duration-250"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+            <p className="font-impact uppercase text-[11px] tracking-[0.3em] text-white/40 text-center mb-4">
+              {language === 'fr' ? 'Types de défis' : 'Challenge types'}
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {([
+                { bg: '#00F5A0', text: 'black' as const, icon: '✅', labelFr: 'SOLO',    labelEn: 'SOLO',    descFr: 'Fais-le, tape "J\'ai réussi"',   descEn: 'Do it, tap "I Did It"' },
+                { bg: '#FF2D6A', text: 'white' as const, icon: '👁️', labelFr: 'TÉMOIN',  labelEn: 'WITNESS', descFr: 'Passe le phone à quelqu\'un pour signer', descEn: 'Hand your phone to someone to sign' },
+                { bg: '#FFD700', text: 'black' as const, icon: '⭐', labelFr: 'MASTER',  labelEn: 'MASTER',  descFr: 'Montre au boss de soirée',        descEn: 'Show the game master' },
+                { bg: '#FF8C00', text: 'black' as const, icon: '⚔️', labelFr: 'DUEL',    labelEn: 'DUEL',    descFr: 'Défie un adversaire, le perdant boit', descEn: 'Challenge someone, loser drinks' },
+              ]).map(type => (
+                <div key={type.labelEn} className="flex items-center gap-3 rounded-xl border-[2px] border-black px-3 py-2.5 shadow-[3px_3px_0px_black]" style={{ background: type.bg }}>
+                  <span className="text-xl leading-none shrink-0">{type.icon}</span>
+                  <span className="font-impact uppercase text-[14px] tracking-tight leading-none shrink-0 w-[72px]" style={{ color: type.text }}>
+                    {language === 'fr' ? type.labelFr : type.labelEn}
+                  </span>
+                  <span className="font-impact uppercase text-[10px] tracking-wide leading-snug flex-1" style={{ color: type.text === 'black' ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)' }}>
+                    {language === 'fr' ? type.descFr : type.descEn}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Challenge reveal sheet — tap to discover before validating */}
       {revealedCell && !s.selectedCell && s.activeScannerMode !== 'MASTER' && (

@@ -185,18 +185,18 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-25 16:24 — branche : main_
+_Mis à jour : 2026-05-25 20:37 — branche : main_
 
 ### Derniers commits
-- ba6032b ✨ feat: BarTransitionOverlay — auto-dismiss 15s countdown ring
+- 7db4063 ✨ feat: witness picker — search + système de favoris
 
 ### Fichiers récemment modifiés
-- components/BarTransitionOverlay.tsx
+- components/ValidationModal.tsx
+- translations.ts
 
 ### Non commité
 ```
  M CLAUDE.md
- M components/BarTransitionOverlay.tsx
 ?? .agents/
 ?? .planning/
 ?? skills-lock.json
