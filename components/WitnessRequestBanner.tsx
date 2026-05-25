@@ -15,8 +15,22 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState(false);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  // Persist dismissed IDs in sessionStorage so banner doesn't re-appear after component remount
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const stored = sessionStorage.getItem('witness_dismissed');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const seenIdsRef = useRef<Set<string>>(new Set());
+
+  const addDismissed = (id: string) => {
+    setDismissed(prev => {
+      const next = new Set([...prev, id]);
+      try { sessionStorage.setItem('witness_dismissed', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
   const sounds = useGameSounds();
   const notifications = useGameNotifications();
   const { t } = useLanguage();
@@ -51,7 +65,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
     setConfirmError(false);
     try {
       await gameService.confirmWitness(req);
-      setDismissed(prev => new Set([...prev, id]));
+      addDismissed(id);
     } catch (e) {
       console.error('[Witness] confirmWitness failed', e);
       setConfirmError(true);
@@ -67,7 +81,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
     setRejectingId(id);
     try {
       await gameService.rejectWitness(id);
-      setDismissed(prev => new Set([...prev, id]));
+      addDismissed(id);
     } catch (e) {
       console.error(e);
     } finally {
@@ -82,7 +96,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
     >
       {/* ── Bouton fermer (sans rejeter) ─────────────────────────────── */}
       <button
-        onClick={() => setDismissed(prev => new Set([...prev, current.id]))}
+        onClick={() => addDismissed(current.id)}
         className="absolute right-4 z-10 w-11 h-11 flex items-center justify-center bg-black/50 border-[2px] border-white/30 rounded-xl active:bg-black/70 transition-all"
         style={{ top: 'max(16px, env(safe-area-inset-top, 0px) + 8px)' }}
         aria-label="Ignorer pour l'instant"

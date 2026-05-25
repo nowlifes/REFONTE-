@@ -1146,6 +1146,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 a.setSelectedCell(null);
                 setRevancheExpiresAt(Date.now() + REVANCHE_DURATION_MS);
               } : undefined}
+              gameId={s.gameSession?.id}
           />
         </div>
       )}

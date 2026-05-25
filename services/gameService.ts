@@ -1823,6 +1823,43 @@ async resetSession(): Promise<void> {
       .eq('id', validationId);
   }
 
+  /** Subscribe to witness result for the requester side.
+   *  Fires callback when witness_status becomes CONFIRMED or REJECTED.
+   *  Returns unsubscribe function. */
+  subscribeWitnessResult(
+    gameId: string,
+    cellId: number,
+    onResult: (status: 'CONFIRMED' | 'REJECTED') => void
+  ): () => void {
+    if (!supabase) return () => {};
+    let fired = false;
+    const check = async () => {
+      if (fired) return;
+      const { data } = await supabase!
+        .from('master_validations')
+        .select('witness_status')
+        .eq('game_id', gameId)
+        .eq('cell_id', cellId)
+        .in('witness_status', ['CONFIRMED', 'REJECTED'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.witness_status === 'CONFIRMED' || data?.witness_status === 'REJECTED') {
+        fired = true;
+        onResult(data.witness_status as 'CONFIRMED' | 'REJECTED');
+      }
+    };
+    const ch = supabase
+      .channel(`witness_result_${gameId}_${cellId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'master_validations',
+        filter: `game_id=eq.${gameId}`,
+      }, check)
+      .subscribe();
+    const interval = setInterval(check, 5000);
+    return () => { supabase!.removeChannel(ch); clearInterval(interval); fired = true; };
+  }
+
   /** Broadcast a master event to all connected players instantly.
    *  Complements postgres_changes — catches missed realtime events on the rare case Supabase drops them. */
   private broadcastMasterEvent(event: 'bar_advance' | 'chaos_mode' | 'pause'): void {

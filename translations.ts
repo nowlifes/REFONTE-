@@ -272,6 +272,8 @@ export const TRANSLATIONS = {
     witness_confirm_question: "Did you see this person do this challenge?",
     witness_confirm_yes: "Yes, I confirm!",
     witness_confirm_no: "Nope, didn't see that",
+    witness_rejected: "Witness declined",
+    choose_another_witness: "Pick someone else who saw you.",
 
     // GamePage — separators & progress
     wave_challenges: "{n} challenges to complete",
@@ -581,6 +583,8 @@ export const TRANSLATIONS = {
     witness_confirm_question: "Tu as vu cette personne accomplir ce défi ?",
     witness_confirm_yes: "Oui, je confirme !",
     witness_confirm_no: "Non, je n'ai pas vu ça",
+    witness_rejected: "Témoin refusé",
+    choose_another_witness: "Choisis quelqu'un d'autre qui t'a vu.",
 
     // GamePage — separators & progress
     wave_challenges: "{n} défis à compléter",

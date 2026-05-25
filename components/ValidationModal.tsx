@@ -37,6 +37,8 @@ interface ValidationModalProps {
   assignedPlayerId?: string;
   /** Called when the current player declares defeat; opponent gets the victory rewards */
   onPvpLost?: (opponentId: string) => void;
+  /** Player's game record ID — needed to subscribe to witness confirmation */
+  gameId?: string;
 }
 
 type ModalStep = 'INFO' | 'WITNESS_MODE' | 'PLAYER_WITNESS_SELECT' | 'WITNESS_SENT' | 'MASTER_PAD' | 'MASTER_SENT' | 'SUCCESS' | 'PVP_OUTCOME' | 'FORTUNE';
@@ -45,7 +47,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
   cell, jokerCount, onClose, onConfirm, onUseJoker, onScanRequest,
   playerNickname, playerAvatarId,
   sessionId, currentPlayerId, onRequestPlayerWitness, onFortuneWon,
-  assignedPlayerId, onPvpLost,
+  assignedPlayerId, onPvpLost, gameId,
 }) => {
   const { t, language } = useLanguage();
 
@@ -72,6 +74,26 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
     : cell.type === ChallengeType.PVP ? 'PVP_OUTCOME'
     : 'INFO';
   const [step, setStep] = useState<ModalStep>(initialStep);
+
+  const [witnessRejected, setWitnessRejected] = useState(false);
+
+  // When waiting for witness confirmation, subscribe and auto-close on result.
+  useEffect(() => {
+    if (step !== 'WITNESS_SENT' || !gameId) return;
+    const unsub = gameService.subscribeWitnessResult(gameId, cell.id, (status) => {
+      if (status === 'CONFIRMED') {
+        onConfirm({ witnessName: '', witnessSignature: 'digital-confirmed' });
+        onClose();
+      } else {
+        setWitnessRejected(true);
+        setTimeout(() => {
+          setWitnessRejected(false);
+          setStep('PLAYER_WITNESS_SELECT');
+        }, 2500);
+      }
+    });
+    return unsub;
+  }, [step, gameId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [witnessName, setWitnessName] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -559,31 +581,35 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
         {/* ─── WITNESS SENT ─── */}
         {step === 'WITNESS_SENT' && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center"
-            style={{ background: 'linear-gradient(180deg, #FF8C00 0%, #FF6A00 60%, #0A1629 100%)' }}>
+            style={{ background: witnessRejected
+              ? 'linear-gradient(180deg, #FF2D6A 0%, #C0145A 60%, #0A1629 100%)'
+              : 'linear-gradient(180deg, #FF8C00 0%, #FF6A00 60%, #0A1629 100%)' }}>
             {/* Pulsing eye */}
             <div className="relative mb-8">
               <div className="absolute inset-0 rounded-full bg-black/20 animate-ping scale-125" />
               <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center shadow-[6px_6px_0px_rgba(0,0,0,0.35)] relative">
-                <span className="text-4xl">👁️</span>
+                <span className="text-4xl">{witnessRejected ? '❌' : '👁️'}</span>
               </div>
             </div>
 
             <h2 className="font-impact text-3xl text-black uppercase tracking-tighter italic leading-none mb-2">
-              {t('request_sent')}
+              {witnessRejected ? t('witness_rejected') : t('request_sent')}
             </h2>
             <p className="font-impact text-black/60 uppercase text-[11px] tracking-widest mb-2">
               {selectedWitnessName}
             </p>
             <p className="font-impact text-black/50 uppercase text-[10px] tracking-widest mb-10 leading-loose max-w-[220px]">
-              {t('must_confirm_phone')}
+              {witnessRejected ? t('choose_another_witness') : t('must_confirm_phone')}
             </p>
 
-            <div className="flex gap-2 mb-10">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="w-2.5 h-2.5 rounded-full bg-black/30 animate-pulse"
-                  style={{ animationDelay: `${i * 0.2}s` }} />
-              ))}
-            </div>
+            {!witnessRejected && (
+              <div className="flex gap-2 mb-10">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="w-2.5 h-2.5 rounded-full bg-black/30 animate-pulse"
+                    style={{ animationDelay: `${i * 0.2}s` }} />
+                ))}
+              </div>
+            )}
 
             <button
               onClick={onClose}
