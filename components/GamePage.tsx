@@ -52,6 +52,9 @@ interface GamePageProps {
 }
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt, boostAuctionType = 'boost', boostAuctionWinner, onBoostAuctionWinnerDone }) => {
+  // Read once at render — avoids 3+ synchronous localStorage hits per render cycle
+  const myPlayerId: string = s.user?.id || localStorage.getItem('bingo_user_id') || '';
+
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
   const [freezeSecondsLeft, setFreezeSecondsLeft] = useState(0);
@@ -107,7 +110,6 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   // Duel status — côté challenger : écoute le résultat en realtime
   useEffect(() => {
     if (!activeDuelId) return;
-    const myPlayerId = localStorage.getItem('bingo_user_id') || '';
     return gameService.subscribeDuelStatus(activeDuelId, myPlayerId, (duel) => {
       if (duel.status === 'CHALLENGER_WON') {
         setDuelResult('won');
@@ -122,7 +124,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     });
   }, [activeDuelId]);
 
-  // Score count-up animation (#6)
+  // Score count-up/down animation
   const [displayScore, setDisplayScore] = useState(s.score);
   const scoreAnimRef = useRef(s.score);
   useEffect(() => {
@@ -131,9 +133,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     let current = scoreAnimRef.current;
     scoreAnimRef.current = target;
     const step = () => {
-      current = Math.min(current + 1, target);
+      current = target > current ? Math.min(current + 1, target) : Math.max(current - 1, target);
       setDisplayScore(current);
-      if (current < target) requestAnimationFrame(step);
+      if (current !== target) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }, [s.score]);
@@ -571,18 +573,18 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       <NetworkStatus />
       {/* Witness request banner — shown when another player designated us as witness */}
       {s.gameSession && (
-        <WitnessRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
+        <WitnessRequestBanner playerId={myPlayerId} />
       )}
 
       {/* Duel banner — shown when another player challenges us to a PVP duel */}
       {s.gameSession && (
-        <DuelRequestBanner playerId={localStorage.getItem('bingo_user_id') || ''} />
+        <DuelRequestBanner playerId={myPlayerId} />
       )}
 
       {/* Duel opponent picker — shown when challenger taps a PVP cell */}
       {duelPicker && s.gameSession && (
         <DuelOpponentPicker
-          currentPlayerId={localStorage.getItem('bingo_user_id') || ''}
+          currentPlayerId={myPlayerId}
           gameId={s.gameSession.id}
           cellId={duelPicker.cellId}
           challengeText={duelPicker.challengeText}
