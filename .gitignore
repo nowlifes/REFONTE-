@@ -26,6 +26,9 @@ dist-ssr
 
 # Claude Code + graphify (runtime state, not source)
 .claude/
+!.claude/settings.json
+!.claude/hooks/
+!.claude/hooks/**
 graphify-out/
 
 # Development artifacts (AI Studio, QA reports, dev notes)
