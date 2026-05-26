@@ -384,7 +384,13 @@ const PlayerApp: React.FC = () => {
 
   // --- KICK LOGIC & START ANIMATION ---
   useEffect(() => {
-    if (isSessionLoading) return;
+    if (isSessionLoading) {
+      // Track session state during loading so prevSessionActive is accurate when loading ends.
+      // QR scan: loads with isSessionActive=true → prevSessionActive=true → no transition later.
+      // Phone open before session: loads with isSessionActive=false → prevSessionActive=false → transition fires when session opens.
+      prevSessionActive.current = isSessionActive;
+      return;
+    }
 
     if (import.meta.env.DEV) console.log(`[SessionEffect] Active: ${isSessionActive}, Prev: ${prevSessionActive.current}, View: ${s.view}`);
 
@@ -400,9 +406,10 @@ const PlayerApp: React.FC = () => {
     }
 
     // 2. START ANIMATION LOGIC
-    // Only fire when session transitions closed→open while app is already loaded.
-    // Fresh page loads (QR scan, reload) must NOT trigger the intro.
-    const sessionTransitioned = !prevSessionActive.current && isSessionActive && !isFirstLoad.current;
+    // prevSessionActive is now tracked during loading, so QR scan (loads with active session)
+    // sets prevSessionActive=true → sessionTransitioned=false → no intro.
+    // Phone open before session: prevSessionActive=false → sessionTransitioned=true → intro ✓
+    const sessionTransitioned = !prevSessionActive.current && isSessionActive;
     const hasSeenIntro = !!sessionStorage.getItem('bingo_intro_seen');
 
     if (sessionTransitioned && !hasSeenIntro) {
