@@ -1491,13 +1491,13 @@ async resetSession(): Promise<void> {
     }
 
     // Fallback: session_id not yet set (linkPlayerToSession race at startup).
-    // Find players who have ANY game record created in the last 24h.
+    // Find players who joined in the last 24h and have ANY game (started_at is the timestamp column).
     if (!players || players.length === 0) {
       const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: recentGames } = await supabase
         .from('games')
         .select('player_id')
-        .gt('created_at', cutoff);
+        .gt('started_at', cutoff);
       if (recentGames && recentGames.length > 0) {
         const ids = [...new Set(recentGames.map((g: any) => g.player_id as string))];
         const { data: fallback } = await supabase
