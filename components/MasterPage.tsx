@@ -981,8 +981,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
                               setRecoveryQR({ playerId: player.id, token: null, loading: true });
                               try { const token = await gameService.generateRecoveryToken(player.id); setRecoveryQR({ playerId: player.id, token, loading: false }); }
                               catch { setRecoveryQR(null); }
-                            }} className="w-9 h-9 bg-black/5 border-[2px] border-black/10 rounded-lg flex items-center justify-center active:scale-90 shrink-0">
-                              <QrCode size={11} className="text-black/30" strokeWidth={2.5} />
+                            }} className="w-9 h-9 bg-[#FFD700] border-[2px] border-black rounded-lg flex items-center justify-center active:scale-90 shrink-0 shadow-[2px_2px_0px_black] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all" title="QR récupération">
+                              <QrCode size={13} className="text-black" strokeWidth={2.5} />
                             </button>
                           </>
                         )}
@@ -1026,26 +1026,26 @@ const MasterPage: React.FC<MasterPageProps> = ({
         </div>
       )}
 
-      {/* RECOVERY QR */}
+      {/* RECOVERY QR — fullscreen so player can scan from a distance */}
       {recoveryQR && (
-        <div className="fixed inset-0 z-[210] bg-black/85 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-white border-[4px] border-black rounded-3xl p-6 w-full max-w-xs shadow-[8px_8px_0px_black] flex flex-col items-center gap-5 relative">
-            <button onClick={() => setRecoveryQR(null)} className="absolute top-4 right-4 w-9 h-9 bg-black/5 border-[2px] border-black/10 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
-              <X size={18} strokeWidth={2.5} className="text-black/40" />
-            </button>
-            <div className="text-center">
-              <h3 className="font-impact uppercase text-[#FFD700] text-[15px] tracking-wide" style={{ WebkitTextStroke: '1px black' }}>QR de récupération</h3>
-              <p className="text-black/40 text-[10px] font-impact uppercase tracking-widest">{playersList.find(p => p.id === recoveryQR.playerId)?.pseudo ?? '...'}</p>
+        <div className="fixed inset-0 z-[210] bg-[#0A1629] flex flex-col items-center justify-center p-8 animate-in fade-in duration-200">
+          <button onClick={() => setRecoveryQR(null)} className="absolute top-6 right-6 w-12 h-12 bg-white/10 border-[2px] border-white/20 rounded-full flex items-center justify-center text-white active:scale-90 transition-all">
+            <X size={22} strokeWidth={2.5} />
+          </button>
+          <p className="font-impact text-white/30 uppercase text-[10px] tracking-[0.4em] mb-3">QR RÉCUPÉRATION</p>
+          <p className="font-impact text-[#FFD700] uppercase text-2xl tracking-tight mb-6" style={{ WebkitTextStroke: '1px black' }}>
+            {playersList.find(p => p.id === recoveryQR.playerId)?.emoji} {playersList.find(p => p.id === recoveryQR.playerId)?.pseudo ?? '...'}
+          </p>
+          {recoveryQR.loading ? (
+            <div className="w-[240px] h-[240px] flex items-center justify-center bg-white rounded-3xl border-[6px] border-[#FFD700]" style={{ boxShadow: '10px 10px 0px black' }}>
+              <Loader2 size={40} className="text-black/20 animate-spin" />
             </div>
-            {recoveryQR.loading ? (
-              <div className="w-[200px] h-[200px] flex items-center justify-center"><Loader2 size={32} className="text-black/20 animate-spin" /></div>
-            ) : recoveryQR.token ? (
-              <div className="bg-white p-4 rounded-2xl border-[4px] border-black shadow-[4px_4px_0px_black]">
-                <QRCodeSVG value={`${window.location.origin}${window.location.pathname.replace('/master', '')}?s=${secureSessionId}&recover=${recoveryQR.token}`} size={180} level="H" fgColor="#000000" />
-              </div>
-            ) : null}
-            <p className="text-black/30 text-[9px] font-impact uppercase tracking-widest">Valable 24h · 1 scan suffit</p>
-          </div>
+          ) : recoveryQR.token ? (
+            <div className="bg-white p-6 rounded-3xl border-[6px] border-[#FFD700]" style={{ boxShadow: '10px 10px 0px black' }}>
+              <QRCodeSVG value={`${window.location.origin}${window.location.pathname.replace('/master', '')}?s=${secureSessionId}&recover=${recoveryQR.token}`} size={220} level="H" fgColor="#000000" />
+            </div>
+          ) : null}
+          <p className="mt-6 font-impact text-white/30 uppercase text-[10px] tracking-widest">Valable 24h · le joueur scanne avec son téléphone</p>
         </div>
       )}
 
