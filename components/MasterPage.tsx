@@ -441,21 +441,36 @@ const MasterPage: React.FC<MasterPageProps> = ({
 
                   {currentBar < 3 ? (
                     transitionEndsAt ? (
-                      /* Transition active — show countdown + cancel */
-                      <div className="bg-[#FF8C00] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
-                        <div>
-                          {nextBarName && <p className="font-impact text-black/60 uppercase text-[9px]">{nextBarName}</p>}
-                          <p className="font-impact text-black text-2xl italic">
-                            <CountdownTimer endsAt={transitionEndsAt} />
-                          </p>
-                          <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">{language === 'fr' ? `Manche ${currentBar} → ${currentBar + 1}` : `Round ${currentBar} → ${currentBar + 1}`} · {language === 'fr' ? 'Lignes débloquées ✓' : 'Lines unlocked ✓'}</p>
+                      /* Transition active — step 2: confirm arrival → advance bar */
+                      <div className="flex flex-col gap-2">
+                        <div className="bg-[#FF8C00] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                          <div>
+                            {nextBarName && <p className="font-impact text-black/60 uppercase text-[9px]">{nextBarName}</p>}
+                            <p className="font-impact text-black text-2xl italic">
+                              <CountdownTimer endsAt={transitionEndsAt} />
+                            </p>
+                            <p className="font-impact text-black/50 uppercase text-[8px] tracking-widest">
+                              {language === 'fr' ? 'En route vers le prochain bar' : 'Moving to next bar'}
+                            </p>
+                          </div>
+                          <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                            <XCircle size={20} className="text-[#FF8C00]" strokeWidth={3} />
+                          </button>
                         </div>
-                        <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
-                          <XCircle size={20} className="text-[#FF8C00]" strokeWidth={3} />
+                        {/* Arrival button — advances bar without new countdown */}
+                        <button
+                          onClick={async () => { if (advanceBar) { setIsTriggeringTransition(true); try { await advanceBar(); } finally { setIsTriggeringTransition(false); } } }}
+                          disabled={isTriggeringTransition}
+                          className="w-full py-4 bg-[#00F5A0] text-black rounded-xl font-impact uppercase text-[13px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+                        >
+                          {isTriggeringTransition
+                            ? <span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" />
+                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `Manche ${currentBar + 1} — On est arrivés !` : `Round ${currentBar + 1} — We're here!`}{currentBar + 1 === 3 && ' ⚡'}</>
+                          }
                         </button>
                       </div>
                     ) : (
-                      /* No active transition — show combined action */
+                      /* No active transition — step 1: announce bar change with countdown */
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1.5">
                           {[15, 20, 30].map(d => (
@@ -470,11 +485,11 @@ const MasterPage: React.FC<MasterPageProps> = ({
                         <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
                           placeholder={language === 'fr' ? 'Nom du prochain bar (optionnel)' : 'Next bar name (optional)'}
                           className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
-                        <button onClick={() => setShowBarAdvanceConfirm(true)} disabled={isTriggeringTransition}
+                        <button onClick={handleTriggerTransition} disabled={isTriggeringTransition}
                           className="w-full py-4 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[12px] tracking-widest flex items-center justify-center gap-2 border-[3px] border-black shadow-[4px_4px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
                           {isTriggeringTransition
                             ? <><span className="w-4 h-4 border-[2px] border-black/30 border-t-black rounded-full animate-spin" /> {language === 'fr' ? 'Envoi...' : 'Sending...'}</>
-                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `Passer à la manche ${currentBar + 1}` : `Go to round ${currentBar + 1}`} · timer {selectedDuration}min{currentBar + 1 === 3 && ' · ⚡ Chaos'}</>
+                            : <><ChevronRight size={17} strokeWidth={3} /> {language === 'fr' ? `On change de bar — ${selectedDuration}min` : `Moving bars — ${selectedDuration}min`}</>
                           }
                         </button>
                       </div>
@@ -605,16 +620,24 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 ) : undefined}
               >
                 {transitionEndsAt ? (
-                  <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
-                    <div>
-                      {nextBarName && <p className="font-impact text-white/70 uppercase text-[9px]">{nextBarName}</p>}
-                      <p className="font-impact text-white text-2xl italic">
-                        <CountdownTimer endsAt={transitionEndsAt} />
-                      </p>
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-[#FF2D6A] border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between">
+                      <div>
+                        {nextBarName && <p className="font-impact text-white/70 uppercase text-[9px]">{nextBarName}</p>}
+                        <p className="font-impact text-white text-2xl italic">
+                          <CountdownTimer endsAt={transitionEndsAt} />
+                        </p>
+                        <p className="font-impact text-white/60 uppercase text-[8px] tracking-widest">
+                          {language === 'fr' ? 'En route vers le prochain bar' : 'Moving to next bar'}
+                        </p>
+                      </div>
+                      <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                        <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={3} />
+                      </button>
                     </div>
-                    <button onClick={clearBarTransition} className="w-10 h-10 bg-white border-[2px] border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
-                      <XCircle size={20} className="text-[#FF2D6A]" strokeWidth={3} />
-                    </button>
+                    <p className="font-impact text-black/40 uppercase text-[9px] tracking-widest text-center">
+                      {language === 'fr' ? 'Utiliser la section "Progression des manches" pour activer' : 'Use "Round progression" section to activate'}
+                    </p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -629,12 +652,12 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       ))}
                     </div>
                     <input type="text" value={barNameInput} onChange={e => setBarNameInput(e.target.value)}
-                      placeholder="Nom du bar (optionnel)"
+                      placeholder={language === 'fr' ? 'Nom du bar (optionnel)' : 'Bar name (optional)'}
                       className="w-full bg-white border-[2px] border-black/20 rounded-xl px-3 py-2.5 font-impact text-black text-[11px] uppercase focus:border-black focus:outline-none placeholder:text-black/20 transition-all" />
                     <button onClick={handleTriggerTransition} disabled={isTriggeringTransition}
-                      className="w-full py-3 bg-[#FF2D6A] text-white rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
-                      <Clock size={14} strokeWidth={3} />
-                      {isTriggeringTransition ? 'Envoi...' : `Countdown (${selectedDuration} min)`}
+                      className="w-full py-3 bg-[#FF8C00] text-black rounded-xl font-impact uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 border-[2px] border-black shadow-[3px_3px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50">
+                      <ChevronRight size={14} strokeWidth={3} />
+                      {isTriggeringTransition ? 'Envoi...' : `${language === 'fr' ? 'On change de bar' : 'Moving bars'} — ${selectedDuration}min`}
                     </button>
                   </div>
                 )}
