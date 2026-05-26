@@ -400,11 +400,12 @@ const PlayerApp: React.FC = () => {
     }
 
     // 2. START ANIMATION LOGIC
+    // Only fire when session transitions closed→open while app is already loaded.
+    // Fresh page loads (QR scan, reload) must NOT trigger the intro.
     const sessionTransitioned = !prevSessionActive.current && isSessionActive && !isFirstLoad.current;
-    const firstLoadActive = isFirstLoad.current && isSessionActive;
     const hasSeenIntro = !!sessionStorage.getItem('bingo_intro_seen');
 
-    if ((sessionTransitioned || (firstLoadActive && !hasSeenIntro))) {
+    if (sessionTransitioned && !hasSeenIntro) {
       sessionStorage.setItem('bingo_intro_seen', '1');
       setShowStartAnimation(true);
       aRef.current.resetGame();
