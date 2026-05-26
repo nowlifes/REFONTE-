@@ -1490,15 +1490,16 @@ async resetSession(): Promise<void> {
       players = data;
     }
 
-    // Fallback: players joined before QR scan may have session_id = NULL.
-    // Use active games to find them instead.
+    // Fallback: session_id not yet set (linkPlayerToSession race at startup).
+    // Find players who have ANY game record created in the last 24h.
     if (!players || players.length === 0) {
-      const { data: activeGames } = await supabase
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentGames } = await supabase
         .from('games')
         .select('player_id')
-        .eq('status', 'ACTIVE');
-      if (activeGames && activeGames.length > 0) {
-        const ids = activeGames.map((g: any) => g.player_id);
+        .gt('created_at', cutoff);
+      if (recentGames && recentGames.length > 0) {
+        const ids = [...new Set(recentGames.map((g: any) => g.player_id as string))];
         const { data: fallback } = await supabase
           .from('players')
           .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
