@@ -163,7 +163,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   }, [secureSessionId]);
 
   // Bar transition
-  const [selectedDuration, setSelectedDuration] = useState<number>(5);
+  const [selectedDuration, setSelectedDuration] = useState<number>(15);
   const [barNameInput, setBarNameInput] = useState('');
   const [isTriggeringTransition, setIsTriggeringTransition] = useState(false);
   const [showBarAdvanceConfirm, setShowBarAdvanceConfirm] = useState(false);
@@ -458,7 +458,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                       /* No active transition — show combined action */
                       <div className="flex flex-col gap-2">
                         <div className="flex gap-1.5">
-                          {[2, 5, 10, 15].map(d => (
+                          {[15, 20, 30].map(d => (
                             <button key={d} onClick={() => setSelectedDuration(d)}
                               className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
                                 selectedDuration === d ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'
@@ -619,7 +619,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 ) : (
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-1.5">
-                      {[2, 5, 10, 15].map(d => (
+                      {[15, 20, 30].map(d => (
                         <button key={d} onClick={() => setSelectedDuration(d)}
                           className={`flex-1 py-2 rounded-xl font-impact text-[11px] uppercase border-[2px] border-black transition-all ${
                             selectedDuration === d ? 'bg-black text-white shadow-none translate-x-[1px] translate-y-[1px]' : 'bg-white text-black shadow-[2px_2px_0px_black] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none'

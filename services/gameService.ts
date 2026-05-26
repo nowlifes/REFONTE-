@@ -1813,14 +1813,16 @@ async resetSession(): Promise<void> {
     }
     // Call the RPC directly — do NOT use this.validateCell() which would corrupt the
     // witness's own localStorage with the requester's game session.
-    await supabase.rpc('validate_cell_atomic', {
+    const { error: rpcError } = await supabase.rpc('validate_cell_atomic', {
       p_game_id: validation.game_id,
       p_cell_id: validation.cell_id,
       p_proof: { witnessName, witnessSignature: 'digital-confirmed' },
     });
-    await supabase.from('master_validations')
+    if (rpcError) throw rpcError;
+    const { error: updateError } = await supabase.from('master_validations')
       .update({ status: 'APPROVED', witness_status: 'CONFIRMED', resolved_at: now })
       .eq('id', validation.id);
+    if (updateError) throw updateError;
     this.pingWitnessResult(validation.game_id, validation.cell_id);
   }
 

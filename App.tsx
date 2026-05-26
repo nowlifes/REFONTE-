@@ -198,7 +198,7 @@ const PlayerApp: React.FC = () => {
     isGamePaused, setGamePaused,
     currentBar, barCadence, chaosMode, maxValidationsPerBar,
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
-    boostAuctionEndsAt, boostAuctionType, boostAuctionWinner, clearBoostAuctionWinner,
+    boostAuctionEndsAt, boostAuctionType, boostAuctionWinner, clearBoostAuctionWinner, clearBoostAuction,
   } = useEventSession();
   const { state: s, actions: a } = useBingoGame({ spotlightDisabled, currentBar });
   const aRef = React.useRef(a);
@@ -400,7 +400,12 @@ const PlayerApp: React.FC = () => {
     }
 
     // 2. START ANIMATION LOGIC
-    if (!prevSessionActive.current && isSessionActive && !isFirstLoad.current) {
+    const sessionTransitioned = !prevSessionActive.current && isSessionActive && !isFirstLoad.current;
+    const firstLoadActive = isFirstLoad.current && isSessionActive;
+    const hasSeenIntro = !!sessionStorage.getItem('bingo_intro_seen');
+
+    if ((sessionTransitioned || (firstLoadActive && !hasSeenIntro))) {
+      sessionStorage.setItem('bingo_intro_seen', '1');
       setShowStartAnimation(true);
       aRef.current.resetGame();
       aRef.current.setView(AppView.NICKNAME);
@@ -423,6 +428,8 @@ const PlayerApp: React.FC = () => {
       if (navigator.vibrate) navigator.vibrate([100, 100, 200, 100, 400]);
       // overlay dismisses itself via onDone
     }
+    // New session resets the intro flag so next game gets the full intro
+    if (!isSessionActive) sessionStorage.removeItem('bingo_intro_seen');
 
     prevSessionActive.current = isSessionActive;
     if (isFirstLoad.current) isFirstLoad.current = false;
@@ -575,7 +582,7 @@ const PlayerApp: React.FC = () => {
               boostAuctionEndsAt={boostAuctionEndsAt}
               boostAuctionType={boostAuctionType}
               boostAuctionWinner={boostAuctionWinner}
-              onBoostAuctionWinnerDone={clearBoostAuctionWinner}
+              onBoostAuctionWinnerDone={() => { clearBoostAuctionWinner(); clearBoostAuction(); }}
             />
           </ErrorBoundary>
         )}

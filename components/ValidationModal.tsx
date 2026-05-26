@@ -325,7 +325,11 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
         {step !== 'SUCCESS' && (
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 p-3 z-20 text-white/30 hover:text-white/70 active:scale-90 transition-all rounded-xl hover:bg-white/5"
+            className={`absolute top-3 right-3 p-3 z-20 active:scale-90 transition-all rounded-xl ${
+              step === 'WITNESS_SENT'
+                ? 'bg-black/20 text-black hover:bg-black/35 border border-black/20'
+                : 'text-white/30 hover:text-white/70 hover:bg-white/5'
+            }`}
             aria-label={t('close')}
           >
             <X size={22} strokeWidth={2.5} />

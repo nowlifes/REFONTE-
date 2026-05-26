@@ -813,7 +813,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       )}
 
       {/* Header compact */}
-      <header className="shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 mt-1">
+      <header className={`shrink-0 w-full px-4 py-2 flex justify-between items-center z-30 ${chaosMode ? 'mt-[36px]' : 'mt-1'}`}>
         {/* Avatar (tap → edit profile) + name (tap → badges) */}
         <div className="flex items-center gap-2 bg-white/5 pr-3 pl-1 py-1 rounded-xl border-2 border-white/10">
           <button onClick={() => setShowEditProfile(true)} className="relative active:scale-90 transition-transform group">

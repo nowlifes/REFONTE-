@@ -27,6 +27,7 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
   const { language } = useLanguage();
   const [secondsLeft, setSecondsLeft] = useState(() => Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
   const [players, setPlayers] = useState<Array<{ id: string; pseudo: string; emoji: string }>>([]);
+  const [playersLoadError, setPlayersLoadError] = useState(false);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
   const [myVote, setMyVote] = useState<string | null>(null);
   const [isVoting, setIsVoting] = useState<string | null>(null);
@@ -53,12 +54,17 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
   // Fetch players
   useEffect(() => {
     if (!sessionId) return;
-    gameService.getPlayersWithScores(sessionId).then(list => {
-      setPlayers(list
-        .filter(p => p.id !== currentPlayerId)
-        .map(p => ({ id: p.id, pseudo: p.pseudo, emoji: getEmoji(p.emoji) }))
-      );
-    });
+    setPlayersLoadError(false);
+    const load = () =>
+      gameService.getPlayersWithScores(sessionId).then(list => {
+        const others = list.filter(p => p.id !== currentPlayerId);
+        setPlayers(others.map(p => ({ id: p.id, pseudo: p.pseudo, emoji: getEmoji(p.emoji) })));
+        setPlayersLoadError(false);
+      }).catch(() => setPlayersLoadError(true));
+    load();
+    // Retry after 3s if initial load fails
+    const retry = setTimeout(load, 3000);
+    return () => clearTimeout(retry);
   }, [sessionId, currentPlayerId]);
 
   // Subscribe to vote counts
@@ -160,10 +166,21 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
             {language === 'fr' ? 'Session introuvable — rescanner le QR' : 'Session not found — rescan the QR'}
           </p>
         )}
-        {players.length === 0 && sessionId && (
-          <p className="text-center text-white/30 font-impact uppercase text-[11px] tracking-widest py-4">
-            {language === 'fr' ? 'Chargement des joueurs...' : 'Loading players...'}
-          </p>
+        {players.length === 0 && sessionId && playersLoadError && (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <p className="text-center text-[#FF2D6A] font-impact uppercase text-[11px] tracking-widest">
+              {language === 'fr' ? 'Erreur réseau — nouvelle tentative...' : 'Network error — retrying...'}
+            </p>
+            <div className="w-4 h-4 border-[2px] border-[#FF2D6A]/30 border-t-[#FF2D6A] rounded-full animate-spin" />
+          </div>
+        )}
+        {players.length === 0 && sessionId && !playersLoadError && (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <div className="w-4 h-4 border-[2px] border-white/20 border-t-white/60 rounded-full animate-spin" />
+            <p className="text-center text-white/30 font-impact uppercase text-[11px] tracking-widest">
+              {language === 'fr' ? 'Chargement des joueurs...' : 'Loading players...'}
+            </p>
+          </div>
         )}
 
         {players.map(player => {

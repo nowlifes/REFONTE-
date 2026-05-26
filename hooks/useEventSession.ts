@@ -243,7 +243,11 @@ export const useEventSession = () => {
     await Promise.all([
       gameService.advanceBar().catch(() => {}), // will be ignored — bar reset handled below
       gameService.setChaosMode(false).catch(() => {}),
+      gameService.clearBoostAuction().catch(() => {}),
     ]);
+    setBoostAuctionEndsAt(null);
+    setBoostAuctionType('boost');
+    setBoostAuctionWinner(null);
     // Force currentBar = 1 in DB (advanceBar only increments, so we set directly)
     try {
       const { data: latest } = await supabase
@@ -351,8 +355,6 @@ export const useEventSession = () => {
         setChaosMode(true);
         await gameService.setChaosMode(true);
       }
-      // Auto-launch boost auction at each bar change — group votes who deserves a free taunt
-      await gameService.startBoostAuction(30, 'boost');
     },
     setBarCadenceValue: async (cadence: string) => {
       setBarCadence(cadence);
@@ -382,6 +384,8 @@ export const useEventSession = () => {
     clearBoostAuction: async () => {
       setBoostAuctionEndsAt(null);
       setBoostAuctionType('boost');
+      setBoostAuctionWinner(null);
+      dismissedBoostWinnerKey.current = null;
       await gameService.clearBoostAuction();
     },
   };

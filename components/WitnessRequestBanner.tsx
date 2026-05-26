@@ -15,6 +15,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Persist dismissed IDs in sessionStorage so banner doesn't re-appear after component remount
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
@@ -66,10 +67,11 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
     try {
       await gameService.confirmWitness(req);
       addDismissed(id);
-    } catch (e) {
+    } catch (e: any) {
       console.error('[Witness] confirmWitness failed', e);
       setConfirmError(true);
-      setTimeout(() => setConfirmError(false), 3000);
+      setErrorMsg(e?.message ?? 'Erreur réseau — réessaie');
+      setTimeout(() => { setConfirmError(false); setErrorMsg(null); }, 4000);
     } finally {
       setConfirmingId(null);
     }
@@ -109,9 +111,9 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
       <div className={`absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-300 pointer-events-none ${confirmError ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
         style={{ top: 'max(72px, env(safe-area-inset-top, 0px) + 60px)' }}
       >
-        <div className="bg-[#FF2E63] border-[3px] border-black rounded-2xl px-5 py-2.5 shadow-[4px_4px_0px_black] whitespace-nowrap">
+        <div className="bg-[#FF2E63] border-[3px] border-black rounded-2xl px-5 py-2.5 shadow-[4px_4px_0px_black]">
           <span className="font-impact text-white uppercase text-[11px] tracking-widest">
-            ❌ {t('witness_confirm_no')} — réessaie
+            {errorMsg ?? `${t('witness_confirm_no')} — réessaie`}
           </span>
         </div>
       </div>
