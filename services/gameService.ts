@@ -1,6 +1,6 @@
 
 import { supabase } from '../lib/supabaseClient';
-import { UserProfile, GameSession, BingoCellData, CellStatus, LeaderboardEntry, TauntType } from '../types';
+import { UserProfile, GameSession, BingoCellData, CellStatus, LeaderboardEntry, TauntType, ChallengeType } from '../types';
 import { ADULT_EMOJI_MAP, CHALLENGES_FR, CHALLENGES_EN } from '../constants';
 
 // Helper to shuffle array (Fisher-Yates)
@@ -504,10 +504,13 @@ class GameBackendService {
     // Garantir 1 WITNESS + 1 PVP + 2 AUTO dans la row 0 pour que les joueurs voient tous les types
     const witnessPool = shuffleArray(nonMasterPool.filter((c: any) => c.type === 'WITNESS'));
     const pvpPool = shuffleArray(nonMasterPool.filter((c: any) => c.type === 'PVP'));
-    const fallbackPool = shuffleArray(nonMasterPool.filter((c: any) => c.type !== 'WITNESS' && c.type !== 'PVP' && c.type !== 'AUTO'));
 
-    const row0Witness = witnessPool[0] ?? fallbackPool.shift() ?? nonMasterPool[0];
-    const row0PVP = pvpPool[0] ?? fallbackPool.shift() ?? nonMasterPool[1];
+    const localWitness = CHALLENGES_FR.find(c => c.type === ChallengeType.WITNESS);
+    const localPVP = CHALLENGES_FR.find(c => c.type === ChallengeType.PVP);
+    const row0Witness = witnessPool[0]
+      ?? (localWitness ? { ...localWitness, is_partner: false } : nonMasterPool[0]);
+    const row0PVP = pvpPool[0]
+      ?? (localPVP ? { ...localPVP, is_partner: false } : nonMasterPool[1]);
     const usedInRow0 = new Set([row0Witness?.id, row0PVP?.id, row0Master?.id].filter(Boolean));
     const autoFill = shuffleArray(nonMasterPool.filter((c: any) => !usedInRow0.has(c.id))).slice(0, 2);
 
@@ -1818,14 +1821,16 @@ async resetSession(): Promise<void> {
     await supabase.from('master_validations')
       .update({ status: 'APPROVED', witness_status: 'CONFIRMED', resolved_at: now })
       .eq('id', validation.id);
+    this.pingWitnessResult(validation.game_id, validation.cell_id);
   }
 
-  async rejectWitness(validationId: string): Promise<void> {
+  async rejectWitness(validationId: string, gameId?: string, cellId?: number): Promise<void> {
     if (!supabase) return;
     await supabase
       .from('master_validations')
       .update({ witness_status: 'REJECTED', resolved_at: new Date().toISOString() })
       .eq('id', validationId);
+    if (gameId && cellId !== undefined) this.pingWitnessResult(gameId, cellId);
   }
 
   /** Subscribe to witness result for the requester side.
@@ -1857,6 +1862,7 @@ async resetSession(): Promise<void> {
     check(); // immediate check — handles case where witness confirmed before subscribe
     const ch = supabase
       .channel(`witness_result_${gameId}_${cellId}`)
+      .on('broadcast', { event: 'witness_confirmed' }, check)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'master_validations',
         filter: `game_id=eq.${gameId}`,
@@ -1898,6 +1904,19 @@ async resetSession(): Promise<void> {
       if (status !== 'SUBSCRIBED' || done) return;
       clearTimeout(bailout);
       ch.send({ type: 'broadcast', event, payload: {} }).finally(cleanup);
+    });
+  }
+
+  private pingWitnessResult(gameId: string, cellId: number): void {
+    if (!supabase) return;
+    const ch = supabase.channel(`witness_result_${gameId}_${cellId}`);
+    let done = false;
+    const cleanup = () => { done = true; setTimeout(() => supabase!.removeChannel(ch), 500); };
+    const bailout = setTimeout(() => { if (!done) { done = true; supabase!.removeChannel(ch); } }, 4000);
+    ch.subscribe((status) => {
+      if (status !== 'SUBSCRIBED' || done) return;
+      clearTimeout(bailout);
+      ch.send({ type: 'broadcast', event: 'witness_confirmed', payload: {} }).finally(cleanup);
     });
   }
 

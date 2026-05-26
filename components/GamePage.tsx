@@ -458,16 +458,17 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const tauntDiscoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (currentBar !== 2) return;
+    const key = `bingo_taunt_discovery_${s.gameSession?.id || ''}`;
     try {
-      if (localStorage.getItem('bingo_taunt_discovery_shown') === '1') return;
+      if (localStorage.getItem(key) === '1') return;
     } catch {}
     setShowTauntDiscovery(true);
-    try { localStorage.setItem('bingo_taunt_discovery_shown', '1'); } catch {}
+    try { localStorage.setItem(key, '1'); } catch {}
     if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]);
     if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current);
     tauntDiscoveryTimerRef.current = setTimeout(() => setShowTauntDiscovery(false), 10000);
     return () => { if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current); };
-  }, [currentBar]);
+  }, [currentBar, s.gameSession?.id]);
   const dismissTauntDiscovery = () => {
     if (tauntDiscoveryTimerRef.current) clearTimeout(tauntDiscoveryTimerRef.current);
     setShowTauntDiscovery(false);

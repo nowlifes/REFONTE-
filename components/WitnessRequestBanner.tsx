@@ -80,7 +80,7 @@ const WitnessRequestBanner: React.FC<WitnessRequestBannerProps> = ({ playerId })
     const id = current.id;
     setRejectingId(id);
     try {
-      await gameService.rejectWitness(id);
+      await gameService.rejectWitness(id, current.game_id, current.cell_id);
       addDismissed(id);
     } catch (e) {
       console.error(e);
