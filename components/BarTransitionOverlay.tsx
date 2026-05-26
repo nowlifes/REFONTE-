@@ -10,7 +10,7 @@ interface BarTransitionOverlayProps {
 }
 
 const MECHANIC_UNLOCK: Record<number, { fr: string; en: string; emoji: string }> = {
-  2: { emoji: '🔥', fr: '2ème bar — les défis deviennent plus fous !', en: '2nd bar — challenges get wilder!' },
+  2: { emoji: '💣', fr: 'Sabotages débloqués — perturbez-vous entre amis !', en: 'Sabotages unlocked — mess with your friends!' },
   3: { emoji: '🌀', fr: 'Mode Chaos — plus de limites !', en: 'Chaos Mode — no more limits!' },
 };
 

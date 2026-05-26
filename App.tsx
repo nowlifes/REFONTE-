@@ -594,7 +594,13 @@ const PlayerApp: React.FC = () => {
                 <span className="text-lg leading-none">🚶</span>
                 <div className="flex flex-col leading-none">
                   <span className="font-impact text-black uppercase text-[13px] tracking-tight">
-                    {language === 'fr' ? 'On bouge bientôt' : 'Moving soon'}
+                    {language === 'fr'
+                      ? transitionSecondsLeft <= 60
+                        ? 'On change de bar !'
+                        : `On part dans ${Math.ceil(transitionSecondsLeft / 60)} min`
+                      : transitionSecondsLeft <= 60
+                        ? 'Bar change now!'
+                        : `Moving in ${Math.ceil(transitionSecondsLeft / 60)} min`}
                     {nextBarName ? ` — ${nextBarName}` : ''}
                   </span>
                   <span className="font-impact text-black/50 uppercase text-[9px] tracking-widest">
