@@ -185,18 +185,20 @@ This saves tokens on the next session — read it first before exploring code.
 
 
 ## État actuel
-_Mis à jour : 2026-05-25 20:37 — branche : main_
+_Mis à jour : 2026-05-26 16:10 — branche : main_
 
 ### Derniers commits
-- 7db4063 ✨ feat: witness picker — search + système de favoris
+- 1d4249a 🐛 fix: 3 bugs Safari/témoin/taunt
 
 ### Fichiers récemment modifiés
-- components/ValidationModal.tsx
-- translations.ts
+- components/GamePage.tsx
+- components/WitnessRequestBanner.tsx
+- services/gameService.ts
 
 ### Non commité
 ```
  M CLAUDE.md
+ M package.json
 ?? .agents/
 ?? .planning/
 ?? skills-lock.json
