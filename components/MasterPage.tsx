@@ -148,6 +148,16 @@ const MasterPage: React.FC<MasterPageProps> = ({
   // playerCount derived from playersList (subscribePlayersWithScores catches INSERT/UPDATE/DELETE)
   const playerCount = playersList.length;
 
+  // Boost auction vote counts (master view)
+  const [boostVoteCounts, setBoostVoteCounts] = useState<Record<string, number>>({});
+  const totalBoostVotes = (Object.values(boostVoteCounts) as number[]).reduce((a: number, b: number) => a + b, 0);
+
+  useEffect(() => {
+    if (!secureSessionId || !boostAuctionEndsAt) { setBoostVoteCounts({}); return; }
+    const unsub = gameService.subscribeBoostVotes(secureSessionId, setBoostVoteCounts);
+    return unsub;
+  }, [secureSessionId, boostAuctionEndsAt]);
+
   // Bar transition
   const [selectedDuration, setSelectedDuration] = useState<number>(15);
   const [barNameInput, setBarNameInput] = useState('');
@@ -546,25 +556,49 @@ const MasterPage: React.FC<MasterPageProps> = ({
                   {startBoostAuction && (
                     boostAuctionEndsAt && boostAuctionEndsAt > Date.now() ? (
                       <div
-                        className="border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex items-center justify-between"
+                        className="border-[3px] border-black rounded-xl p-3 shadow-[4px_4px_0px_black] flex flex-col gap-2"
                         style={{ backgroundColor: boostAuctionType === 'sabotage' ? '#FF2D6A' : '#FF8C00' }}
                       >
-                        <div>
-                          <p className="font-impact text-black uppercase text-[9px] tracking-widest">
-                            {boostAuctionType === 'sabotage'
-                              ? (language === 'fr' ? '💀 Sabotage en cours' : '💀 Sabotage active')
-                              : (language === 'fr' ? '🏆 Boost en cours' : '🏆 Boost active')}
-                          </p>
-                          <p className="font-impact text-black text-lg italic">
-                            <CountdownTimer endsAt={boostAuctionEndsAt} />
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-impact text-black uppercase text-[9px] tracking-widest">
+                              {boostAuctionType === 'sabotage'
+                                ? (language === 'fr' ? '💀 Sabotage en cours' : '💀 Sabotage active')
+                                : (language === 'fr' ? '🏆 Boost en cours' : '🏆 Boost active')}
+                            </p>
+                            <p className="font-impact text-black text-lg italic">
+                              <CountdownTimer endsAt={boostAuctionEndsAt} />
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="font-impact text-black text-[13px] uppercase">
+                              {totalBoostVotes}/{playerCount} votes
+                            </span>
+                            <button
+                              onClick={async () => { await closeBoostAuction?.(); }}
+                              className="px-3 py-2 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                            >
+                              ✓ Confirmer
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={async () => { await closeBoostAuction?.(); }}
-                          className="px-3 py-2 bg-black text-white rounded-xl font-impact uppercase text-[10px] tracking-widest border-[2px] border-black shadow-[2px_2px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
-                        >
-                          ✓ Confirmer
-                        </button>
+                        {/* Vote breakdown */}
+                        {Object.keys(boostVoteCounts).length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            {(Object.entries(boostVoteCounts) as [string, number][])
+                              .sort((a, b) => b[1] - a[1])
+                              .map(([pid, count]) => {
+                                const p = playersList.find(pl => pl.id === pid);
+                                if (!p) return null;
+                                return (
+                                  <div key={pid} className="flex items-center justify-between bg-black/20 rounded-lg px-2 py-1">
+                                    <span className="font-impact text-black text-[11px] uppercase truncate">{p.emoji} {p.pseudo}</span>
+                                    <span className="font-impact text-black text-[11px] shrink-0">{count} vote{count !== 1 ? 's' : ''}</span>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="flex gap-2">

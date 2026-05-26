@@ -1188,11 +1188,14 @@ async resetSession(): Promise<void> {
     return () => { supabase.removeChannel(ch); };
   }
 
-  async closeBoostAuction(sessionId: string): Promise<{ winnerId: string; winnerName: string; winnerEmoji: string; type: 'boost' | 'sabotage' } | null> {
+  async closeBoostAuction(): Promise<{ winnerId: string; winnerName: string; winnerEmoji: string; type: 'boost' | 'sabotage' } | null> {
     if (!supabase) return null;
-    const { data: session } = await supabase.from('event_session').select('boost_auction_type').eq('id', sessionId).maybeSingle();
+    const eventSessionId = await this.getSessionId();
+    if (!eventSessionId) return null;
+    const { data: session } = await supabase.from('event_session').select('boost_auction_type').eq('id', eventSessionId).maybeSingle();
     const auctionType: 'boost' | 'sabotage' = (session?.boost_auction_type as 'boost' | 'sabotage') ?? 'boost';
-    const counts = await this.getBoostVoteCounts(sessionId);
+    const secureSessionId = localStorage.getItem(this.SECURE_SESSION_KEY);
+    const counts = secureSessionId ? await this.getBoostVoteCounts(secureSessionId) : {};
     const entries = Object.entries(counts);
     if (entries.length === 0) { await this.clearBoostAuction(); return null; }
     const winnerId = entries.sort((a, b) => b[1] - a[1])[0][0];
@@ -1202,19 +1205,16 @@ async resetSession(): Promise<void> {
     } else {
       await this.applyGroupSabotage(winnerId);
     }
-    const { data: player } = await supabase.from('players').select('nickname, avatar_id').eq('id', winnerId).maybeSingle();
+    const { data: player } = await supabase.from('players').select('pseudo, emoji').eq('id', winnerId).maybeSingle();
     const activityType = auctionType === 'boost' ? 'BOOST_WON' : 'SABOTAGE_WON';
-    if (player) await this.postActivity(winnerId, player.nickname, player.avatar_id, activityType);
-    const [eventSessionId] = await Promise.all([
-      this.getSessionId(),
-      supabase.from('boost_votes').delete().eq('session_id', sessionId),
+    if (player) await this.postActivity(winnerId, player.pseudo, player.emoji, activityType);
+    await Promise.all([
+      secureSessionId ? supabase.from('boost_votes').delete().eq('session_id', secureSessionId) : Promise.resolve(),
     ]);
     // Persist winner for reveal overlay on all clients, then clear auction state
-    if (eventSessionId) {
-      const winnerPayload = { name: player?.nickname ?? '?', emoji: player?.avatar_id ?? '🎲', type: auctionType };
-      await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: winnerPayload }).eq('id', eventSessionId);
-    }
-    return { winnerId, winnerName: player?.nickname ?? '?', winnerEmoji: player?.avatar_id ?? '🎲', type: auctionType };
+    const winnerPayload = { name: player?.pseudo ?? '?', emoji: player?.emoji ?? '🎲', type: auctionType };
+    await supabase.from('event_session').update({ boost_auction_ends_at: null, boost_auction_type: 'boost', boost_auction_winner: winnerPayload }).eq('id', eventSessionId);
+    return { winnerId, winnerName: player?.pseudo ?? '?', winnerEmoji: player?.emoji ?? '🎲', type: auctionType };
   }
 
   // Duration (ms) each taunt keeps the victim affected — minimum 1 minute
@@ -1553,6 +1553,7 @@ async resetSession(): Promise<void> {
       .channel(`players_scores_live_${sessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${sessionId}` }, refetch)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games' }, refetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'games' }, refetch)
       .subscribe((status) => {
         // Re-fetch on reconnect to catch any missed events while offline
         if (status === 'SUBSCRIBED') refetch();

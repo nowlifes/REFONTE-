@@ -546,14 +546,14 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             </div>
             <div className="font-impact uppercase italic text-white/90 text-2xl tracking-tight animate-in slide-in-from-bottom-2 duration-300 delay-100"
               style={{ fontSize: 'clamp(20px, 6vw, 28px)', textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
-              {language === 'fr' ? "ATTAQUE AVANT D'ÊTRE ATTAQUÉ !" : 'ATTACK BEFORE BEING ATTACKED!'}
+              {language === 'fr' ? 'DERNIER BAR, TOUT EST PERMIS !' : 'LAST BAR, ANYTHING GOES!'}
             </div>
             <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
               <div className="font-impact uppercase text-[#CC0000] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
-                {language === 'fr' ? 'CHAQUE DÉFI = UN SABOTAGE GRATUIT' : 'EVERY CHALLENGE = 1 FREE SABOTAGE'}
+                {language === 'fr' ? 'GRILLE ENTIÈRE DÉBLOQUÉE !' : 'FULL GRID UNLOCKED!'}
               </div>
               <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
-                {language === 'fr' ? '⚡ GRILLE ENTIÈRE DÉBLOQUÉE · FONCE OU DISPARAIS ⚡' : '⚡ FULL GRID UNLOCKED · GO OR DISAPPEAR ⚡'}
+                {language === 'fr' ? '⚡ DERNIER BAR · PLUS DE LIMITES · FONCE ⚡' : '⚡ LAST BAR · NO MORE LIMITS · GO ⚡'}
               </div>
             </div>
           </div>

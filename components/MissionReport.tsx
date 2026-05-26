@@ -71,31 +71,65 @@ const MissionReport: React.FC<MissionReportProps> = ({
     gameService.getLeaderboard().then(d => setTop3(d.slice(0, 3))).catch(() => {});
   }, []);
 
+  const captureImage = async (): Promise<{ blob: Blob; file: File } | null> => {
+    if (!cardRef.current) return null;
+    const canvas = await html2canvas(cardRef.current, {
+      backgroundColor: '#0A1629',
+      scale: 3,
+      logging: false,
+      useCORS: true,
+    });
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return null;
+    const file = new File([blob], `bingo-crawl-${nickname}.png`, { type: 'image/png' });
+    return { blob, file };
+  };
+
+  const saveImageToGallery = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bingo-crawl-${nickname}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleShare = async () => {
-    if (!cardRef.current) return;
     setIsSharing(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#0A1629',
-        scale: 3,
-        logging: false,
-        useCORS: true,
-      });
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) return;
-      const file = new File([blob], `bingo-crawl-${nickname}.png`, { type: 'image/png' });
+      const result = await captureImage();
+      if (!result) return;
+      const { blob, file } = result;
       const shareText = language === 'fr'
         ? `${nickname} — ${score}/25 défis complétés ${rank.emoji} #BingoCrawl #TheBingoCrawl`
         : `${nickname} — ${score}/25 challenges done ${rank.emoji} #BingoCrawl #TheBingoCrawl`;
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'The Bingo Crawl', text: shareText });
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bingo-crawl-${nickname}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
+        saveImageToGallery(blob);
+      }
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2500);
+    } catch (err) {
+      console.error('Share error:', err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleShareInstagram = async () => {
+    setIsSharing(true);
+    try {
+      const result = await captureImage();
+      if (!result) return;
+      const { blob, file } = result;
+      // Try native share first (shows Instagram in share sheet on iOS/Android)
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'The Bingo Crawl' });
+      } else {
+        // Save to gallery, then open Instagram
+        saveImageToGallery(blob);
+        setTimeout(() => { window.location.href = 'instagram://app'; }, 800);
       }
       setShareSuccess(true);
       setTimeout(() => setShareSuccess(false), 2500);
@@ -116,15 +150,15 @@ const MissionReport: React.FC<MissionReportProps> = ({
     <div className="fixed inset-0 z-[100] bg-[#0A1629] flex flex-col overflow-hidden animate-in fade-in duration-400">
 
       {/* ── Header ── */}
-      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between z-20 border-b border-white/8">
+      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between z-20 border-b-[3px] border-black" style={{ backgroundColor: rank.color }}>
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-xl bg-white/5 border-2 border-white/10 flex items-center justify-center text-white active:scale-90 transition-transform"
+          className="w-10 h-10 rounded-xl bg-black/20 border-2 border-black flex items-center justify-center text-black active:scale-90 transition-transform"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={3} />
         </button>
-        <span className="font-impact uppercase text-[11px] tracking-[0.3em] text-white/40">
-          {language === 'fr' ? 'FIN DE SOIRÉE' : 'NIGHT OVER'}
+        <span className="font-impact uppercase text-[13px] tracking-[0.3em] text-black">
+          {rank.emoji} {language === 'fr' ? 'FIN DE SOIRÉE' : 'NIGHT OVER'} {rank.emoji}
         </span>
         <div className="w-10" />
       </div>
@@ -161,7 +195,7 @@ const MissionReport: React.FC<MissionReportProps> = ({
               style={{ backgroundColor: '#0A1629' }}
             >
               {/* Rank band */}
-              <div className="px-5 pt-5 pb-4" style={{ backgroundColor: rank.bg }}>
+              <div className="px-5 pt-5 pb-4" style={{ background: `linear-gradient(135deg, ${rank.color} 0%, ${rank.bg || '#0A1629'} 100%)` }}>
                 <div className="flex items-center justify-between mb-4">
                   <span
                     className="font-impact text-[10px] uppercase tracking-[0.25em] px-3 py-1 rounded-lg border-[2px] border-black shadow-[2px_2px_0px_black]"
@@ -491,25 +525,33 @@ const MissionReport: React.FC<MissionReportProps> = ({
       {/* ── Share button (fixed, SOIRÉE tab only) ── */}
       {tab === 'SOIREE' && (
         <div className="fixed bottom-0 left-0 right-0 px-5 pb-6 pt-3 bg-gradient-to-t from-[#0A1629] via-[#0A1629]/95 to-transparent z-50">
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="w-full font-impact text-xl uppercase py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center justify-center gap-3 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
-            style={{ backgroundColor: rank.color, color: '#000' }}
-          >
-            {isSharing ? (
-              <div className="w-5 h-5 border-[3px] border-black/30 border-t-black rounded-full animate-spin" />
-            ) : (
-              <>
-                <Share2 className="w-5 h-5" strokeWidth={3} />
-                {language === 'fr' ? 'Partager sur Instagram' : 'Share on Instagram'}
-              </>
-            )}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleShareInstagram}
+              disabled={isSharing}
+              className="flex-1 font-impact text-xl uppercase py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center justify-center gap-3 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
+              style={{ backgroundColor: rank.color, color: '#000' }}
+            >
+              {isSharing ? (
+                <div className="w-5 h-5 border-[3px] border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span className="text-xl leading-none">📸</span>
+                  Instagram
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="w-14 py-4 rounded-[16px] border-[3px] border-black shadow-[5px_5px_0px_black] flex items-center justify-center active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50 bg-white/10"
+            >
+              <Share2 className="w-5 h-5 text-white" strokeWidth={3} />
+            </button>
+          </div>
           <div className="flex items-center justify-center gap-3 mt-2">
-            <Users className="w-3 h-3 text-white/20" />
             <p className="text-center font-impact text-[9px] text-white/20 uppercase tracking-widest">
-              {language === 'fr' ? 'Enregistre en story ou dans ta galerie' : 'Save as story or to your gallery'}
+              {language === 'fr' ? 'L\'image est sauvegardée dans ta galerie' : 'Image saved to your gallery'}
             </p>
           </div>
         </div>

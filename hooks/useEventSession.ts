@@ -388,5 +388,9 @@ export const useEventSession = () => {
       dismissedBoostWinnerKey.current = null;
       await gameService.clearBoostAuction();
     },
+    closeBoostAuction: async () => {
+      setBoostAuctionEndsAt(null);
+      await gameService.closeBoostAuction();
+    },
   };
 };

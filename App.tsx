@@ -68,7 +68,7 @@ const MasterApp: React.FC = () => {
     isGamePaused, setGamePaused,
     currentBar, barCadence, chaosMode, maxValidationsPerBar,
     advanceBar, setBarCadenceValue, setChaosMode, setMaxValidationsPerBar,
-    boostAuctionEndsAt: masterBoostAuctionEndsAt, boostAuctionType, startBoostAuction, clearBoostAuction,
+    boostAuctionEndsAt: masterBoostAuctionEndsAt, boostAuctionType, startBoostAuction, clearBoostAuction, closeBoostAuction,
   } = useEventSession();
 
   const resetSession = async () => {
@@ -172,7 +172,7 @@ const MasterApp: React.FC = () => {
       boostAuctionEndsAt={masterBoostAuctionEndsAt}
       boostAuctionType={boostAuctionType}
       startBoostAuction={startBoostAuction}
-      closeBoostAuction={clearBoostAuction}
+      closeBoostAuction={closeBoostAuction}
     />
   );
 };
