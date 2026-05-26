@@ -51,20 +51,21 @@ const BoostAuctionBanner: React.FC<BoostAuctionBannerProps> = ({
     return () => clearInterval(iv);
   }, [endsAt, onExpired]);
 
-  // Fetch players
+  // Fetch players — retry every 3s until at least one player loads
   useEffect(() => {
     if (!sessionId) return;
     setPlayersLoadError(false);
+    let mounted = true;
     const load = () =>
       gameService.getPlayersWithScores(sessionId).then(list => {
+        if (!mounted) return;
         const others = list.filter(p => p.id !== currentPlayerId);
         setPlayers(others.map(p => ({ id: p.id, pseudo: p.pseudo, emoji: getEmoji(p.emoji) })));
         setPlayersLoadError(false);
-      }).catch(() => setPlayersLoadError(true));
+      }).catch(() => { if (mounted) setPlayersLoadError(true); });
     load();
-    // Retry after 3s if initial load fails
-    const retry = setTimeout(load, 3000);
-    return () => clearTimeout(retry);
+    const interval = setInterval(load, 3000);
+    return () => { mounted = false; clearInterval(interval); };
   }, [sessionId, currentPlayerId]);
 
   // Subscribe to vote counts

@@ -328,7 +328,7 @@ const ValidationModal: React.FC<ValidationModalProps> = ({
             className={`absolute top-3 right-3 p-3 z-20 active:scale-90 transition-all rounded-xl ${
               step === 'WITNESS_SENT'
                 ? 'bg-black/20 text-black hover:bg-black/35 border border-black/20'
-                : 'text-white/30 hover:text-white/70 hover:bg-white/5'
+                : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
             }`}
             aria-label={t('close')}
           >

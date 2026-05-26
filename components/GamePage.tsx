@@ -52,8 +52,9 @@ interface GamePageProps {
 }
 
 const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions: uia, onCrownClick, onPhotoProof, secureSessionId, challengeCooldownSecs = 0, isGamePaused = false, chaosMode = false, currentBar = 1, barCadence = '1,2,2', barTransitionActive = false, boostAuctionEndsAt, boostAuctionType = 'boost', boostAuctionWinner, onBoostAuctionWinnerDone }) => {
-  // Read once at render — avoids 3+ synchronous localStorage hits per render cycle
-  const myPlayerId: string = s.user?.id || localStorage.getItem('bingo_user_id') || '';
+  // gameSession.userId is the authoritative players.id — always prefer it over user state
+  // which may be null during initial async restore after a page reload / QR scan
+  const myPlayerId: string = s.gameSession?.userId || s.user?.id || localStorage.getItem('bingo_user_id') || '';
 
   // Derive the player's emoji character for cell stamps
   const playerEmojiChar = ADULT_EMOJI_MAP[s.avatarId] || s.avatarId || '🎲';
