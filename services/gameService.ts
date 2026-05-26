@@ -1481,11 +1481,32 @@ async resetSession(): Promise<void> {
     deviceId: string | null; lastSeenAt: string | null; gameId: string | null;
   }>> {
     if (!supabase) return [];
-    const { data: players } = await supabase
+    let players: any[] | null = null;
+    { const { data } = await supabase
       .from('players')
       .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
+      players = data;
+    }
+
+    // Fallback: players joined before QR scan may have session_id = NULL.
+    // Use active games to find them instead.
+    if (!players || players.length === 0) {
+      const { data: activeGames } = await supabase
+        .from('games')
+        .select('player_id')
+        .eq('status', 'ACTIVE');
+      if (activeGames && activeGames.length > 0) {
+        const ids = activeGames.map((g: any) => g.player_id);
+        const { data: fallback } = await supabase
+          .from('players')
+          .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
+          .in('id', ids)
+          .order('created_at', { ascending: true });
+        if (fallback && fallback.length > 0) players = fallback;
+      }
+    }
 
     if (!players || players.length === 0) return [];
     const playerIds = players.map((p: any) => p.id);

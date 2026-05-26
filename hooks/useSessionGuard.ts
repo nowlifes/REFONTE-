@@ -65,15 +65,21 @@ export const useSessionGuard = (onKick: () => void): SessionGuardResult => {
     // ─── Re-validate helper (used by all reconnection paths) ──────────────
     const revalidate = async () => {
       if (cancelled) return;
-      const valid = await validate(sessionId);
+      let valid = await validate(sessionId);
       if (cancelled) return;
       if (!valid && isValidRef.current) {
-        // Was valid, now isn't — kick immediately
+        // Network might not be ready yet (phone wake-up race). Retry once after 2s
+        // before kicking — avoids false kicks due to temporary network unavailability.
+        await new Promise(r => setTimeout(r, 2000));
+        if (cancelled) return;
+        valid = await validate(sessionId);
+        if (cancelled) return;
+      }
+      if (!valid && isValidRef.current) {
         window.history.replaceState(null, '', window.location.pathname);
         setIsValid(false);
         onKickRef.current();
       } else if (valid && !isValidRef.current) {
-        // Edge case: session re-opened (shouldn't happen, but be safe)
         setIsValid(true);
       }
     };

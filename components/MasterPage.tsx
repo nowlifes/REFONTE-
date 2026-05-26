@@ -10,7 +10,6 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { APP_VERSION, CHALLENGES_EN, CHALLENGES_FR } from '../constants';
 import { gameService } from '../services/gameService';
-import { supabase } from '../lib/supabaseClient';
 import BackgroundParticles from './BackgroundParticles';
 
 const SESSION_COLORS = ['#FF2E63','#00F5A0','#FFD700','#93C5FD','#FF8C00','#A78BFA','#F472B6','#34D399'];
@@ -146,21 +145,8 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const [witnessSelectedPlayer, setWitnessSelectedPlayer] = useState<Record<string, string>>({});
   const [sendingWitnessId, setSendingWitnessId] = useState<string | null>(null);
 
-  // Player count — refetch on every INSERT/DELETE to avoid out-of-order drift
-  const [playerCount, setPlayerCount] = useState(0);
-  useEffect(() => {
-    if (!secureSessionId) { setPlayerCount(0); return; }
-    const fetchCount = () => supabase
-      .from('players').select('id', { count: 'exact', head: true })
-      .eq('session_id', secureSessionId)
-      .then(({ count }) => setPlayerCount(count ?? 0));
-    fetchCount();
-    const ch = supabase.channel(`player_count_${secureSessionId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` }, fetchCount)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players', filter: `session_id=eq.${secureSessionId}` }, fetchCount)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [secureSessionId]);
+  // playerCount derived from playersList (subscribePlayersWithScores catches INSERT/UPDATE/DELETE)
+  const playerCount = playersList.length;
 
   // Bar transition
   const [selectedDuration, setSelectedDuration] = useState<number>(15);
@@ -263,7 +249,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
   };
   const handleKickPlayer = async (pid: string) => {
     setKickingPlayerId(pid);
-    try { await gameService.kickPlayer(pid); setPlayersList(prev => prev.filter(p => p.id !== pid)); setPlayerCount(prev => Math.max(0, prev - 1)); }
+    try { await gameService.kickPlayer(pid); setPlayersList(prev => prev.filter(p => p.id !== pid)); }
     catch (e) { console.error(e); alert('Erreur lors du kick. Vérifiez votre connexion.'); }
     finally { setKickingPlayerId(null); setKickConfirmId(null); }
   };
