@@ -324,6 +324,7 @@ const PlayerApp: React.FC = () => {
   const [showStartAnimation, setShowStartAnimation] = useState(false);
   const isFirstLoad = useRef(true);
   const prevSessionActive = useRef(isSessionActive);
+  const firstNonLoadingRun = useRef(true);
 
   const handleHiddenLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -406,10 +407,12 @@ const PlayerApp: React.FC = () => {
     }
 
     // 2. START ANIMATION LOGIC
-    // prevSessionActive is now tracked during loading, so QR scan (loads with active session)
-    // sets prevSessionActive=true → sessionTransitioned=false → no intro.
-    // Phone open before session: prevSessionActive=false → sessionTransitioned=true → intro ✓
-    const sessionTransitioned = !prevSessionActive.current && isSessionActive;
+    // firstNonLoadingRun guards against triggering intro on initial load:
+    //   QR scan: loading ends with isSessionActive=true → prevSessionActive=false → would fire without this guard
+    //   Waiting player: loading ends with isSessionActive=false → normal flow, fires when session opens ✓
+    const isInitialLoad = firstNonLoadingRun.current;
+    if (isInitialLoad) firstNonLoadingRun.current = false;
+    const sessionTransitioned = !isInitialLoad && !prevSessionActive.current && isSessionActive;
     const hasSeenIntro = !!sessionStorage.getItem('bingo_intro_seen');
 
     if (sessionTransitioned && !hasSeenIntro) {

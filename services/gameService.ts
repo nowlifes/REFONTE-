@@ -512,7 +512,9 @@ class GameBackendService {
     const row0PVP = pvpPool[0]
       ?? (localPVP ? { ...localPVP, is_partner: false } : nonMasterPool[1]);
     const usedInRow0 = new Set([row0Witness?.id, row0PVP?.id, row0Master?.id].filter(Boolean));
-    const autoFill = shuffleArray(nonMasterPool.filter((c: any) => !usedInRow0.has(c.id))).slice(0, 2);
+    // autoFill must be strictly AUTO type so row0 always contains all 4 types
+    const autoPool = shuffleArray(nonMasterPool.filter((c: any) => !usedInRow0.has(c.id) && c.type === 'AUTO'));
+    const autoFill = autoPool.slice(0, 2);
 
     const row0 = shuffleArray([row0Master, row0Witness, row0PVP, ...autoFill].filter(Boolean));
 
@@ -2033,7 +2035,7 @@ async resetSession(): Promise<void> {
   async linkPlayerToSession(playerId: string, sessionId: string): Promise<void> {
     if (!supabase) return;
     await supabase.from('players').update({ session_id: sessionId })
-      .eq('id', playerId).is('session_id', null);
+      .eq('id', playerId);
   }
 
   /** Update pseudo (preserving [XX] country prefix) and emoji for a player. */
