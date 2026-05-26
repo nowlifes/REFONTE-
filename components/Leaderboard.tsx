@@ -346,6 +346,50 @@ const TauntSheet: React.FC<TauntSheetProps> = ({ entry, tauntsLeft, language, ga
               </div>
             </>
           )}
+
+          {/* ── MIRROR — teaser permanent (non jouable) ── */}
+          <div className="flex items-center gap-3 mt-5 mb-3 px-1">
+            <div className="h-px flex-1 bg-white/8" />
+            <span className="font-impact text-[#FF2D6A]/40 text-[8px] uppercase tracking-[0.2em]">
+              {language === 'fr' ? 'Prochainement' : 'Next drop'}
+            </span>
+            <div className="h-px flex-1 bg-white/8" />
+          </div>
+          <div
+            className="relative w-full flex items-center gap-3.5 rounded-2xl px-4 py-3.5 border-[3px] text-left overflow-hidden select-none"
+            style={{ borderColor: '#FF2D6A22', backgroundColor: '#0D0818' }}
+          >
+            {/* Shimmer sweep */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'linear-gradient(105deg, transparent 35%, #FF2D6A06 50%, transparent 65%)' }}
+            />
+            {/* Icon */}
+            <div
+              className="shrink-0 w-11 h-11 rounded-xl border-[2px] flex items-center justify-center text-[22px]"
+              style={{ borderColor: '#FF2D6A30', backgroundColor: '#1A0A1A', filter: 'blur(0.4px)' }}
+            >
+              🪞
+            </div>
+            {/* Label */}
+            <div className="flex-1 min-w-0">
+              <p className="font-impact text-[13px] uppercase italic tracking-tight leading-none" style={{ color: '#FF2D6A66' }}>
+                Mirror
+              </p>
+              <p className="font-impact text-[9px] uppercase tracking-widest mt-1 leading-tight text-white/20">
+                {language === 'fr' ? 'Ton écran retourné en miroir' : 'Your whole screen... flipped'}
+              </p>
+            </div>
+            {/* Badge */}
+            <div
+              className="shrink-0 px-2 py-1 rounded-lg border"
+              style={{ borderColor: '#FF2D6A35', backgroundColor: '#FF2D6A10' }}
+            >
+              <span className="font-impact text-[9px] uppercase tracking-widest" style={{ color: '#FF2D6A80' }}>
+                {language === 'fr' ? 'Bientôt' : 'Soon'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </>
