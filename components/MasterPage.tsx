@@ -880,7 +880,7 @@ const MasterPage: React.FC<MasterPageProps> = ({
                 <div className="flex items-start gap-3">
                   <span className="text-lg leading-none mt-0.5">⚡</span>
                   <p className="font-impact text-[#FF2D6A] uppercase text-[10px] tracking-widest leading-relaxed font-bold">
-                    {language === 'fr' ? 'Mode Chaos activé — grille entière débloquée, course finale, le plus rapide devient King 👑' : 'Chaos Mode — full grid unlocked, final race, fastest player becomes King 👑'}
+                    {language === 'fr' ? 'Mode Chaos activé — grille entière débloquée, course finale, le·la plus rapide décroche la couronne 👑' : 'Chaos Mode — full grid unlocked, final race, fastest takes the crown 👑'}
                   </p>
                 </div>
               )}

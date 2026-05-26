@@ -11,7 +11,7 @@ interface BarTransitionOverlayProps {
 
 const MECHANIC_UNLOCK: Record<number, { fr: string; en: string; emoji: string }> = {
   2: { emoji: '💣', fr: 'Tu peux saboter tes adversaires — fonce !', en: 'You can sabotage your rivals — go for it!' },
-  3: { emoji: '👑', fr: 'Mode Chaos — course finale, sois le premier !', en: 'Chaos Mode — final race, be the first!' },
+  3: { emoji: '👑', fr: 'Mode Chaos — course finale, qui décroche la couronne ?', en: 'Chaos Mode — final race, who takes the crown?' },
 };
 
 const AUTO_DISMISS_SECS = 15;

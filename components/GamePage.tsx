@@ -550,7 +550,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
             </div>
             <div className="bg-black border-[4px] border-black rounded-2xl px-6 py-4 shadow-[6px_6px_0px_rgba(0,0,0,0.4)] animate-in zoom-in-90 duration-300 delay-200">
               <div className="font-impact uppercase text-[#CC0000] leading-tight" style={{ fontSize: 'clamp(16px, 4.5vw, 22px)' }}>
-                {language === 'fr' ? 'GRILLE ENTIÈRE DÉBLOQUÉE — LE PLUS RAPIDE DEVIENT KING 👑' : 'FULL GRID UNLOCKED — FASTEST BECOMES KING 👑'}
+                {language === 'fr' ? 'GRILLE ENTIÈRE DÉBLOQUÉE — LE·LA PLUS RAPIDE DÉCROCHE LA COURONNE 👑' : 'FULL GRID UNLOCKED — FASTEST TAKES THE CROWN 👑'}
               </div>
               <div className="font-impact uppercase text-white/60 text-[10px] tracking-widest mt-1.5">
                 {language === 'fr' ? '⚡ DERNIER BAR · COURSE FINALE · QUI FINIT EN PREMIER ⚡' : '⚡ LAST BAR · FINAL RACE · WHO FINISHES FIRST ⚡'}

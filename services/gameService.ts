@@ -1549,9 +1549,17 @@ async resetSession(): Promise<void> {
 
     this.getPlayersWithScores(sessionId).then(callback); // immediate initial fetch
 
+    // Safety net: refetch every 10s to catch players whose session_id was never set
+    const pollTimer = setInterval(() => {
+      this.getPlayersWithScores(sessionId).then(callback);
+    }, 10_000);
+
     const ch = supabase
       .channel(`players_scores_live_${sessionId}`)
+      // Catch players already linked to this session (UPDATE/DELETE)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${sessionId}` }, refetch)
+      // Catch any new player INSERT (no filter — new players have no session_id yet)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players' }, refetch)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games' }, refetch)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'games' }, refetch)
       .subscribe((status) => {
@@ -1561,6 +1569,7 @@ async resetSession(): Promise<void> {
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      clearInterval(pollTimer);
       supabase.removeChannel(ch);
     };
   }
