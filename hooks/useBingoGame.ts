@@ -491,6 +491,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
     const score = validated.length;
 
     if (score === 1) injectBadge('FIRST_BLOOD');
+    if (score === 2) setJokers(j => j + 1);
     if (score === 10) injectBadge('PARTY_ANIMAL');
     
     const witnessCount = validated.filter(c => c.type === ChallengeType.WITNESS).length;

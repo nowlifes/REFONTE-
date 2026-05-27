@@ -440,7 +440,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [showJokerDiscovery, setShowJokerDiscovery] = useState(false);
   const jokerDiscoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (s.score < 3) return;
+    if (s.score < 2) return;
     try {
       if (localStorage.getItem('bingo_joker_discovery_shown') === '1') return;
     } catch {}

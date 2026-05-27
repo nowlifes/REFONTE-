@@ -222,7 +222,7 @@ const MASTER_VALID_CODE = "KING";
 const MASTER_RUNE_SEQUENCE = [0, 2, 3, 1];
 // Suppress unused-variable warnings (values are kept here as single source of truth documentation)
 void MASTER_VALID_CODE; void MASTER_RUNE_SEQUENCE;
-export const INITIAL_JOKERS = 2;
+export const INITIAL_JOKERS = 0;
 
 export const SOUNDS = {
   CLICK:    '/sounds/click.mp3',
