@@ -1275,6 +1275,41 @@ async resetSession(): Promise<void> {
     if (error) console.warn('[Taunt] trap_penalty failed:', error.message);
   }
 
+  // Round 3 opener: assign a random sabotage to every active player.
+  // Called when advanceBar reaches bar 3 (chaos mode).
+  async sendSabotageToAll(sessionId: string): Promise<void> {
+    if (!supabase) return;
+    const SABOTAGE_TYPES = [TauntType.ICE_BLOCK, TauntType.TINY_TARGET, TauntType.BLOB, TauntType.FLASHLIGHT, TauntType.FREEZE];
+    const durationMs = 60_000;
+    const frozenUntil = new Date(Date.now() + durationMs).toISOString();
+
+    const { data: activePlayers } = await supabase
+      .from('players')
+      .select('id')
+      .eq('session_id', sessionId);
+
+    if (!activePlayers || activePlayers.length === 0) return;
+    const playerIds = activePlayers.map((p: any) => p.id as string);
+
+    const { data: activeGames } = await supabase
+      .from('games')
+      .select('id, frozen_until')
+      .in('player_id', playerIds)
+      .eq('status', 'ACTIVE');
+
+    if (!activeGames || activeGames.length === 0) return;
+
+    // Only apply to games not already frozen
+    const notFrozen = activeGames.filter((g: any) => !g.frozen_until || new Date(g.frozen_until).getTime() <= Date.now());
+    for (const game of notFrozen) {
+      const tauntType = SABOTAGE_TYPES[Math.floor(Math.random() * SABOTAGE_TYPES.length)];
+      await supabase
+        .from('games')
+        .update({ frozen_until: frozenUntil, taunt_type: tauntType, taunt_data: null })
+        .eq('id', game.id);
+    }
+  }
+
   subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {
     if (!supabase) return () => {};
     const refetch = async () => {
@@ -1490,26 +1525,33 @@ async resetSession(): Promise<void> {
       players = data;
     }
 
-    // Fallback: session_id not yet set (linkPlayerToSession race at startup).
-    // Find players who joined in the last 24h and have ANY game (started_at is the timestamp column).
-    if (!players || players.length === 0) {
+    // Supplement: some players may not yet have session_id set (linkPlayerToSession race at startup).
+    // Always merge in players who have an active game in the last 24h but no session_id yet,
+    // so they appear in the master dashboard immediately after joining.
+    {
       const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const existingIds = new Set((players || []).map((p: any) => p.id as string));
       const { data: recentGames } = await supabase
         .from('games')
         .select('player_id')
-        .gt('started_at', cutoff);
+        .gt('started_at', cutoff)
+        .eq('status', 'ACTIVE');
       if (recentGames && recentGames.length > 0) {
-        const ids = [...new Set(recentGames.map((g: any) => g.player_id as string))];
-        const { data: fallback } = await supabase
-          .from('players')
-          .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
-          .in('id', ids)
-          .order('created_at', { ascending: true });
-        if (fallback && fallback.length > 0) players = fallback;
+        const missingIds = [...new Set(recentGames.map((g: any) => g.player_id as string))].filter(id => !existingIds.has(id));
+        if (missingIds.length > 0) {
+          const { data: extra } = await supabase
+            .from('players')
+            .select('id, pseudo, emoji, created_at, device_id, last_seen_at')
+            .in('id', missingIds)
+            .order('created_at', { ascending: true });
+          if (extra && extra.length > 0) {
+            players = [...(players || []), ...extra];
+          }
+        }
       }
+      // If still empty after supplement, nothing to show
+      if (!players || players.length === 0) return [];
     }
-
-    if (!players || players.length === 0) return [];
     const playerIds = players.map((p: any) => p.id);
 
     const { data: games } = await supabase

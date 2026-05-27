@@ -429,7 +429,9 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     if (!prevChaosRef.current && chaosMode) {
       setShowChaosAnnounce(true);
       if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
-      setTimeout(() => setShowChaosAnnounce(false), 3200);
+      // Auto-dismiss after 15s as safety net — player should tap OK first.
+      const t = setTimeout(() => setShowChaosAnnounce(false), 15_000);
+      return () => clearTimeout(t);
     }
     prevChaosRef.current = chaosMode;
   }, [chaosMode]);
@@ -556,6 +558,12 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
                 {language === 'fr' ? '⚡ DERNIER BAR · COURSE FINALE · QUI FINIT EN PREMIER ⚡' : '⚡ LAST BAR · FINAL RACE · WHO FINISHES FIRST ⚡'}
               </div>
             </div>
+            <button
+              onClick={() => setShowChaosAnnounce(false)}
+              className="w-full max-w-xs bg-white text-[#CC0000] font-impact uppercase text-xl py-4 rounded-2xl border-[4px] border-black shadow-[6px_6px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform animate-in fade-in duration-300 delay-500"
+            >
+              {language === 'fr' ? "OK J'AI COMPRIS !" : "GOT IT!"}
+            </button>
           </div>
         </div>
       )}
@@ -1150,6 +1158,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
       {s.selectedCell && s.activeScannerMode !== 'MASTER' && (
         <div id="tutorial-validation-actions">
           <ValidationModal
+              key={s.selectedCell.id}
               cell={s.selectedCell}
               jokerCount={s.jokers}
               lastWitnessTime={s.lastWitnessTime}

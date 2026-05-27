@@ -7,7 +7,7 @@ interface IceBlockOverlayProps {
 }
 
 const TOTAL_BLOCKS = 12;
-const TAPS_PER_BLOCK = 3;
+const TAPS_PER_BLOCK = 5;
 
 const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft, onUnlocked }) => {
   const { language } = useLanguage();
@@ -31,7 +31,7 @@ const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft, onUnlock
   const pct = Math.round((melted / TOTAL_BLOCKS) * 100);
 
   return (
-    <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-[#0A1629]/90 backdrop-blur-md animate-in fade-in duration-200" style={{ touchAction: 'none' }}>
       <div className="w-full max-w-xs mx-4 flex flex-col items-center gap-4">
 
         {/* Header */}
@@ -70,7 +70,7 @@ const IceBlockOverlay: React.FC<IceBlockOverlayProps> = ({ secondsLeft, onUnlock
                 {melted
                   ? <span className="text-xl">✅</span>
                   : <span className="text-xl select-none">
-                      {crackLevel === 0 ? '🧊' : crackLevel === 1 ? '🫧' : '💧'}
+                      {crackLevel === 0 ? '🧊' : crackLevel === 1 ? '🧊' : crackLevel === 2 ? '🫧' : crackLevel === 3 ? '🫧' : '💧'}
                     </span>
                 }
               </button>

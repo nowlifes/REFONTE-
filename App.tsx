@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Smartphone, X, KeyRound } from 'lucide-react';
 import canvasConfetti from 'canvas-confetti';
@@ -210,6 +210,13 @@ const PlayerApp: React.FC = () => {
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false);
   const [transitionSecondsLeft, setTransitionSecondsLeft] = useState(0);
   const { language } = useLanguage();
+
+  // Stable callback — inline lambda would recreate on every render, causing BoostRevealOverlay
+  // to restart its interval on each re-render → infinite "boost earned" loop.
+  const handleBoostAuctionWinnerDone = useCallback(() => {
+    clearBoostAuctionWinner();
+    clearBoostAuction();
+  }, [clearBoostAuctionWinner, clearBoostAuction]);
 
   // Keep Supabase alive (free tier pauses after 7 days without activity)
   useEffect(() => {
@@ -593,7 +600,7 @@ const PlayerApp: React.FC = () => {
               boostAuctionEndsAt={boostAuctionEndsAt}
               boostAuctionType={boostAuctionType}
               boostAuctionWinner={boostAuctionWinner}
-              onBoostAuctionWinnerDone={() => { clearBoostAuctionWinner(); clearBoostAuction(); }}
+              onBoostAuctionWinnerDone={handleBoostAuctionWinnerDone}
             />
           </ErrorBoundary>
         )}

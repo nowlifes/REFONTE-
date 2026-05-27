@@ -314,7 +314,12 @@ export const useEventSession = () => {
       setTransitionEndsAt(null);
       setNextBarName(null);
       setCurrentBar(newBar);
-      if (newBar >= 3) setChaosMode(true);
+      if (newBar >= 3) {
+        setChaosMode(true);
+        if (secureSessionIdRef.current) {
+          gameService.sendSabotageToAll(secureSessionIdRef.current).catch(e => console.warn('[Bar3] sendSabotageToAll failed', e));
+        }
+      }
       await gameService.triggerBarTransitionAndAdvance(durationMinutes, newBar, barName);
     },
     secureSessionId,
@@ -354,6 +359,10 @@ export const useEventSession = () => {
       if (newBar >= 3) {
         setChaosMode(true);
         await gameService.setChaosMode(true);
+        // Round 3 opener: give every active player a random sabotage.
+        if (secureSessionIdRef.current) {
+          gameService.sendSabotageToAll(secureSessionIdRef.current).catch(e => console.warn('[Bar3] sendSabotageToAll failed', e));
+        }
       }
     },
     setBarCadenceValue: async (cadence: string) => {

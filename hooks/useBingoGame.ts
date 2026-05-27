@@ -332,7 +332,10 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
       if (data.frozen_until) {
         setFrozenUntil(new Date(data.frozen_until).getTime());
       } else {
-        setFrozenUntil(null);
+        // Clear freeze only when the server explicitly removes it (frozen_until=null).
+        // Guard: don't clear a locally-active freeze from a stale payload — only clear
+        // if the local freeze is already expired or absent.
+        setFrozenUntil(prev => (prev && prev > Date.now()) ? prev : undefined);
       }
 
       if (data.taunts_sent !== undefined) {
@@ -665,7 +668,7 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
         setActiveScannerMode(null);
         checkBadges(newCells);
 
-        playSound('VALIDATE');
+        // Sound is played by GamePage.handleValidateCell (WebAudio) to avoid double-playing.
         triggerHaptic('success');
         canvasConfetti({
             particleCount: 60,

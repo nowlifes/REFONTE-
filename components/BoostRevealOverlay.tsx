@@ -34,7 +34,7 @@ const BoostRevealOverlay: React.FC<BoostRevealOverlayProps> = ({ winner, onDone 
       <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accentColor} 0%, #0A1629 60%)`, opacity: 0.97 }} />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center gap-6 px-8 text-center">
+      <div className="relative z-10 flex flex-col items-center gap-6 px-6 text-center w-full max-w-sm mx-auto">
         {/* Type label */}
         <div className="inline-flex items-center gap-2 bg-black/40 border-[2px] border-white/20 rounded-xl px-4 py-1.5">
           <span className="font-impact text-white uppercase text-[11px] tracking-widest">
@@ -46,8 +46,7 @@ const BoostRevealOverlay: React.FC<BoostRevealOverlayProps> = ({ winner, onDone 
 
         {/* Winner card */}
         <div
-          className="bg-white border-[4px] border-black rounded-3xl px-10 py-8 shadow-[8px_8px_0px_black] flex flex-col items-center gap-3"
-          style={{ minWidth: '260px' }}
+          className="w-full bg-white border-[4px] border-black rounded-3xl px-8 py-8 shadow-[8px_8px_0px_black] flex flex-col items-center gap-3"
         >
           <div
             className="w-20 h-20 rounded-2xl border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_black]"
