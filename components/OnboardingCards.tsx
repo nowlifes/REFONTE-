@@ -25,8 +25,8 @@ const CHALLENGE_TYPES = [
     icon: '👁️',
     titleFr: 'Défi TÉMOIN',
     titleEn: 'WITNESS Challenge',
-    descFr: 'Tu sélectionnes quelqu\'un dans la salle. C\'est lui qui valide sur son téléphone.',
-    descEn: 'Pick someone nearby. They validate on their own phone.',
+    descFr: 'Tu sélectionnes un témoin dans la liste. Il reçoit une notif et valide sur son téléphone.',
+    descEn: 'Pick a witness from the list. They get a notification and validate on their phone.',
   },
   {
     bg: '#FFD700',
