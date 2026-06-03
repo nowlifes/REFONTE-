@@ -22,12 +22,10 @@ interface BingoCellProps {
   rowUnlocksAtBar?: number;
   /** Chaos mode — cells wiggle to signal all-out frenzy */
   chaosMode?: boolean;
-  /** Focus view — fill parent container instead of fixed 66×66px */
-  focusSize?: boolean;
 }
 
 const BingoCell: React.FC<BingoCellProps> = React.memo(({
-  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, avatarEmoji, rowLocked, rowUnlocksAtBar, chaosMode, focusSize,
+  data, onClick, isWinning, winningIndex = -1, isFeverTarget, isLocked, isUnlocking, isSpotlight, avatarEmoji, rowLocked, rowUnlocksAtBar, chaosMode,
 }) => {
   const { id, text, type, status, isPartner } = data;
   const isValidated = status === CellStatus.VALIDATED;
@@ -71,7 +69,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
                                        '#00F5A0';
     const borderOpacity = type === ChallengeType.WITNESS ? '30' : '25';
     return (
-      <div className={`relative select-none ${focusSize ? 'w-full h-full' : 'w-[66px] h-[66px]'}`} style={{ cursor: 'default' }}>
+      <div className="relative w-[66px] h-[66px] select-none" style={{ cursor: 'default' }}>
         <div
           className={`absolute inset-0 rounded-[8px] overflow-hidden flex items-center justify-center border-[1.5px] border-dashed bg-[#0B1220]`}
           style={{ borderColor: `${auraColor}${borderOpacity}` }}
@@ -85,15 +83,15 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
           />
 
           {/* Blurred challenge text — the tease */}
-          <div className={`relative z-10 w-full flex flex-col items-center justify-center gap-[2px] pointer-events-none ${focusSize ? 'px-3' : 'px-[4px]'}`}>
+          <div className="relative z-10 w-full px-[4px] flex flex-col items-center justify-center gap-[2px] pointer-events-none">
             <span
               className="font-impact uppercase text-center w-full leading-tight"
               style={{
-                fontSize: focusSize ? 'clamp(14px, 4.2vw, 20px)' : '8px',
+                fontSize: '8px',
                 letterSpacing: '-0.1px',
                 color: auraColor,
                 opacity: 0.65,
-                filter: focusSize ? 'blur(5px)' : 'blur(2.8px)',
+                filter: 'blur(2.8px)',
               }}
             >
               {text}
@@ -114,15 +112,15 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
 
           {/* Lock icon */}
           <Lock
-            className={`absolute z-30 ${focusSize ? 'top-2 right-2' : 'top-[3px] right-[3px]'}`}
-            style={{ width: focusSize ? 18 : 8, height: focusSize ? 18 : 8, color: `${auraColor}40`, strokeWidth: 2.5 }}
+            className="absolute top-[3px] right-[3px] z-30"
+            style={{ width: 8, height: 8, color: `${auraColor}40`, strokeWidth: 2.5 }}
           />
 
           {/* Bar unlock hint — bottom left */}
           {rowUnlocksAtBar != null && (
             <div
-              className={`absolute z-30 font-impact uppercase ${focusSize ? 'bottom-2 left-3' : 'bottom-[2px] left-[3px]'}`}
-              style={{ fontSize: focusSize ? '11px' : '6px', color: `${auraColor}35`, letterSpacing: '0.5px' }}
+              className="absolute bottom-[2px] left-[3px] z-30 font-impact uppercase"
+              style={{ fontSize: '6px', color: `${auraColor}35`, letterSpacing: '0.5px' }}
             >
               BAR {rowUnlocksAtBar}
             </div>
@@ -134,7 +132,7 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
 
   return (
     <div
-      className={`relative select-none perspective-1000 touch-manipulation ${focusSize ? 'w-full h-full' : 'w-[66px] h-[66px]'}`}
+      className="relative w-[66px] h-[66px] select-none perspective-1000 touch-manipulation"
       style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
       onClick={() => !isLocked && status === CellStatus.EMPTY && onClick(id)}
     >
@@ -159,25 +157,6 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               <div className="flex items-center gap-0.5 bg-[#FFD700]/20 border border-[#FFD700]/50 rounded-[3px] px-1 py-0.5">
                 <span className="text-[10px] font-impact uppercase tracking-tight leading-none text-[#FFD700]">⚡5</span>
               </div>
-            </div>
-          ) : focusSize ? (
-            /* Focus view — large card showing the FULL challenge text */
-            <div className="flex flex-col items-center justify-center gap-1.5 pointer-events-none w-full h-full px-3 py-2 relative">
-              {/* Partner badge — top-right corner */}
-              {isPartner && (
-                <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-[#FFD700] border-[1.5px] border-black rounded-bl-lg rounded-tr-[10px] flex items-center justify-center">
-                  <Star className="w-3.5 h-3.5 text-black" fill="currentColor" strokeWidth={0} />
-                </div>
-              )}
-              {isSpotlight && (
-                <Zap className="w-5 h-5 mb-0.5 shrink-0" fill="currentColor" strokeWidth={0} style={{ color: type === ChallengeType.WITNESS ? '#fff' : '#000' }} />
-              )}
-              <span
-                className="font-impact uppercase leading-[1.05] text-center w-full"
-                style={{ fontSize: 'clamp(15px, 4.6vw, 22px)', letterSpacing: '-0.3px' }}
-              >
-                {text}
-              </span>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-0 pointer-events-none w-full px-1 relative">
@@ -219,14 +198,14 @@ const BingoCell: React.FC<BingoCellProps> = React.memo(({
               {/* Player emoji — personal stamp */}
               <span
                 className="leading-none select-none"
-                style={{ fontSize: focusSize ? '64px' : '28px', filter: 'drop-shadow(1px 2px 0px rgba(0,0,0,0.25))' }}
+                style={{ fontSize: '28px', filter: 'drop-shadow(1px 2px 0px rgba(0,0,0,0.25))' }}
                 role="img"
               >
                 {avatarEmoji}
               </span>
               {/* Small check badge */}
-              <div className={`absolute bg-[#00F5A0] border border-black rounded-full flex items-center justify-center shadow-[1px_1px_0px_black] ${focusSize ? 'bottom-2 right-2 w-7 h-7' : 'bottom-[4px] right-[4px] w-[14px] h-[14px]'}`}>
-                <Check className={focusSize ? 'w-4 h-4 text-black' : 'w-[9px] h-[9px] text-black'} strokeWidth={4} />
+              <div className="absolute bottom-[4px] right-[4px] w-[14px] h-[14px] bg-[#00F5A0] border border-black rounded-full flex items-center justify-center shadow-[1px_1px_0px_black]">
+                <Check className="w-[9px] h-[9px] text-black" strokeWidth={4} />
               </div>
             </>
           ) : (
