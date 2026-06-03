@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock } from 'lucide-react';
+import { Trophy, Crown, Settings, Sparkles, Zap, Pencil, Lock, LayoutGrid, Maximize2 } from 'lucide-react';
 import { ADULT_EMOJI_MAP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AppView, BingoCellData, CellStatus, TauntType, ChallengeType } from '../types';
@@ -65,6 +65,10 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
   const [spotlightSecondsLeft, setSpotlightSecondsLeft] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+
+  // ── Grille : vue focus (manche en grand) ↔ overview (5×5 zoom arrière) ──
+  const [gridView, setGridView] = useState<'focus' | 'overview'>('focus');
+  const [focusManche, setFocusManche] = useState(currentBar);
 
   // Duel (PVP challenges)
   const [duelPicker, setDuelPicker] = useState<{ cellId: number; challengeText: string } | null>(null);
@@ -168,6 +172,35 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
     }
     return result;
   }, [cadenceArray, unlockedRows, currentBar, bar2Wave1Complete]);
+
+  // ── Mapping manche (1-based) ↔ rangs de la grille ──────────────────
+  const totalManches = cadenceArray.length;
+  // Rangs [start, end) appartenant à une manche donnée
+  const mancheRows = useCallback((bar: number): [number, number] => {
+    const start = cadenceArray.slice(0, bar - 1).reduce((a, b) => a + b, 0);
+    const count = cadenceArray[bar - 1] ?? 1;
+    return [start, start + count];
+  }, [cadenceArray]);
+  // Numéro de manche (1-based) auquel appartient un rang
+  const rowToBar = useCallback((row: number): number => {
+    let cum = 0;
+    for (let b = 0; b < cadenceArray.length; b++) {
+      cum += cadenceArray[b];
+      if (row < cum) return b + 1;
+    }
+    return cadenceArray.length;
+  }, [cadenceArray]);
+  // Cellules de la manche actuellement en focus
+  const focusCells = useMemo(() => {
+    const [startRow, endRow] = mancheRows(focusManche);
+    return s.cells.filter((c: BingoCellData) => {
+      const r = Math.floor(c.id / 5);
+      return r >= startRow && r < endRow;
+    });
+  }, [s.cells, focusManche, mancheRows]);
+
+  // La manche en focus suit automatiquement la progression du bar courant
+  useEffect(() => { setFocusManche(currentBar); }, [currentBar]);
 
   const sounds = useGameSounds();
   const notifications = useGameNotifications();
@@ -896,12 +929,72 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
         </div>
       </header>
 
-      {/* GRILLE BINGO - 350x350px fixe */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 overflow-hidden w-full">
-        {/* Outer wrapper — relative anchor for row-unlock separators */}
+      {/* GRILLE BINGO — vue focus (manche en grand) ↔ overview (5×5 zoom arrière) */}
+      <main className="flex-1 flex flex-col items-center justify-center p-3 relative z-10 overflow-hidden w-full">
+        {gridView === 'focus' ? (
+          /* ───────── VUE FOCUS — manche en cours, cartes lisibles ───────── */
+          <div id="tutorial-grid-area" className="w-full max-w-[440px] flex-1 min-h-0 flex flex-col items-center gap-3">
+            {/* En-tête manche + pastilles de progression */}
+            <div className="shrink-0 flex items-center gap-3">
+              <span className="font-impact uppercase text-white text-xl tracking-wide leading-none">
+                {language === 'fr' ? 'Manche' : 'Round'} <span className="text-[#FFD700]">{focusManche}</span>
+              </span>
+              <span className="text-white/25 font-impact text-sm">/ {totalManches}</span>
+              <div className="flex items-center gap-1.5 ml-1">
+                {focusCells.map((c: BingoCellData) => (
+                  <div
+                    key={c.id}
+                    className={`w-2.5 h-2.5 rounded-full border-[1.5px] border-black transition-colors ${c.status === CellStatus.VALIDATED ? 'bg-[#00F5A0]' : 'bg-white/15'}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Grille de grandes cartes — scrollable si la manche a 10 cases */}
+            <div className="w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-1 py-1 no-scrollbar">
+              <div className="grid grid-cols-2 gap-2.5 auto-rows-fr">
+                {(() => {
+                  const now = Date.now();
+                  return focusCells.map((cell: BingoCellData) => {
+                    const cellRow = Math.floor(cell.id / 5);
+                    const isWaveLocked = !chaosMode && cellRow === 2 && currentBar === 2 && !bar2Wave1Complete;
+                    const isRowLocked = !chaosMode && (cellRow >= unlockedRows || isWaveLocked);
+                    const isCenter = cell.id === 12;
+                    const isLocked = !isRowLocked && isCenter && isMysteryCellLocked;
+                    const isRowUnlocking = unlockingRows.includes(cellRow);
+                    const isUnlocking = (isCenter && mysteryUnlocking) || isRowUnlocking;
+                    const rowUnlocksAtBar = isRowLocked
+                      ? [...rowSeparators].reverse().find((sep: RowSeparator) => sep.afterRow <= cellRow)?.barLabel
+                      : undefined;
+                    return (
+                      <div key={cell.id} className="aspect-square min-h-[130px]">
+                        <BingoCell
+                          data={cell}
+                          onClick={handleCellClickStable}
+                          isWinning={s.winningIds.includes(cell.id)}
+                          winningIndex={s.winningIds.indexOf(cell.id)}
+                          isFeverTarget={s.feverCells.includes(cell.id)}
+                          isLocked={isLocked}
+                          isUnlocking={isUnlocking}
+                          isSpotlight={cell.id === s.spotlightCellId && !!s.spotlightEndsAt && now < s.spotlightEndsAt}
+                          avatarEmoji={playerEmojiChar}
+                          rowLocked={isRowLocked}
+                          rowUnlocksAtBar={rowUnlocksAtBar}
+                          chaosMode={chaosMode}
+                          focusSize
+                        />
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* ───────── VUE OVERVIEW — grille 5×5, tape une manche pour zoomer ───────── */
+        /* Outer wrapper — relative anchor for row-unlock separators */
         <div className="relative p-4 bg-black/40 rounded-[2rem] border-[4px] border-white/5 shadow-2xl">
           <div
-            id="tutorial-grid-area"
             className="grid grid-cols-5 gap-[4px] p-[4px] bg-[#1A1A2E] rounded-[12px] shadow-inner"
             style={{ width: '350px', height: '350px' }}
           >
@@ -980,7 +1073,57 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
               </div>
             );
           })}
+
+          {/* ── Bandes manche cliquables : tape pour zoomer dans une manche ── */}
+          {Array.from({ length: totalManches }, (_, i) => i + 1).map((m) => {
+            const [startRow, endRow] = mancheRows(m);
+            const topPx = 20 + startRow * 70;
+            const heightPx = (endRow - startRow) * 70 - 4;
+            const unlocked = m <= currentBar;
+            const isCurrent = m === currentBar;
+            return (
+              <button
+                key={`manche-band-${m}`}
+                disabled={!unlocked}
+                onClick={() => { if (unlocked) { setFocusManche(m); setGridView('focus'); } }}
+                className={`absolute z-30 rounded-[14px] flex items-start justify-end p-1.5 transition-all duration-200 group ${unlocked ? 'active:bg-white/[0.07] cursor-pointer' : 'cursor-default'} ${isCurrent ? 'ring-2 ring-[#FFD700]/50 ring-inset' : ''}`}
+                style={{ left: 20, top: topPx, width: 342, height: heightPx }}
+                aria-label={unlocked ? `${language === 'fr' ? 'Zoomer manche' : 'Zoom round'} ${m}` : undefined}
+              >
+                {/* Pastille d'affordance — coin haut droit */}
+                <div
+                  className={`flex items-center gap-1 rounded-lg border-[1.5px] border-black px-1.5 py-0.5 shadow-[2px_2px_0px_black] ${isCurrent ? 'bg-[#FFD700]' : unlocked ? 'bg-white/85' : 'bg-[#2A3555]'}`}
+                >
+                  {unlocked
+                    ? <Maximize2 size={9} strokeWidth={3} className="text-black" />
+                    : <Lock size={9} strokeWidth={3} className="text-white/50" />}
+                  <span className={`font-impact uppercase leading-none ${unlocked ? 'text-black' : 'text-white/50'}`} style={{ fontSize: '8px' }}>
+                    {language === 'fr' ? 'M' : 'R'}{m}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
+        )}
+
+        {/* Toggle vue focus ↔ overview — le contrôle principal */}
+        <button
+          onClick={() => setGridView(v => (v === 'focus' ? 'overview' : 'focus'))}
+          className="mt-3 flex items-center gap-2 bg-[#FFD700] text-black border-[3px] border-black rounded-2xl px-4 py-2 shadow-[4px_4px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform"
+        >
+          {gridView === 'focus' ? (
+            <>
+              <LayoutGrid size={16} strokeWidth={2.75} />
+              <span className="font-impact uppercase text-[13px] tracking-wide">{language === 'fr' ? "Vue d'ensemble" : 'Overview'}</span>
+            </>
+          ) : (
+            <>
+              <Maximize2 size={16} strokeWidth={2.75} />
+              <span className="font-impact uppercase text-[13px] tracking-wide">{language === 'fr' ? 'Manche en cours' : 'Current round'}</span>
+            </>
+          )}
+        </button>
 
         {/* Legend chip — tap to see challenge type key */}
         <button
