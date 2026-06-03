@@ -68,7 +68,7 @@ const GamePage: React.FC<GamePageProps> = ({ state: s, actions: a, ui, uiActions
 
   // ── Zoom grille — loupe simple : agrandit la grille, pan tactile ──
   const ZOOM_BASE = 390;   // taille naturelle du wrapper (350 + p-4 + border)
-  const ZOOM_FACTOR = 1.7;
+  const ZOOM_FACTOR = 1.4;
   const [gridZoomed, setGridZoomed] = useState(false);
   const zoomViewportRef = useRef<HTMLDivElement>(null);
   const toggleGridZoom = useCallback(() => {

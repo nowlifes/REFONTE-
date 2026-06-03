@@ -561,6 +561,7 @@ const PlayerApp: React.FC = () => {
             avatarId={s.avatarId || ''}
             onCrownClick={handleCrownClick}
             onLeave={() => { a.resetGame(); a.setView(AppView.NICKNAME); }}
+            onSaveProfile={async (nick, avatarKey) => { await a.updateProfile(nick, avatarKey); }}
           />
         )}
 

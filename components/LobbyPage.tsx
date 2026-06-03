@@ -4,10 +4,12 @@
  * Le jeu démarre quand le Master lance le countdown 3-2-1.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import BackgroundParticles from './BackgroundParticles';
 import ShieldLogo from './ShieldLogo';
+import EditProfileSheet from './EditProfileSheet';
 import { ADULT_EMOJI_MAP } from '../constants';
 
 const getEmoji = (id: string) => ADULT_EMOJI_MAP[id] || id || '🎲';
@@ -17,6 +19,8 @@ interface LobbyPageProps {
   avatarId: string;
   onCrownClick?: () => void;
   onLeave?: () => void;
+  /** Re-modifier pseudo + avatar pendant l'attente du début de partie */
+  onSaveProfile?: (nickname: string, avatarKey: string) => Promise<void>;
 }
 
 const RULES_FR = [
@@ -31,10 +35,11 @@ const RULES_EN = [
   { emoji: '🏆', text: 'Complete a row → +1 Joker. Full grid = eternal glory!' },
 ];
 
-const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick, onLeave }) => {
+const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick, onLeave, onSaveProfile }) => {
   const { language } = useLanguage();
   const isFr = language === 'fr';
   const rules = isFr ? RULES_FR : RULES_EN;
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   return (
     <div className="fixed inset-0 bg-[#0A1629] flex flex-col select-none">
@@ -63,8 +68,20 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick,
 
           {/* Avatar + nom */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-28 h-28 bg-[#FFD700] border-[4px] border-black rounded-3xl flex items-center justify-center shadow-[8px_8px_0px_black] text-6xl animate-in zoom-in duration-300">
-              {getEmoji(avatarId)}
+            <div className="relative animate-in zoom-in duration-300">
+              <div className="w-28 h-28 bg-[#FFD700] border-[4px] border-black rounded-3xl flex items-center justify-center shadow-[8px_8px_0px_black] text-6xl">
+                {getEmoji(avatarId)}
+              </div>
+              {/* Bouton crayon — re-modifier le perso pendant l'attente */}
+              {onSaveProfile && (
+                <button
+                  onClick={() => setShowEditProfile(true)}
+                  aria-label={isFr ? 'Modifier mon perso' : 'Edit my character'}
+                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-white border-[3px] border-black rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-transform"
+                >
+                  <Pencil className="w-4 h-4 text-black" strokeWidth={2.75} />
+                </button>
+              )}
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center justify-center gap-1.5">
@@ -114,6 +131,19 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick,
             </span>
           </div>
 
+          {/* Re-modifier le perso tant que la partie n'a pas démarré */}
+          {onSaveProfile && (
+            <button
+              onClick={() => setShowEditProfile(true)}
+              className="flex items-center gap-2 bg-white/8 border-[2px] border-white/15 rounded-full px-4 py-2 active:bg-white/15 transition-all"
+            >
+              <Pencil className="w-3.5 h-3.5 text-[#FFD700]" strokeWidth={2.75} />
+              <span className="text-[10px] font-impact uppercase tracking-widest text-white/70">
+                {isFr ? 'Modifier mon perso' : 'Edit my character'}
+              </span>
+            </button>
+          )}
+
         </div>
 
         {/* Escape hatch — if master never starts */}
@@ -135,6 +165,16 @@ const LobbyPage: React.FC<LobbyPageProps> = ({ nickname, avatarId, onCrownClick,
         </div>
 
       </div>
+
+      {/* Sheet d'édition pseudo + avatar */}
+      {showEditProfile && onSaveProfile && (
+        <EditProfileSheet
+          currentNickname={nickname}
+          currentAvatarId={avatarId}
+          onSave={onSaveProfile}
+          onClose={() => setShowEditProfile(false)}
+        />
+      )}
     </div>
   );
 };
