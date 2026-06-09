@@ -454,18 +454,25 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
         colors: ['#FFFFFF', '#FDE047', '#00FF9D', '#FF2D6A'],
       });
 
-      // +1 joker OR +1 taunt per new line (random, optimistic with rollback)
+      // +1 joker OR +1 taunt per new line (random, optimistic)
+      // NOTE: une cellule peut fermer plusieurs lignes d'un coup (ligne + colonne).
+      // On persiste donc autant de bonus que de lignes (newLines), sinon le resync
+      // serveur (+1 par appel) reprend une valeur inférieure et le joueur "perd" un bonus.
       const reward: 'joker' | 'taunt' = Math.random() < 0.5 ? 'joker' : 'taunt';
       if (reward === 'joker') {
         setJokers(prev => prev + newLines);
-        if (gameSession) gameService.awardBonusJoker(gameSession.id).catch(() => {
-          setJokers(prev => Math.max(0, prev - newLines));
-        });
+        if (gameSession) {
+          for (let i = 0; i < newLines; i++) {
+            gameService.awardBonusJoker(gameSession.id).catch(() => {});
+          }
+        }
       } else {
         setGameSession(prev => prev ? { ...prev, tauntsBonus: (prev.tauntsBonus ?? 0) + newLines } : prev);
-        if (gameSession) gameService.awardBonusTaunt(gameSession.id).catch(() => {
-          setGameSession(prev => prev ? { ...prev, tauntsBonus: Math.max(0, (prev.tauntsBonus ?? 0) - newLines) } : prev);
-        });
+        if (gameSession) {
+          for (let i = 0; i < newLines; i++) {
+            gameService.awardBonusTaunt(gameSession.id).catch(() => {});
+          }
+        }
       }
 
       // Trigger celebration banner in GamePage
@@ -730,8 +737,11 @@ export const useBingoGame = (opts: { spotlightDisabled?: boolean; currentBar?: n
     },
 
     // Déblocage anticipé côté client (Ice Block, Tiny Target, Blob, Flashlight complétés avant expiration)
+    // Persiste le clear côté serveur : sinon le poll relit frozen_until (encore dans le futur) et re-applique le sabotage.
     clearFreezeLocally: () => {
       setFrozenUntil(undefined);
+      const gid = gameSession?.id;
+      if (gid) gameService.clearOwnFreeze(gid).catch(e => console.warn('[Taunt] clearOwnFreeze failed', e));
     },
 
 

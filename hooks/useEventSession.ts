@@ -106,7 +106,9 @@ export const useEventSession = () => {
 
   const restartPoll = useCallback(() => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    const interval = isRealtimeConnected.current ? 3_000 : 3_000; // 3s Safari fix — postgres_changes silent on Safari
+    // Poll constant à 3 s, même quand le realtime est connecté : Safari laisse
+    // souvent les postgres_changes silencieux, donc on ne ralentit jamais le poll.
+    const interval = 3_000;
     pollIntervalRef.current = setInterval(() => checkSession(), interval);
   }, [checkSession]);
 
@@ -240,8 +242,10 @@ export const useEventSession = () => {
     // Reset cadence so the new evening starts clean at Bar 1 with no chaos
     setCurrentBar(1);
     setChaosMode(false);
+    // NB : ne PAS appeler advanceBar() ici — il incrémente current_bar ET broadcast
+    // 'bar_advance' à tous les joueurs (transition fantôme), alors qu'on force
+    // current_bar = 1 juste après. On reset chaos + enchères uniquement.
     await Promise.all([
-      gameService.advanceBar().catch(() => {}), // will be ignored — bar reset handled below
       gameService.setChaosMode(false).catch(() => {}),
       gameService.clearBoostAuction().catch(() => {}),
     ]);
@@ -316,9 +320,6 @@ export const useEventSession = () => {
       setCurrentBar(newBar);
       if (newBar >= 3) {
         setChaosMode(true);
-        if (secureSessionIdRef.current) {
-          gameService.sendSabotageToAll(secureSessionIdRef.current).catch(e => console.warn('[Bar3] sendSabotageToAll failed', e));
-        }
       }
       await gameService.triggerBarTransitionAndAdvance(durationMinutes, newBar, barName);
     },
@@ -359,10 +360,6 @@ export const useEventSession = () => {
       if (newBar >= 3) {
         setChaosMode(true);
         await gameService.setChaosMode(true);
-        // Round 3 opener: give every active player a random sabotage.
-        if (secureSessionIdRef.current) {
-          gameService.sendSabotageToAll(secureSessionIdRef.current).catch(e => console.warn('[Bar3] sendSabotageToAll failed', e));
-        }
       }
     },
     setBarCadenceValue: async (cadence: string) => {

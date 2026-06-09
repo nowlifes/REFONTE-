@@ -110,6 +110,17 @@ class GameBackendService {
       localStorage.removeItem(OFFLINE_QUEUE_KEY);
   }
 
+  // Returns true if the error means the RPC isn't deployed yet (function not found).
+  // Lets callers fall back to the legacy fetch+update path without breaking.
+  private isMissingFunctionError(e: any): boolean {
+    if (!e) return false;
+    const code = e?.code ?? '';
+    const msg = (e?.message ?? '').toLowerCase();
+    return code === '42883' || code === 'PGRST202' ||
+           msg.includes('could not find the function') ||
+           msg.includes('does not exist');
+  }
+
   // Returns true if the error is permanent (no point retrying).
   private isPermanentError(e: any): boolean {
       if (!e) return false;
@@ -755,40 +766,32 @@ class GameBackendService {
     }
 
     try {
-        const { data: game, error: fetchError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('id', gameId)
-        .single();
+        // Swap atomique : respecte jokers_bonus, ne réécrit pas le score
+        // (préserve duel +1 / trap -2), verrouille la ligne. Cf. migration 012.
+        const { data: rows, error: rpcError } = await supabase
+          .rpc('use_joker_atomic', {
+            p_game_id: gameId,
+            p_cell_id: cellId,
+            p_new_text: newChallenge.text,
+            p_new_type: newChallenge.type,
+          });
 
-        if (fetchError || !game) throw new Error("Game not found");
-        
-        const jokersUsed = game.jokers_used || 0;
-        if (jokersUsed >= 2) throw new Error("No jokers left");
+        if (rpcError) {
+          // RPC pas encore déployée → fallback sur l'ancien chemin (rien ne casse)
+          if (this.isMissingFunctionError(rpcError)) {
+            return await this.useJokerViaFetch(gameId, cellId, newChallenge);
+          }
+          throw rpcError;
+        }
 
-        const newGrid = (game.grid_challenges || []).map((c: any) => c.id === cellId ? {
-        ...c,
-        text: newChallenge.text,
-        type: newChallenge.type
-        } : c);
+        // Set vide = plus de jokers OU jeu inactif (idempotent) → on garde le cache
+        if (!rows || rows.length === 0) {
+          const cached = localStorage.getItem('bingo_last_session');
+          if (cached) return JSON.parse(cached) as GameSession;
+          throw Object.assign(new Error("No jokers left or game inactive"), { code: 'GAME_INACTIVE' });
+        }
 
-        const newValidated = (game.validated_cells || []).filter((v: any) => v.id !== cellId);
-        
-        const { data: updatedData, error: updateError } = await supabase
-        .from('games')
-        .update({
-            grid_challenges: newGrid,
-            validated_cells: newValidated,
-            score: newValidated.length,
-            jokers_used: jokersUsed + 1
-        })
-        .eq('id', gameId)
-        .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
-        .single();
-
-        if (updateError) throw updateError;
-        
-        const finalSession = this.mapDataToSession(updatedData);
+        const finalSession = this.mapDataToSession(rows[0]);
         localStorage.setItem('bingo_last_session', JSON.stringify(finalSession));
         return finalSession;
 
@@ -805,6 +808,52 @@ class GameBackendService {
         }
         throw e;
     }
+  }
+
+  /** Ancien chemin fetch+update — fallback si use_joker_atomic n'est pas déployée.
+   *  Conserve le comportement historique (sans le verrou atomique). */
+  private async useJokerViaFetch(gameId: string, cellId: number, newChallenge: any): Promise<GameSession> {
+    if (!supabase) throw new Error("Backend not configured");
+    const { data: game, error: fetchError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('id', gameId)
+      .single();
+
+    if (fetchError || !game) throw new Error("Game not found");
+
+    const jokersUsed = game.jokers_used || 0;
+    const jokersBonus = game.jokers_bonus || 0;
+    // Respecte les jokers bonus (comme la RPC) — pas seulement les 2 de base.
+    if (2 - jokersUsed + jokersBonus <= 0) throw new Error("No jokers left");
+
+    const newGrid = (game.grid_challenges || []).map((c: any) => c.id === cellId ? {
+      ...c,
+      text: newChallenge.text,
+      type: newChallenge.type
+    } : c);
+
+    const wasValidated = (game.validated_cells || []).some((v: any) => v.id === cellId);
+    const newValidated = (game.validated_cells || []).filter((v: any) => v.id !== cellId);
+
+    const { data: updatedData, error: updateError } = await supabase
+      .from('games')
+      .update({
+        grid_challenges: newGrid,
+        validated_cells: newValidated,
+        // Préserve les ajustements externes : on retire juste le point de la cellule swappée.
+        score: Math.max(0, (game.score || 0) - (wasValidated ? 1 : 0)),
+        jokers_used: jokersUsed + 1
+      })
+      .eq('id', gameId)
+      .select('id, player_id, grid_challenges, validated_cells, status, score, started_at, jokers_used, jokers_bonus, taunts_sent, taunts_bonus, taunt_type, taunt_data')
+      .single();
+
+    if (updateError) throw updateError;
+
+    const finalSession = this.mapDataToSession(updatedData);
+    localStorage.setItem('bingo_last_session', JSON.stringify(finalSession));
+    return finalSession;
   }
 
   async getLeaderboard(currentUserId?: string): Promise<LeaderboardEntry[]> {
@@ -1273,41 +1322,6 @@ async resetSession(): Promise<void> {
     if (!supabase) return;
     const { error } = await supabase.rpc('trap_penalty', { victim_game_id: victimGameId });
     if (error) console.warn('[Taunt] trap_penalty failed:', error.message);
-  }
-
-  // Round 3 opener: assign a random sabotage to every active player.
-  // Called when advanceBar reaches bar 3 (chaos mode).
-  async sendSabotageToAll(sessionId: string): Promise<void> {
-    if (!supabase) return;
-    const SABOTAGE_TYPES = [TauntType.ICE_BLOCK, TauntType.TINY_TARGET, TauntType.BLOB, TauntType.FLASHLIGHT, TauntType.FREEZE];
-    const durationMs = 60_000;
-    const frozenUntil = new Date(Date.now() + durationMs).toISOString();
-
-    const { data: activePlayers } = await supabase
-      .from('players')
-      .select('id')
-      .eq('session_id', sessionId);
-
-    if (!activePlayers || activePlayers.length === 0) return;
-    const playerIds = activePlayers.map((p: any) => p.id as string);
-
-    const { data: activeGames } = await supabase
-      .from('games')
-      .select('id, frozen_until')
-      .in('player_id', playerIds)
-      .eq('status', 'ACTIVE');
-
-    if (!activeGames || activeGames.length === 0) return;
-
-    // Only apply to games not already frozen
-    const notFrozen = activeGames.filter((g: any) => !g.frozen_until || new Date(g.frozen_until).getTime() <= Date.now());
-    for (const game of notFrozen) {
-      const tauntType = SABOTAGE_TYPES[Math.floor(Math.random() * SABOTAGE_TYPES.length)];
-      await supabase
-        .from('games')
-        .update({ frozen_until: frozenUntil, taunt_type: tauntType, taunt_data: null })
-        .eq('id', game.id);
-    }
   }
 
   subscribeToGameUpdates(gameId: string, callback: (data: any) => void) {
@@ -1840,6 +1854,15 @@ async resetSession(): Promise<void> {
     if (error) throw error;
     this.pingPlayer(witnessPlayerId, 'witness');
     return data.id;
+  }
+
+  /** Player cleared their own sabotage early — persist so polling/realtime won't re-apply it. */
+  async clearOwnFreeze(gameId: string): Promise<void> {
+    if (!supabase) return;
+    await supabase
+      .from('games')
+      .update({ frozen_until: null, taunt_type: null, taunt_data: null })
+      .eq('id', gameId);
   }
 
   /** Clear all active taunt/freeze effects for a session — master emergency reset. */

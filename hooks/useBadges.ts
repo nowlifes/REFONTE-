@@ -44,13 +44,13 @@ export function useBadges(playerId: string | undefined) {
         },
         (payload) => {
           const badge = payload.new as Badge;
-          setBadges(prev => {
-            if (prev.find(b => b.badge_type === badge.badge_type)) return prev;
-            setNewBadge(badge);
-            const next = [...prev, badge];
-            badgesRef.current = next;
-            return next;
-          });
+          // Source de vérité = badgesRef (pas de setState dans un updater :
+          // évite la double-exécution en StrictMode et le double "new badge").
+          if (badgesRef.current.some(b => b.badge_type === badge.badge_type)) return;
+          const next = [...badgesRef.current, badge];
+          badgesRef.current = next;
+          setBadges(next);
+          setNewBadge(badge);
         }
       )
       .subscribe();
