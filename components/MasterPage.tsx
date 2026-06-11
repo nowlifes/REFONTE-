@@ -295,7 +295,13 @@ const MasterPage: React.FC<MasterPageProps> = ({
   const handleCreateNew = async () => {
     setIsCreatingNew(true);
     try { await createNewSession(); setShowNewSessionConfirm(false); }
-    catch (e) { console.error(e); alert('Erreur lors de la création de session. Vérifiez votre connexion.'); }
+    catch (e: any) {
+      console.error(e);
+      const detail = e?.message || e?.error_description || e?.hint || (typeof e === 'string' ? e : 'erreur inconnue');
+      // Surface the real Supabase error instead of a misleading "connexion" message —
+      // the DB connection is rarely the actual cause (RPC missing, RLS, constraint…).
+      alert(`Échec création de session.\n\nCause réelle : ${detail}`);
+    }
     finally { setIsCreatingNew(false); }
   };
   const handleWrapped = async () => {
